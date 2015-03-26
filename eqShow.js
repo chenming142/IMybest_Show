@@ -29,9 +29,9 @@
             var dimension = {},
                 rate = width / height,
                 pRate = w / h;
-            dimension =  rate > pRate
-                    ? (dimension.width = w, dimension.height = w / rate )
-                    : (dimension.height = h, dimension.width = h * rate);
+            rate > pRate
+                ? (dimension.width = w, dimension.height = w / rate )
+                : (dimension.height = h, dimension.width = h * rate);
             return dimension;
         }
 
@@ -577,7 +577,7 @@
         });
 	}(win.eqShow);
 
-	var p = 0;
+	var p = 0, q = !1;
 
     ng.module("app.directives.component", ["services.scene"])
         .directive("compDraggable", function () {
@@ -894,5 +894,271 @@
                 }
             }
         })
+        .directive("compResize", function() {
+            function calculate(width, height, w, h){
+                var dimension = {},
+                    rate = width / height,
+                    pRate = w / h;
+                rate > pRate
+                    ? (dimension.width = w, dimension.height = w / rate )
+                    : (dimension.height = h, dimension.width = h * rate);
+                return dimension;
+            }
 
+            function caleDimension(element) {
+                var box = element.children(".element-box"),
+                    dimension = {width: box.width(),height: box.height()};
+                if ("4" == element.attr("ctype").charAt(0)) {
+                    var img = element.find("img"),
+                        rate = img.width() / img.height(),
+                        r = dimension.width / dimension.height;
+                    if(rate >= r){
+                        img.outerHeight(dimension.height);
+                        img.outerWidth(dimension.height * rate);
+                        img.css("marginLeft", -(img.outerWidth() - dimension.width) / 2);
+                        img.css("marginTop", 0);
+                    }else{
+                        img.outerWidth(dimension.width);
+                        img.outerHeight(dimension.width / rate);
+                        img.css("marginTop", -(img.outerHeight() - dimension.height) / 2);
+                        img.css("marginLeft", 0)
+                    }
+                } else if ("p" == element.attr("ctype").charAt(0)) {
+                    var li = element.find("li"),
+                        img = element.find("img");
+                    img.each(function(index) {
+                        var self = $(this),
+                            cale = calculate(self.width(), self.height(), dimension.width, dimension.height);
+                        self.css({width: cale.width,height: cale.height});
+                        li.eq(index).css({lineHeight: dimension.height + "px"});
+                    });
+                } else {
+                    element.find(".element").css({width: dimension.width, height: dimension.height});
+                }
+            }
+
+            function updateDimension(scope, element) {
+                var dimension = {width: element.width(),height: element.height()};
+                if ("4" == element.attr("ctype").charAt(0)) {
+                    var img = element.find("img"),
+                        props = {
+                            width: dimension.width,
+                            height: dimension.height,
+                            imgStyle: {
+                                width: img.width(),
+                                height: img.height(),
+                                marginTop: img.css("marginTop"),
+                                marginLeft: img.css("marginLeft")
+                            }
+                        };
+                    scope.updateCompSize(element.attr("id"), props);
+                } else if ("p" == element.attr("ctype").charAt(0)) {
+                    var slide = element.find(".slide"),
+                        dot = slide.find(".dot"),
+                        id = slide.attr("id"),
+                        length = slide.attr("length");
+                    INTERVAL_OBJ[id] && (clearInterval(INTERVAL_OBJ[id]), delete INTERVAL_OBJ[id]);
+                    f.swipeSlide({
+                        autoSwipe: "true" == slide.attr("autoscroll"),
+                        continuousScroll: !0,
+                        speed: slide.attr("interval"),
+                        transitionType: "cubic-bezier(0.22, 0.69, 0.72, 0.88)",
+                        lazyLoad: !0,
+                        clone: !1,
+                        length: i
+                    }, function(index, callback) {
+                        --index < 0 && (index = length - 1);
+                        dot.children().eq(index).addClass("cur").siblings().removeClass("cur");
+                        callback && (INTERVAL_OBJ[id] = callback);
+                    });
+                    scope.updateCompSize(element.attr("id"), dimension);
+                } else {
+                    scope.updateCompSize(element.attr("id"), dimension);
+                }
+            }
+
+            function resizeHandler(scope, element, target, resize) {
+                var width, height, left, top,
+                    $element = $(element),
+                    ul = $element.closest("ul"),
+                    transform = 0,
+                    angle = 0,
+                    minWidth = parseFloat($element.css("min-width") || 50),
+                    minHeight = parseFloat($element.css("min-height") || 30),
+                    hammer = new Hammer($(target).get(0));
+                hammer.get("pan").set({threshold: 0,direction: Hammer.DIRECTION_ALL});
+                hammer.on("panstart", function() {
+                    $element.addClass("no-drag");
+
+                    width = $element.width();
+                    height = $element.height();
+                    left = parseFloat($element.css("left"));
+                    top = parseFloat($element.css("top"));
+
+                    ul.css("cursor", resize);
+                    $("body").css({"user-select": "none",cursor: "default"});
+
+                    transform = $element.get(0).style.transform;
+                    transform = transform && transform.replace("rotateZ(", "").replace("deg)", "");
+                    transform = transform && parseFloat(transform);
+                    angle = 2 * transform * Math.PI / 360
+                });
+                hammer.on("panmove", function(event) {
+                    switch (resize) {
+                        case RESIZE.RESIZE_W:
+                            if (width - event.deltaX <= minWidth) break;
+                            $element.css({left: left + event.deltaX,width: width - event.deltaX});
+                            break;
+                        case RESIZE.RESIZE_E:
+                            $element.css({width: width + event.deltaX});
+                            break;
+                        case RESIZE.RESIZE_N:
+                            if (height - event.deltaY <= minHeight) break;
+                            $element.css({top: top + event.deltaY,height: height - event.deltaY});
+                            break;
+                        case RESIZE.RESIZE_S:
+                            $element.css({height: top + event.deltaY});
+                            break;
+                        case RESIZE.RESIZE_SE:
+                            $element.css({height: height + event.deltaY,width: width + event.deltaX});
+                            break;
+                        case RESIZE.RESIZE_SW:
+                            if (width - event.deltaX <= minWidth) break;
+                            $element.css({
+                                left: left + event.deltaX,
+                                height: height + event.deltaY,
+                                width: width - event.deltaX
+                            });
+                            break;
+                        case RESIZE.RESIZE_NE:
+                            if (height - event.deltaY <= minHeight) break;
+                            $element.css({
+                                top: top + event.deltaY,
+                                height: height - event.deltaY,
+                                width: width + event.deltaX
+                            });
+                            break;
+                        case RESIZE.RESIZE_NW:
+                            height - event.deltaY > minHeight && $element.css("top", top + event.deltaY);
+                            width - event.deltaX > minWidth && $element.css("left", left + event.deltaX);
+                            $element.css({
+                                height: height - event.deltaY,
+                                width: width - event.deltaX
+                            });
+                            break;
+                    }
+                    if(event.deltaX > 0 && $element.width() > 320 - parseFloat($element.css("left"))){
+                        $element.width(320 - parseFloat($element.css("left")));
+                    }
+                    if(event.deltaX < 0 && $element.width() > left + width ){
+                        $element.width(left + width);
+                        $element.css("left", 0);
+                    }
+                    if(event.deltaY > 0
+                        && $element.height() > 486 - parseFloat($element.css("top"))){
+                        $element.height(486 - parseFloat($element.css("top")));
+                    }
+                    if(event.deltaY < 0 && $element.height() > top + height){
+                        $element.height(top + height);
+                        $element.css("top", 0);
+                    }
+                    caleDimension($element);
+                });
+                hammer.on("panend", function() {
+                    ul.css("cursor", "default");
+                    $("body").css({"user-select": "initial",cursor: "default"});
+                    updateDimension(scope, $element);
+                    scope.$broadcast("updateMaxRadius", $element);
+                });
+            }
+            var RESIZE = {
+                RESIZE_W: "w-resize",
+                RESIZE_E: "e-resize",
+                RESIZE_N: "n-resize",
+                RESIZE_S: "s-resize",
+                RESIZE_SE: "se-resize",
+                RESIZE_SW: "sw-resize",
+                RESIZE_NE: "ne-resize",
+                RESIZE_NW: "nw-resize"
+            };
+            return {
+                restrict: "A",
+                link: function(scope, element) {
+                    var $bar-n = $('<div class="bar bar-n" >'),
+                        $bar-s = $('<div class="bar bar-s" >'),
+                        $bar-e = $('<div class="bar bar-e" >'),
+                        $bar-w = $('<div class="bar bar-w" >'),
+                        $bar-ne = $('<div class="bar bar-ne bar-radius">'),
+                        $bar-nw = $('<div class="bar bar-nw bar-radius">'),
+                        $bar-se = $('<div class="bar bar-se bar-radius">'),
+                        $bar-sw = $('<div class="bar bar-sw bar-radius">');
+                    element.append($bar-n).append($bar-s).append($bar-e).append($bar-w)
+                     .append($bar-ne).append($bar-nw).append($bar-se).append($bar-sw)
+                     .unbind("mousedown").mousedown(function() {
+                        $(this).children(".bar").show().end()
+                            .siblings().children(".bar").hide();
+                     });
+                    element.parent().unbind("mousedown").mousedown(function(event) {
+                        if(!$(event.target).closest("li").length){
+                            $(this).children("li").find(".bar").hide();
+                            scope.$emit("hideStylePanel");
+                        }
+                    });
+                    resizeHandler(scope, element, $bar-n, RESIZE.RESIZE_N);
+                    resizeHandler(scope, element, $bar-s, RESIZE.RESIZE_S);
+                    resizeHandler(scope, element, $bar-e, RESIZE.RESIZE_E);
+                    resizeHandler(scope, element, $bar-w, RESIZE.RESIZE_W);
+                    resizeHandler(scope, element, $bar-ne, RESIZE.RESIZE_NE);
+                    resizeHandler(scope, element, $bar-nw, RESIZE.RESIZE_NW);
+                    resizeHandler(scope, element, $bar-se, RESIZE.RESIZE_SE);
+                    resizeHandler(scope, element, $bar-sw, RESIZE.RESIZE_SW);
+                }
+            }
+        })
+        .directive("pasteElement", ["sceneService", function(sceneService) {
+            function generateMenu() {
+                var element = $('<ul id="pasteMenu" class="dropdown-menu" '
+                                +'style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1">'
+                                +'<li class="paste" role="presentation">'
+                                    +'<a role="menuitem" tabindex="-1">' +
+                                        +'<div class="fa fa-paste" style="color: #08a1ef;"></div>&nbsp;&nbsp;粘贴'
+                                    +'</a>'
+                                +'</li>'
+                            +'</ul>')
+                    .css({position: "absolute","user-select": "none"});
+                element.find(".paste").on("click", function() {
+                    sceneService.pasteElement(sceneService.originalElemDef, sceneService.copyElemDef, sceneService.sameCopyCount);
+                    element.hide()
+                });
+                return element;
+            }
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    var $element = $(element);
+                    $element.on("contextmenu", function(events) {
+                        if (q) {
+                            var menu = generateMenu(),element = $("#pasteMenu");
+                            element.length > 0 && element.remove();
+                            $("#eq_main").append(menu);
+                            menu.css({
+                                left: events.pageX + $("#eq_main").scrollLeft() + 15,
+                                top: events.pageY + $("#eq_main").scrollTop()
+                            }).show();
+                            $("#eq_main").mousemove(function(events) {
+                                if(
+                                    events.pageX < $("#pasteMenu").offset().left - 20
+                                        || events.pageX > $("#pasteMenu").offset().left + $("#pasteMenu").width() + 20
+                                        || events.pageY < $("#pasteMenu").offset().top - 20
+                                        || events.pageY > $("#pasteMenu").offset().top + $("#pasteMenu").height() + 20){
+                                    $("#pasteMenu").hide();
+                                    $(this).unbind("mousemove");
+                                }
+                            });
+                        }
+                        return !1;
+                    });
+                }
+            }
+        }]);
 }(window, window.angular);
