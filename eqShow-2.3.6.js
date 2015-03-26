@@ -939,7 +939,8 @@
                             if (!m) continue;
                             d.append(m);
                             for (var n = 0; n < l.length; n++) l[n](m, g[f], e);
-                            k[("" + g[f].type).charAt(0)] && k[("" + g[f].type).charAt(0)](m, g[f]), "edit" == e && j[("" + g[f].type).charAt(0)] && j[("" + g[f].type).charAt(0)](m, g[f])
+                            k[("" + g[f].type).charAt(0)] && k[("" + g[f].type).charAt(0)](m, g[f]),
+                            "edit" == e && j[("" + g[f].type).charAt(0)] && j[("" + g[f].type).charAt(0)](m, g[f])
                         }
             }
 
@@ -988,13 +989,45 @@
         });
         d.addInterceptor(function(a, b) {
             function c(a, b, c) {
-                a.css("animation", b + " " + c.duration + "s ease " + c.delay + "s " + (c.countNum ? c.countNum : "")), "view" == d.mode ? (c.count && a.css("animation-iteration-count", "infinite"), a.css("animation-fill-mode", "both")) : (a.css("animation-iteration-count", "1"), a.css("animation-fill-mode", "backwards")), c.linear && a.css("animation-timing-function", "linear")
+                a.css("animation", b + " " + c.duration + "s ease " + c.delay + "s " + (c.countNum ? c.countNum : "")),
+                "view" == d.mode
+                    ? (
+                        c.count && a.css("animation-iteration-count", "infinite"),
+                        a.css("animation-fill-mode", "both")
+                    ) : (
+                        a.css("animation-iteration-count", "1"),
+                        a.css("animation-fill-mode", "backwards")),
+                    c.linear && a.css("animation-timing-function", "linear")
             }
             if (b.properties && b.properties.anim) {
                 var e = b.properties.anim,
                     f = $(".element-box", a),
                     g = "";
-                0 === e.type && (g = "fadeIn"), 1 === e.type && (0 === e.direction && (g = "fadeInLeft"), 1 === e.direction && (g = "fadeInDown"), 2 === e.direction && (g = "fadeInRight"), 3 === e.direction && (g = "fadeInUp")), 6 === e.type && (g = "wobble"), 5 === e.type && (g = "rubberBand"), 7 === e.type && (g = "rotateIn"), 8 === e.type && (g = "flip"), 9 === e.type && (g = "swing"), 2 === e.type && (0 === e.direction && (g = "bounceInLeft"), 1 === e.direction && (g = "bounceInDown"), 2 === e.direction && (g = "bounceInRight"), 3 === e.direction && (g = "bounceInUp")), 3 === e.type && (g = "bounceIn"), 4 === e.type && (g = "zoomIn"), 10 === e.type && (g = "fadeOut"), 11 === e.type && (g = "flipOutY"), 12 === e.type && (g = "rollIn"), 13 === e.type && (g = "lightSpeedIn"), b.properties.anim.trigger ? a.click(function() {
+                0 === e.type && (g = "fadeIn"),
+                1 === e.type && (
+                    0 === e.direction && (g = "fadeInLeft"),
+                    1 === e.direction && (g = "fadeInDown"),
+                    2 === e.direction && (g = "fadeInRight"),
+                    3 === e.direction && (g = "fadeInUp")
+                ),
+                6 === e.type && (g = "wobble"),
+                5 === e.type && (g = "rubberBand"),
+                7 === e.type && (g = "rotateIn"),
+                8 === e.type && (g = "flip"),
+                9 === e.type && (g = "swing"),
+                2 === e.type && (
+                        0 === e.direction && (g = "bounceInLeft"),
+                        1 === e.direction && (g = "bounceInDown"),
+                        2 === e.direction && (g = "bounceInRight"),
+                        3 === e.direction && (g = "bounceInUp")
+                ),
+                3 === e.type && (g = "bounceIn"),
+                4 === e.type && (g = "zoomIn"),
+                10 === e.type && (g = "fadeOut"),
+                11 === e.type && (g = "flipOutY"),
+                12 === e.type && (g = "rollIn"),
+                13 === e.type && (g = "lightSpeedIn"),
+                b.properties.anim.trigger ? a.click(function() {
                     c(f, g, b.properties.anim)
                 }) : c(f, g, b.properties.anim)
             }
@@ -1015,7 +1048,16 @@
         }),
         d.addComponent("3", function(a) {
             var b = $("#nr .edit_area")[0];
-            return "view" == d.mode && (b = document.getElementById("edit_area" + d.def.id)), b = $(b).parent()[0], a.properties.bgColor && (b.style.backgroundColor = a.properties.bgColor), a.properties.imgSrc && (b.style.backgroundImage = /^http.*/.test(a.properties.imgSrc) ? "url(" + a.properties.imgSrc + ")" : "url(" + PREFIX_FILE_HOST + "/" + a.properties.imgSrc + ")", b.style.backgroundOrigin = "element content-box", b.style.backgroundSize = "cover", b.style.backgroundPosition = "50% 50%"), b
+            return "view" == d.mode && (b = document.getElementById("edit_area" + d.def.id)),
+                b = $(b).parent()[0],
+                a.properties.bgColor && (b.style.backgroundColor = a.properties.bgColor),
+                a.properties.imgSrc && (b.style.backgroundImage = /^http.*/.test(a.properties.imgSrc)
+                    ? "url(" + a.properties.imgSrc + ")"
+                    : "url(" + PREFIX_FILE_HOST + "/" + a.properties.imgSrc + ")",
+                b.style.backgroundOrigin = "element content-box",
+                b.style.backgroundSize = "cover",
+                b.style.backgroundPosition = "50% 50%"),
+                b
         }),
         d.addComponent("4", function(a) {
             var b = document.createElement("img");
@@ -1050,16 +1092,20 @@
                     });
                     m.append(l), h.append(m), i.append($("<span>"))
                 }
-                return INTERVAL_OBJ[a.id] && (clearInterval(INTERVAL_OBJ[a.id]), delete INTERVAL_OBJ[a.id]), g.attr("length", a.properties.children.length).attr("autoscroll", a.properties.autoPlay).attr("interval", a.properties.interval), g.swipeSlide({
-                    autoSwipe: a.properties.autoPlay,
-                    continuousScroll: !0,
-                    speed: a.properties.interval,
-                    transitionType: "cubic-bezier(0.22, 0.69, 0.72, 0.88)",
-                    lazyLoad: !0,
-                    width: e
-                }, function(b, c) {
-                    i.children().eq(b).addClass("cur").siblings().removeClass("cur"), c && (INTERVAL_OBJ[a.id] = c)
-                }), g.get(0)
+                return INTERVAL_OBJ[a.id] && (clearInterval(INTERVAL_OBJ[a.id]), delete INTERVAL_OBJ[a.id]),
+                    g.attr("length", a.properties.children.length)
+                     .attr("autoscroll", a.properties.autoPlay)
+                     .attr("interval", a.properties.interval),
+                    g.swipeSlide({
+                        autoSwipe: a.properties.autoPlay,
+                        continuousScroll: !0,
+                        speed: a.properties.interval,
+                        transitionType: "cubic-bezier(0.22, 0.69, 0.72, 0.88)",
+                        lazyLoad: !0,
+                        width: e
+                    }, function(b, c) {
+                        i.children().eq(b).addClass("cur").siblings().removeClass("cur"), c && (INTERVAL_OBJ[a.id] = c)
+                    }), g.get(0)
             }
         }),
         d.addComponent("6", function(a) {
@@ -1088,53 +1134,66 @@
         }),
 
         d.bindAfterRenderEvent("1", function(a, b) {
-        if (a = $("div", a)[0], "view" == d.mode && 1 == b.type) {
-            var c = b.properties.labels;
-            for (key in c) ! function(b) {
-                $($(a).find(".label_content")[b]).on("click", function() {
-                    pageScroll(c[b])
-                })
-            }(key)
-        }
-    }),
-        d.bindAfterRenderEvent("8", function(a, b) {
-        a = $("a", a)[0];
-        var c = {
-            id: b.sceneId,
-            num: b.properties.number
-        };
-        if ("view" == d.mode) {
-            var e = function() {
-                $.ajax({
-                    cache: !0,
-                    type: "POST",
-                    url: PREFIX_S1_URL + "eqs/dial",
-                    data: $.param(c),
-                    async: !1,
-                    error: function() {
-                        alert("Connection error")
-                    },
-                    success: function() {}
-                })
-            };
-            a.addEventListener("click", e)
-        }
-    }),
-        d.bindAfterRenderEvent("4", function(b, c) {
-        "view" == d.mode && c.properties.url && $(b).click(function() {
-            {
-                var b = c.properties.url;
-                isNaN(b) ? a.open(b) : eqxiu.pageScroll(b)
+            if (a = $("div", a)[0], "view" == d.mode && 1 == b.type) {
+                var c = b.properties.labels;
+                for (key in c) ! function(b) {
+                    $($(a).find(".label_content")[b]).on("click", function() {
+                        pageScroll(c[b])
+                    })
+                }(key)
             }
-        })
-    }),
+        }),
+        d.bindAfterRenderEvent("8", function(a, b) {
+            a = $("a", a)[0];
+            var c = {
+                id: b.sceneId,
+                num: b.properties.number
+            };
+            if ("view" == d.mode) {
+                var e = function() {
+                    $.ajax({
+                        cache: !0,
+                        type: "POST",
+                        url: PREFIX_S1_URL + "eqs/dial",
+                        data: $.param(c),
+                        async: !1,
+                        error: function() {
+                            alert("Connection error")
+                        },
+                        success: function() {}
+                    })
+                };
+                a.addEventListener("click", e)
+            }
+        }),
+        d.bindAfterRenderEvent("4", function(b, c) {
+            "view" == d.mode && c.properties.url && $(b).click(function() {
+                {
+                    var b = c.properties.url;
+                    isNaN(b) ? a.open(b) : eqxiu.pageScroll(b)
+                }
+            })
+        }),
         d.bindAfterRenderEvent("v", function(a, b) {
         "view" == d.mode && $(a).click(function() {
-            $(a).hide(), $("#audio_btn").hasClass("video_exist") && ($("#audio_btn").hide(), $("#media")[0].pause()), $('<div class="video_mask" id="mask_' + b.id + '"></div>').appendTo($(a).closest(".m-img")), $('<a class = "close_mask" id="close_' + b.id + '"></a>').appendTo($(a).closest(".m-img")), $(b.properties.src).appendTo($("#mask_" + b.id)).attr("style", "position: absolute;top:0; min-height: 45%; max-height: 100%; top: 20%;").attr("width", "100%").removeAttr("height"), $("#close_" + b.id).bind("click", function() {
-                $(a).show(), $("#mask_" + b.id).remove(), $("#close_" + b.id).remove(), $("#audio_btn").hasClass("video_exist") && $("#audio_btn").show(function() {
+            $(a).hide(),
+            $("#audio_btn").hasClass("video_exist")
+                && ($("#audio_btn").hide(),$("#media")[0].pause()),
+            $('<div class="video_mask" id="mask_' + b.id + '"></div>').appendTo($(a).closest(".m-img")),
+            $('<a class = "close_mask" id="close_' + b.id + '"></a>').appendTo($(a).closest(".m-img")),
+            $(b.properties.src)
+                .appendTo($("#mask_" + b.id))
+                .attr("style", "position: absolute;top:0; min-height: 45%; max-height: 100%; top: 20%;")
+                .attr("width", "100%")
+                .removeAttr("height"),
+            $("#close_" + b.id).bind("click", function() {
+                $(a).show(),
+                $("#mask_" + b.id).remove(),
+                $("#close_" + b.id).remove(),
+                $("#audio_btn").hasClass("video_exist") && $("#audio_btn").show(function() {
                     $(this).hasClass("off") || $("#media")[0].play()
                 })
-            })
+             })
         })
     }),
         d.bindAfterRenderEvent("2", function(a) {
@@ -1150,46 +1209,46 @@
                 }
         }),
         d.bindAfterRenderEvent("6", function(a) {
-        if (a = $("button", a)[0], "view" == d.mode) {
-            var b = function(b, c) {
-                    var d = !0,
-                        e = $(a).parents("ul"),
-                        f = {};
-                    $("textarea", e).each(function() {
-                        if (d) {
-                            if ("required" == $(this).attr("required") && "" == $(this).val().trim()) return alert($(this).attr("placeholder") + "为必填项"), void(d = !1);
-                            if ("502" == $(this).attr("ctype")) {
-                                var a = new RegExp(/(\d{11})|^((\d{7,8})|(\d{4}|\d{3})-(\d{7,8})|(\d{4}|\d{3})-(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1})|(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1}))$/g);
-                                if (!a.test($(this).val())) return alert("手机号码格式错误"), void(d = !1)
+            if (a = $("button", a)[0], "view" == d.mode) {
+                var b = function(b, c) {
+                        var d = !0,
+                            e = $(a).parents("ul"),
+                            f = {};
+                        $("textarea", e).each(function() {
+                            if (d) {
+                                if ("required" == $(this).attr("required") && "" == $(this).val().trim()) return alert($(this).attr("placeholder") + "为必填项"), void(d = !1);
+                                if ("502" == $(this).attr("ctype")) {
+                                    var a = new RegExp(/(\d{11})|^((\d{7,8})|(\d{4}|\d{3})-(\d{7,8})|(\d{4}|\d{3})-(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1})|(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1}))$/g);
+                                    if (!a.test($(this).val())) return alert("手机号码格式错误"), void(d = !1)
+                                }
+                                if ("503" == $(this).attr("ctype")) {
+                                    var b = new RegExp(/^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/g);
+                                    if (!b.test($(this).val())) return alert("邮箱格式错误"), void(d = !1)
+                                }
+                                f[$(this).attr("name")] = $(this).val()
                             }
-                            if ("503" == $(this).attr("ctype")) {
-                                var b = new RegExp(/^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/g);
-                                if (!b.test($(this).val())) return alert("邮箱格式错误"), void(d = !1)
+                        }), d && $.ajax({
+                            cache: !0,
+                            type: "POST",
+                            url: PREFIX_S1_URL + "eqs/r/" + c,
+                            data: $.param(f),
+                            async: !1,
+                            error: function() {
+                                alert("Connection error")
+                            },
+                            success: function() {
+                                $(b).unbind("click").click(function() {
+                                    alert("请不要重复提交")
+                                }), alert("提交成功")
                             }
-                            f[$(this).attr("name")] = $(this).val()
-                        }
-                    }), d && $.ajax({
-                        cache: !0,
-                        type: "POST",
-                        url: PREFIX_S1_URL + "eqs/r/" + c,
-                        data: $.param(f),
-                        async: !1,
-                        error: function() {
-                            alert("Connection error")
-                        },
-                        success: function() {
-                            $(b).unbind("click").click(function() {
-                                alert("请不要重复提交")
-                            }), alert("提交成功")
-                        }
-                    })
-                },
-                c = d.def.sceneId;
-            $(a).bind("click", function() {
-                b(this, c)
-            })
-        }
-    }),
+                        })
+                    },
+                    c = d.def.sceneId;
+                $(a).bind("click", function() {
+                    b(this, c)
+                })
+            }
+        }),
         d.bindAfterRenderEvent("7", function(a, b) {
             var c = new BMap.Map("map_" + b.id, {
                     enableMapClick: !1
@@ -4795,15 +4854,18 @@
                 }
             }
         }),
-    b.module("app.directives.component", ["services.scene"]).directive("compDraggable", function() {
+    b.module("app.directives.component", ["services.scene"])
+        .directive("compDraggable", function() {
             return {
                 restrict: "A",
                 link: function(a, b, c) {
                     a.$on("$destroy", function() {
                         $(b).draggable(), $(b).draggable("destroy"), b = null
-                    }), b.on("$destroy", function() {
+                    }),
+                    b.on("$destroy", function() {
                         $(b).draggable(), $(b).draggable("destroy"), b = null
-                    }), $(b).draggable({
+                    }),
+                    $(b).draggable({
                         revert: !1,
                         stack: ".comp-draggable",
                         helper: "panel" == c.compDraggable || "page" == c.compDraggable ? "clone" : "",
@@ -4819,7 +4881,8 @@
                     })
                 }
             }
-        }).directive("compDroppable", function() {
+        })
+        .directive("compDroppable", function() {
             return {
                 restrict: "A",
                 link: function(a, b) {
@@ -4842,7 +4905,8 @@
                     })
                 }
             }
-        }).directive("compSortable", function() {
+        })
+        .directive("compSortable", function() {
             return {
                 restrict: "A",
                 link: function(a, b) {
@@ -4852,7 +4916,8 @@
                     })
                 }
             }
-        }).directive("compResizable", function() {
+        })
+        .directive("compResizable", function() {
             return {
                 restrict: "A",
                 link: function(a, b) {
@@ -4888,7 +4953,8 @@
                     })
                 }
             }
-        }).directive("photoDraggable", function() {
+        })
+        .directive("photoDraggable", function() {
             return {
                 restrict: "A",
                 link: function(a, b) {
@@ -4910,7 +4976,8 @@
                     })
                 }
             }
-        }).directive("cropDroppable", function() {
+        })
+        .directive("cropDroppable", function() {
             return {
                 restrict: "A",
                 link: function(a, b) {
@@ -4927,7 +4994,8 @@
                     })
                 }
             }
-        }).directive("compRotate", function() {
+        })
+        .directive("compRotate", function() {
             return {
                 restrict: "A",
                 link: function(a, b) {
@@ -4964,7 +5032,8 @@
                     })
                 }
             }
-        }).directive("compDrag", function() {
+        })
+        .directive("compDrag", function() {
             return {
                 restrict: "A",
                 link: function(a, b) {
@@ -5023,7 +5092,8 @@
                     })
                 }
             }
-        }).directive("compResize", function() {
+        })
+        .directive("compResize", function() {
             function a(a, b, c, d) {
                 var e = {},
                     f = a / b,
@@ -5205,7 +5275,8 @@
                     }), d(a, c, h, e.RESIZE_E), d(a, c, i, e.RESIZE_W), d(a, c, f, e.RESIZE_N), d(a, c, g, e.RESIZE_S), d(a, c, j, e.RESIZE_NE), d(a, c, k, e.RESIZE_NW), d(a, c, l, e.RESIZE_SE), d(a, c, m, e.RESIZE_SW)
                 }
             }
-        }).directive("pasteElement", ["sceneService", function(a) {
+        })
+        .directive("pasteElement", ["sceneService", function(a) {
             function b() {
                 var b = $('<ul id="pasteMenu" class="dropdown-menu" style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1"><li class="paste" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-paste" style="color: #08a1ef;"></div>&nbsp;&nbsp;粘贴</a></li></ul>').css({
                     position: "absolute",
@@ -5539,7 +5610,8 @@
                 };
             return f
         }]),
-    b.module("security.service", ["security.retryQueue", "security.login", "security.register", "ui.bootstrap.modal"]).factory("security", ["$http", "$q", "$location", "securityRetryQueue", "$modal", "ModalService", function(b, c, d, e, f, g) {
+    b.module("security.service", ["security.retryQueue", "security.login", "security.register", "ui.bootstrap.modal"])
+        .factory("security", ["$http", "$q", "$location", "securityRetryQueue", "$modal", "ModalService", function(b, c, d, e, f, g) {
             function h(b) {
                 b = b || "/", a.location.href = b
             }
@@ -7527,38 +7599,38 @@
                 url: PREFIX_URL + b
             })
         },
-            E.getPageTpls = function(b, c, d, e, f, g) {
-            var h = "/m/scene/tpl/scene/list";
-            b && (h += (/\?/.test(h) ? "&" : "?") + "tplType=1"), c && (h += (/\?/.test(h) ? "&" : "?") + "bizType=" + c), d && (h += (/\?/.test(h) ? "&" : "?") + "tagId=" + d), g && (h += (/\?/.test(h) ? "&" : "?") + "orderBy=" + g);
-            var i = new Date;
-            return h += (/\?/.test(h) ? "&" : "?") + "pageNo=" + (e ? e : 1), h += (/\?/.test(h) ? "&" : "?") + "pageSize=" + (f ? f : 12), h += (/\?/.test(h) ? "&" : "?") + "time=" + i.getTime(), a({
-                withCredentials: !0,
-                method: "GET",
-                url: PREFIX_URL + h
-            })
-        },
-            E.getPageTplTypesTwo = function(b, c) {
-            var d = "/m/scene/tag/sys/list?type=2&bizType=" + c,
-                e = new Date;
-            return d += (/\?/.test(d) ? "&" : "?") + "time=" + e.getTime(), a({
-                withCredentials: !0,
-                method: "GET",
-                url: PREFIX_URL + d
-            })
-        },
-            E.saveMyTpl = function(b) {
-            var c = "/m/scene/page/mytpl/save";
-            return a({
-                withCredentials: !0,
-                method: "POST",
-                url: PREFIX_URL + c,
-                headers: {
-                    "Content-Type": "text/plain; charset=UTF-8"
-                },
-                data: JSON.stringify(b)
-            })
-        },
-            E.previewScene = function(b) {
+        E.getPageTpls = function(b, c, d, e, f, g) {
+        var h = "/m/scene/tpl/scene/list";
+        b && (h += (/\?/.test(h) ? "&" : "?") + "tplType=1"), c && (h += (/\?/.test(h) ? "&" : "?") + "bizType=" + c), d && (h += (/\?/.test(h) ? "&" : "?") + "tagId=" + d), g && (h += (/\?/.test(h) ? "&" : "?") + "orderBy=" + g);
+        var i = new Date;
+        return h += (/\?/.test(h) ? "&" : "?") + "pageNo=" + (e ? e : 1), h += (/\?/.test(h) ? "&" : "?") + "pageSize=" + (f ? f : 12), h += (/\?/.test(h) ? "&" : "?") + "time=" + i.getTime(), a({
+            withCredentials: !0,
+            method: "GET",
+            url: PREFIX_URL + h
+        })
+    },
+        E.getPageTplTypesTwo = function(b, c) {
+        var d = "/m/scene/tag/sys/list?type=2&bizType=" + c,
+            e = new Date;
+        return d += (/\?/.test(d) ? "&" : "?") + "time=" + e.getTime(), a({
+            withCredentials: !0,
+            method: "GET",
+            url: PREFIX_URL + d
+        })
+    },
+        E.saveMyTpl = function(b) {
+        var c = "/m/scene/page/mytpl/save";
+        return a({
+            withCredentials: !0,
+            method: "POST",
+            url: PREFIX_URL + c,
+            headers: {
+                "Content-Type": "text/plain; charset=UTF-8"
+            },
+            data: JSON.stringify(b)
+        })
+    },
+        E.previewScene = function(b) {
             var c = "/m/scene/page/mytpl/list/?id=" + b,
                 d = new Date;
             c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime();
