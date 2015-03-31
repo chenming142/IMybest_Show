@@ -71,12 +71,14 @@
 					var box = $('<div class="element-box">')
 								.append($('<div class="element-box-contents">').append(component));
 					element.append(box);
-					if(5 != ("" + comp.type).charAt(0) && 6 != ("" + comp.type).charAt(0) || "edit" != mode){
-						$(component).before($('<div class="element" style="position: absolute; height: 100%; width: 100%;">'));
-					}
+
+                    5 != ("" + comp.type).charAt(0) && 6 != ("" + comp.type).charAt(0)
+                        || "edit" != mode
+                        || $(component).before($('<div class="element" style="position: absolute; height: 100%; width: 100%;">'));
+
 					if(comp.css){
-						component.css({width: 320 - parseInt(comp.css.left)});
-						component.css({
+                        element.css({width: 320 - parseInt(comp.css.left)});
+                        element.css({
 	                        width: comp.css.width,
 	                        height: comp.css.height,
 	                        left: comp.css.left,
@@ -121,7 +123,7 @@
 							}
 						}else{
 							var wrapComp = wrapComponent(elements[f], mode);
-							if(!m)continue;
+							if(!wrapComp)continue;
 							wrap.append(wrapComp);
 							for(var n = 0; n < interceptors.length; n++){
 								interceptors[n](wrapComp, elements[f], mode);
@@ -200,7 +202,7 @@
 						animation = "fadeIn";
 						break;
 					case 1:
-						switch(e.direction){
+						switch(anim.direction){
 							case 0:
 								animation = "fadeInLeft";
 								break;
@@ -580,7 +582,7 @@
 	}(win.eqShow);
 
 	var p = 0, q = !1;
-    ng.module("app", ['ngRoute', 'scene', 'ui.bootstrap',"templates-app"]);
+    ng.module("app", ['ngRoute', 'scene', 'ui.bootstrap',"templates-app", "templates-common"]);
     ng.module("app").config(["$routeProvider", function($routeProvider) {
         //d.theme = "bootstrap";
         $routeProvider.when("/scene/create/:sceneId", {
@@ -703,19 +705,26 @@
                 c.getPageTpls(1)
         }]);
 
-    ng.module("scene.create", ["services.scene","app.directives.component", "services.pagetpl", "services.modal"]);
+    ng.module("scene.create", [
+        "app.directives.editor",
+        "services.scene",
+        "app.directives.component",
+        "services.pagetpl",
+        "services.modal"
+    ]);
     ng.module("scene.create")
         .controller("CreateSceneCtrl", ["$timeout", "$compile", "$rootScope", "$scope", "$routeParams", "$route", "$location", "sceneService", "pageTplService", "$modal", "ModalService", "$window",
-            function($timeout, $compile, $rootScope, $scope, $routeParams, h, $location, sceneService, pageTplService, m, n, o, p, r, s) {
-                function t(pageId, c, d) {
+            function($timeout, $compile, $rootScope, $scope, $routeParams, h, $location, sceneService, pageTplService, m, ModalService, o, p, r, s) {
+                //TODO: 根据指定的场景的指定 pageIdx，加载场景页面信息并解析执行
+                function loadPageInfo(pageIdx, c, d) {
                     $scope.loading = !0;
                     $("#editBG").hide();
-                    $scope.pageId = $scope.pages[pageId - 1].id;
+                    $scope.pageId = $scope.pages[pageIdx - 1].id;
                     sceneService.getSceneByPage($scope.pageId, c, d).then(function(data) {
                         $scope.loading = !1;
                         $scope.tpl = data.data;
 
-                        x = JSON.stringify($scope.tpl);
+                        curPageTpl = JSON.stringify($scope.tpl);
                         $scope.sceneId = $scope.tpl.obj.sceneId;
 
                         if($scope.tpl.obj.properties && ($scope.tpl.obj.properties.image || $scope.tpl.obj.properties.scratch)){
@@ -775,11 +784,11 @@
 
                         if(c || d){
                             $location.$$search = {};
-                            $location.search("pageId", ++pageId);
+                            $location.search("pageId", ++pageIdx);
                             $scope.getPageNames();
                         }
-                        $scope.pageNum = pageId;
-                        w = $scope.tpl.obj.scene.name;
+                        $scope.pageNum = pageIdx;
+                        curSceneName = $scope.tpl.obj.scene.name;
                         $("#nr").empty();
 
                         var h = ng.copy($scope.tpl.obj);
@@ -796,13 +805,13 @@
                 }
 
                 function u() {
-                    r.pushForCurrentRoute("scene.save.success.nopublish", "notify.success")
+                    //r.pushForCurrentRoute("scene.save.success.nopublish", "notify.success");
                 }
                 $scope.loading = !1;
                 $scope.PREFIX_FILE_HOST = PREFIX_FILE_HOST;
                 $scope.tpl = {};
 
-                var v, w = "",x = "",y = "";
+                var v, curSceneName = "",curPageTpl = "",y = "";
 
                 $scope.templateType = 1;
                 $scope.categoryId = -1;
@@ -816,7 +825,6 @@
                 $scope.openAudioModal = sceneService.openAudioModal;
                 //$scope.isAllowToAccessScrollImage = o.isAllowToAccess(4);
 
-                var z = null;
                 $scope.scratch || ($scope.scratch = {});
                 $scope.finger || ($scope.finger = {});
 
@@ -950,43 +958,36 @@
                     $compile($("#nr"))($scope);
                 });
 
+                var uploadModal = null;
                 $scope.openUploadModal = function() {
-                    z || (z = m.open({
-                        windowClass: "upload-console",
-                        templateUrl: "my/upload.tpl.html",
-                        controller: "UploadCtrl",
-                        resolve: {
-                            category: function() {
-                                return {
-                                    categoryId: "0",
-                                    fileType: "1",
-                                    scratch: "scratch"
+                    if(!uploadModal){
+                        uploadModal = $modal.open({
+                            windowClass: "upload-console",
+                            templateUrl: "my/upload.tpl.html",
+                            controller: "UploadCtrl",
+                            resolve: {
+                                category: function() {
+                                    return {
+                                        categoryId: "0",
+                                        fileType: "1",
+                                        scratch: "scratch"
+                                    }
                                 }
                             }
-                        }
-                    }).result.then(function(a) {
-                            f.scratch.image.path = f.PREFIX_FILE_HOST + a, f.scratch.image.name = "", z = null
+                        }).result.then(function(data) {
+                            $scope.scratch.image.path = $scope.PREFIX_FILE_HOST + data;
+                            $scope.scratch.image.name = "";
+                            uploadModal = null;
                         }, function() {
-                            z = null
-                        }))
+                            uploadModal = null;
+                        });
+                    }
                 };
                 $scope.cancel = function() {};
                 $scope.cancelEffect = function() {
-                f.effectType = "", $("#modalBackdrop1").remove()
-            };
-
-                var $cropPanel = null;
-                $scope.$on("showCropPanel", function(event, data) {
-                    var $element = $(".content").eq(0);
-                    if($cropPanel){
-                        $rootScope.$broadcast("changeElemDef", data);
-                        $cropPanel.show();
-                    }else{
-                        $compile("<div crop-image></div>")($scope);
-                    }
-                    $element.append($cropPanel);
-                });
-
+                    $scope.effectType = "";
+                    $("#modalBackdrop1").remove()
+                };
                 $scope.saveEffect = function(a) {
                         if (f.tpl.obj.properties = {}, "scratch" == f.effectType) f.tpl.obj.properties.scratch = a, f.effectName = "涂抹";
                         else if ("finger" == f.effectType) f.tpl.obj.properties.finger = a, f.effectName = "指纹";
@@ -1002,7 +1003,17 @@
                         "fallingObject" == f.effectType && (f.tpl.obj.properties.fallingObject = a, f.effectName = "环境"), f.cancelEffect()
                     };
 
-                var $stylePanel = null;
+                var $stylePanel = null, $cropPanel = null;
+                $scope.$on("showCropPanel", function(event, data) {
+                    var $element = $(".content").eq(0);
+                    if($cropPanel){
+                        $rootScope.$broadcast("changeElemDef", data);
+                        $cropPanel.show();
+                    }else{
+                        $compile("<div crop-image></div>")($scope);
+                    }
+                    $element.append($cropPanel);
+                });
                 $scope.$on("showStylePanel", function(event, data) {
                     var $element = $(".content").eq(0);
                     if($stylePanel){
@@ -1025,7 +1036,7 @@
                     f.pageList = !0;
                     !f.isEditor || 1101 !== f.sceneId && 1102 !== f.sceneId && 1103 !== f.sceneId || (f.pageLabelAll.length = 0, f.pageIdTag = a.id, f.getPageTagLabel()),
                     a.id != f.tpl.obj.id && f.saveScene(null, function() {
-                        t(b + 1), j.$$search = {}, j.search("pageId", a.num)
+                        loadPageInfo(b + 1), j.$$search = {}, j.search("pageId", a.num)
                     });
                 };
                 $scope.stopCopy = function() {
@@ -1036,35 +1047,43 @@
                 };
                 $scope.getPageNames = function() {
                     var sceneId = $routeParams.sceneId;
-                    console.log("sceneId: "+sceneId);
+                    //根据指定sceneId，获取该场景的所有页面信息
                     sceneService.getPageNames(sceneId).then(function(data) {
                         $scope.pages = data.data.list;
                         ng.forEach($scope.pages, function(value, key) {
                             value.name || (value.name = "第" + (key + 1) + "页");
                         });
-                        var pageId = $location.search().pageId ? $location.search().pageId : $scope.pages[0].num;
-                        console.log("pageId: "+pageId);
-                        t(pageId);
+                        var pageIdx = $location.search().pageId ? $location.search().pageId : $scope.pages[0].num;
+                        loadPageInfo(pageIdx);
                     });
                 };
-                //TODO: 开始调用
+                //TODO: 获取指定场景的所有页面
                 $scope.getPageNames();
                 $scope.editableStatus = [];
                 $scope.savePageNames = function(a, b) {
-                        a.name || (a.name = "第" + (b + 1) + "页"), f.tpl.obj.name = a.name, y != a.name && k.savePageNames(f.tpl.obj).then(function() {})
-                    };
-                $scope.removeScratch = function(a) {
-                        a.stopPropagation(), f.tpl.obj.properties = null
-                    };
-                $scope.$on("text.click", function(a, b) {
-                        $("#btn-toolbar").remove(), $("body").append(d("<toolbar></toolbar>")(f));
-                        var e = $(b).offset().top;
-                        c(function() {
-                            $("#btn-toolbar").css("top", e - 50), $("#btn-toolbar").show(), $("#btn-toolbar").bind("click mousedown", function(a) {
-                                a.stopPropagation()
-                            }), $(b).wysiwyg_destroy(), $(b).wysiwyg(), b.focus()
-                        })
+                    a.name || (a.name = "第" + (b + 1) + "页");
+                    $scope.tpl.obj.name = a.name;
+                    y != a.name && sceneService.savePageNames($scope.tpl.obj).then(function() {});
+                };
+                $scope.removeScratch = function(event) {
+                    event.stopPropagation();
+                    $scope.tpl.obj.properties = null;
+                };
+                $scope.$on("text.click", function(event, element) {
+                    $("#btn-toolbar").remove();
+                    $("body").append($compile("<toolbar></toolbar>")($scope));
+                    var top = $(element).offset().top;
+                    $timeout(function() {
+                        $("#btn-toolbar").css("top", top - 50);
+                        $("#btn-toolbar").show();
+                        $("#btn-toolbar").bind("click mousedown", function(event) {
+                            event.stopPropagation();
+                        });
+                        $(element).wysiwyg_destroy();
+                        $(element).wysiwyg();
+                        element.focus();
                     });
+                });
                 $scope.updatePosition = function(a) {
                         var b, c, d = f.tpl.obj.elements,
                             e = [];
@@ -1082,26 +1101,51 @@
                         f.tpl.obj.elements = e
                     };
                 $scope.updateEditor = function() {
-                        $("#nr").empty(), k.templateEditor.parse({
-                            def: f.tpl.obj,
-                            appendTo: "#nr",
-                            mode: "edit"
-                        }), d($("#nr"))(f)
-                    };
+                    $("#nr").empty();
+                    sceneService.templateEditor.parse({
+                        def: $scope.tpl.obj,
+                        appendTo: "#nr",
+                        mode: "edit"
+                    });
+                    $compile($("#nr"))($scope);
+                };
 
                 var C = !1;
-                $scope.saveScene = function(a, c) {
+                $scope.saveScene = function(save, callback) {
                     if (!C) {
-                        if (C = !0, x == JSON.stringify(f.tpl)) return c && c(), a && (!f.tpl.obj.scene.publishTime || f.tpl.obj.scene.updateTime > f.tpl.obj.scene.publishTime ? u() : r.pushForCurrentRoute("scene.save.success.published", "notify.success")), void(C = !1);
-                        "" === f.tpl.obj.scene.name && (f.tpl.obj.scene.name = w), f.tpl.obj.scene.name = f.tpl.obj.scene.name.replace(/(<([^>]+)>)/gi, ""), k.getSceneObj().obj.scene.image && k.getSceneObj().obj.scene.image.bgAudio && (f.tpl.obj.scene.image || (f.tpl.obj.scene.image = {}), f.tpl.obj.scene.image.bgAudio = k.getSceneObj().obj.scene.image.bgAudio), k.resetCss(), f.tpl.obj.scene.image.isAdvancedUser = e.isAdvancedUser || e.isVendorUser ? !0 : !1, k.saveScene(f.tpl.obj).then(function() {
-                            C = !1, f.tpl.obj.scene.updateTime = (new Date).getTime(), x = b.toJson(f.tpl), v && (k.recordTplUsage(v), v = null), c && c(), a && u()
+                        if (C = !0, curPageTpl == JSON.stringify($scope.tpl)) return callback && callback();
+                        if(save){
+                            if(!$scope.tpl.obj.scene.publishTime || $scope.tpl.obj.scene.updateTime > $scope.tpl.obj.scene.publishTime){
+                                u();
+                            }else{
+                                //r.pushForCurrentRoute("scene.save.success.published", "notify.success");
+                            }
+                        }
+                        void(C = !1);
+                        if("" === $scope.tpl.obj.scene.name)$scope.tpl.obj.scene.name = curSceneName;
+                        $scope.tpl.obj.scene.name = $scope.tpl.obj.scene.name.replace(/(<([^>]+)>)/gi, "");
+
+                        if(sceneService.getSceneObj().obj.scene.image
+                            && sceneService.getSceneObj().obj.scene.image.bgAudio){
+                            if(!$scope.tpl.obj.scene.image)$scope.tpl.obj.scene.image = {};
+                            $scope.tpl.obj.scene.image.bgAudio = sceneService.getSceneObj().obj.scene.image.bgAudio
+                        }
+                        sceneService.resetCss();
+                        $scope.tpl.obj.scene.image.isAdvancedUser = $rootScope.isAdvancedUser || $rootScope.isVendorUser ? !0 : !1;
+                        sceneService.saveScene($scope.tpl.obj).then(function() {
+                            C = !1;
+                            $scope.tpl.obj.scene.updateTime = (new Date).getTime();
+                            curPageTpl = ng.toJson($scope.tpl);
+                            v && (sceneService.recordTplUsage(v), v = null);
+                            callback && callback();
+                            save && u();
                         }, function() {
-                            C = !1
-                        })
+                            C = !1;
+                        });
                     }
                 };
                 $scope.publishScene = function() {
-                        return f.tpl.obj.scene.publishTime && f.tpl.obj.scene.updateTime <= f.tpl.obj.scene.publishTime && x == b.toJson(f.tpl) ? void j.path("my/scene/" + f.sceneId) : void f.saveScene(null, function() {
+                        return f.tpl.obj.scene.publishTime && f.tpl.obj.scene.updateTime <= f.tpl.obj.scene.publishTime && curPageTpl == b.toJson(f.tpl) ? void j.path("my/scene/" + f.sceneId) : void f.saveScene(null, function() {
                             k.publishScene(f.tpl.obj.sceneId).then(function(a) {
                                 a.data.success && (r.pushForNextRoute("scene.publish.success", "notify.success"), q = !1, j.path(f.tpl.obj.scene.publishTime ? "my/scene/" + f.sceneId : "my/sceneSetting/" + f.sceneId))
                             })
@@ -1109,8 +1153,8 @@
                     };
                 $scope.exitScene = function() {
                         q = !1;
-                        JSON.parse(x);
-                        x == b.toJson(f.tpl) ? p.history.back() : n.openConfirmDialog({
+                        JSON.parse(curPageTpl);
+                        curPageTpl == b.toJson(f.tpl) ? p.history.back() : n.openConfirmDialog({
                             msg: "是否保存更改内容？",
                             confirmName: "保存",
                             cancelName: "不保存"
@@ -1122,12 +1166,12 @@
                     };
                 $scope.duplicatePage = function() {
                         f.saveScene(null, function() {
-                            t(f.pageNum, !1, !0)
+                            loadPageInfo(f.pageNum, !1, !0)
                         })
                     };
                 $scope.insertPage = function() {
                         f.saveScene(null, function() {
-                            t(f.pageNum, !0, !1)
+                            loadPageInfo(f.pageNum, !0, !1)
                         }), $("#pageList").height() >= 360 && c(function() {
                             var a = document.getElementById("pageList");
                             a.scrollTop = a.scrollHeight
@@ -1135,7 +1179,7 @@
                     };
                 $scope.deletePage = function(a) {
                         a.stopPropagation(), f.loading || (f.loading = !0, k.deletePage(f.tpl.obj.id).then(function() {
-                            f.loading = !1, j.$$search = {}, f.pages.length == f.pageNum ? (f.pages.pop(), j.search("pageId", --f.pageNum), t(f.pageNum, !1, !1)) : (f.pages.splice(f.pageNum - 1, 1), j.search("pageId", f.pageNum), t(f.pageNum, !1, !1))
+                            f.loading = !1, j.$$search = {}, f.pages.length == f.pageNum ? (f.pages.pop(), j.search("pageId", --f.pageNum), loadPageInfo(f.pageNum, !1, !1)) : (f.pages.splice(f.pageNum - 1, 1), j.search("pageId", f.pageNum), loadPageInfo(f.pageNum, !1, !1))
                         }, function() {
                             f.loading = !1
                         }))
@@ -1211,43 +1255,56 @@
                         })
                     } else f.myPageTpls = []
                 };
+                /**
+                 * 根据指定的 tplPageType， 获取该类型下的所有页面
+                 * @param tplPageType
+                 */
                 $scope.getPageTplsByType = function(tplPageType) {
-                    H(tplPageType);
+                    getPageTpls(tplPageType);
                 };
 
-                var F = function() {
-                        var a = "1" == f.type ? 3 : 4;
-                        f.childCatrgoryList
-                        && f.childCatrgoryList.length > a
-                            ? (
-                            f.otherCategory = f.childCatrgoryList.slice(a),
-                                f.childCatrgoryList = f.childCatrgoryList.slice(0, a)
-                            )
-                            : f.otherCategory = []
-                    },
-                    G = {},
-                    H = function(tplPageType) {
-                        if(G[tplPageType]){
-                            $scope.childCatrgoryList = G[tplPageType];
-                            $scope.getPageTplTypestemp($scope.childCatrgoryList[0].id, tplPageType);
-                            F();
+                var ensureCatrgory = function() {
+                        //TODO: $scope.type??
+                        console.log("$scope.type: "+$scope.type);
+                        var catrgory = "1" == $scope.type ? 3 : 4;
+                        if($scope.childCatrgoryList && $scope.childCatrgoryList.length > catrgory){
+                            $scope.otherCategory = $scope.childCatrgoryList.slice(catrgory);
+                            $scope.childCatrgoryList = $scope.childCatrgoryList.slice(0, catrgory);
                         }else{
+                            $scope.otherCategory = [];
+                        }
+                    },
+                    PageTpls = {},//当前已缓存的PageTpls
+                    /**
+                     * 获取指定类型下的所有PageTpl
+                     * @param tplPageType
+                     */
+                    getPageTpls = function(tplPageType) {
+                        if(PageTpls[tplPageType]){
+                            $scope.childCatrgoryList = PageTpls[tplPageType];
+                            $scope.getPageTplTypestemp($scope.childCatrgoryList[0].id, tplPageType);
+                            ensureCatrgory();
+                        }else{
+                            //获取指定的 tplPageType 类型下的TagLabel
                             pageTplService.getPageTagLabel(tplPageType).then(function(data) {
-                                $scope.childCatrgoryList = G[tplPageType] = data.data.list;
+                                $scope.childCatrgoryList = PageTpls[tplPageType] = data.data.list;
                                 $scope.getPageTplTypestemp($scope.childCatrgoryList[0].id, tplPageType);
-                                F();
+                                ensureCatrgory();
                             });
                         }
                     },
-                    I = {};
-
+                    PageLabels = {};
+                /**
+                 * 根据指定的 tplPageType， 获取该类型下的所有TagLabel
+                 * @param tplPageType
+                 */
                 $scope.getPageTagLabel = function(tplPageType) {
-                    if(I[tplPageType]){
-                        $scope.pageLabel = I[tplPageType];
+                    if(PageLabels[tplPageType]){
+                        $scope.pageLabel = PageLabels[tplPageType];
                         K();
                     }else{
                         pageTplService.getPageTagLabel(tplPageType).then(function(data) {
-                            $scope.pageLabel = I[tplPageType] = data.data.list;
+                            $scope.pageLabel = PageLabels[tplPageType] = data.data.list;
                             K();
                         });
                     }
@@ -1256,22 +1313,23 @@
 
 
                 var J, K = function() {
-                    l.getPageTagLabelCheck(f.pageIdTag).then(function(a) {
-                        J = a.data.list;
-                        for (var b = 0; b < f.pageLabel.length; b++) {
-                            for (var c = {
-                                id: f.pageLabel[b].id,
-                                name: f.pageLabel[b].name
-                            }, d = 0; d < J.length; d++) {
-                                if (J[d].id === f.pageLabel[b].id) {
+                    //TODO: $scope.pageIdTag ??
+                    console.log("$scope.pageIdTag: "+$scope.pageIdTag);
+                    //获取指定 pageIdTag 下的所有pageTpl
+                    pageTplService.getPageTagLabelCheck($scope.pageIdTag).then(function(data) {
+                        J = data.data.list;
+                        for (var b = 0; b < $scope.pageLabel.length; b++) {
+                            var c = {id: $scope.pageLabel[b].id,name: $scope.pageLabel[b].name};
+                            for (d = 0; d < J.length; d++) {
+                                if (J[d].id === $scope.pageLabel[b].id) {
                                     c.ischecked = !0;
-                                    break
+                                    break;
                                 }
                                 c.ischecked = !1
                             }
-                            f.pageLabelAll.push(c)
+                            $scope.pageLabelAll.push(c);
                         }
-                    })
+                    });
                 };
 
                 $scope.pageChildLabel = function() {
@@ -1281,90 +1339,109 @@
                         alert("分配成功！"), h.reload()
                     }, function() {})
                 };
-                $scope.getPageTplTypestemp = function(a, b) {//a=1, b=1101
-                        l.getPageTplTypestemp(a, b).then(function(b) {
-                            if (
-                                f.categoryId = a,
-                                    f.pageTpls = b.data.list && b.data.list.length > 0 ? b.data.list : [],
-                                    f.otherCategory.length > 0) {
-                                var c;
-                                c = f.childCatrgoryList[0];
-                                for (var d = 0; d < f.otherCategory.length; d++)
-                                    f.categoryId == f.otherCategory[d].id
-                                    && (f.childCatrgoryList[0] = f.otherCategory[d], f.otherCategory[d] = c)
-                            }
-                        })
-                    },
+                /**
+                 * 获取指定的 TagLabelId 和 tplPageType， 获取满足的所有PageTpl
+                 * @param id
+                 * @param bizType
+                 */
+                $scope.getPageTplTypestemp = function(id, bizType) {
+                    pageTplService.getPageTplTypestemp(id, bizType).then(function(data) {
+                        $scope.categoryId = id;
+                        $scope.pageTpls = data.data.list && data.data.list.length > 0 ? data.data.list : [];
 
+                        if ($scope.otherCategory.length > 0) {
+                            var c = $scope.childCatrgoryList[0];
+                            for (var d = 0; d < $scope.otherCategory.length; d++){
+                                if($scope.categoryId == $scope.otherCategory[d].id){
+                                    $scope.childCatrgoryList[0] = $scope.otherCategory[d];
+                                    $scope.otherCategory[d] = c;
+                                }
+                            }
+                        }
+                    });
+                };
+                //TODO:获取所有页面的类型
                 pageTplService.getPageTplTypes().then(function(data) {
                     $scope.pageTplTypes = data.data.list && data.data.list.length > 0
                         ? data.data.list.splice(0, 3)
                         : [];
                 }).then(function() {
+                    //获取指定类型下的所有模板页面
                     $scope.getPageTplsByType($scope.pageTplTypes[0].value);
                 });
 
                 $scope.exitPageTplPreview = function() {
-                        $("#nr").empty(), k.templateEditor.parse({
-                            def: f.tpl.obj,
-                            appendTo: "#nr",
-                            mode: "edit"
-                        }), e.$broadcast("dom.changed")
+                    $("#nr").empty();
+                    sceneService.templateEditor.parse({
+                        def: $scope.tpl.obj,
+                        appendTo: "#nr",
+                        mode: "edit"
+                    });
+                    $rootScope.$broadcast("dom.changed");
+                };
+                /**
+                 * 选择并插入模板页
+                 * @param pageTplId
+                 */
+                $scope.insertPageTpl = function(pageTplId) {
+                    $scope.loading = !0;
+                    var loadPageTpl = function(pageTplId) {
+                        //获取指定的场景模板页
+                        sceneService.getSceneTpl(pageTplId).then(function(data) {
+                            $scope.loading = !1;
+                            //TODO: 当前使用的PageTplId
+                            v = data.data.obj.id;
+                            $scope.tpl.obj.elements = sceneService.getElements();
+                            $("#nr").empty();
+                            //s.addPageHistory(f.tpl.obj.id, f.tpl.obj.elements);
+                            sceneService.templateEditor.parse({
+                                def: $scope.tpl.obj,
+                                appendTo: "#nr",
+                                mode: "edit"
+                            });
+                            $rootScope.$broadcast("dom.changed");
+                        }, function() {
+                            $scope.loading = !1;
+                        });
                     };
-                $scope.insertPageTpl = function(a) {//75183
-                        f.loading = !0;
-                        var b = function(a) {
-                            k.getSceneTpl(a).then(function(a) {
-                                f.loading = !1,
-                                    v = a.data.obj.id,
-                                    f.tpl.obj.elements = k.getElements(),
-                                    $("#nr").empty(),
-                                    s.addPageHistory(f.tpl.obj.id, f.tpl.obj.elements),
-                                    k.templateEditor.parse({
-                                        def: f.tpl.obj,
-                                        appendTo: "#nr",
-                                        mode: "edit"
-                                    }),
-                                    e.$broadcast("dom.changed")
-                            }, function() {
-                                f.loading = !1
-                            })
-                        };
-                        f.tpl.obj.elements && f.tpl.obj.elements.length > 0
-                            ? n.openConfirmDialog({
+                    if($scope.tpl.obj.elements && $scope.tpl.obj.elements.length > 0){
+                        ModalService.openConfirmDialog({
                             msg: "页面模板会覆盖编辑区域已有组件，是否继续？",
                             confirmName: "是",
                             cancelName: "取消"
                         }, function() {
-                            b(a)
-                        })
-                            : b(a)
-                    };
+                            loadPageTpl(pageTplId);
+                        });
+                    }else{
+                        loadPageTpl(pageTplId);
+                    }
+                };
                 $scope.chooseThumb = function() {
-                        m.open({
-                            windowClass: "console",
-                            templateUrl: "scene/console/bg.tpl.html",
-                            controller: "BgConsoleCtrl",
-                            resolve: {
-                                obj: function() {
-                                    return {
-                                        fileType: "0"
-                                    }
+                    $modal.open({
+                        windowClass: "console",
+                        templateUrl: "scene/console/bg.tpl.html",
+                        controller: "BgConsoleCtrl",
+                        resolve: {
+                            obj: function() {
+                                return {
+                                    fileType: "0"
                                 }
                             }
-                        }).result.then(function(a) {
-                                f.tpl.obj.properties || (f.tpl.obj.properties = {}), f.tpl.obj.properties.thumbSrc = a.data
-                            }, function() {
-                                f.tpl.obj.properties.thumbSrc = null
-                            })
-                    };
-
-                $(win).bind("beforeunload", function() {
-                    return "请确认您的场景已保存";
-                });
-                $scope.$on("$destroy", function() {
-                        $(a).unbind("beforeunload"), s.clearHistory()
+                        }
+                    }).result.then(function(data) {
+                        if(!$scope.tpl.obj.properties)$scope.tpl.obj.properties = {};
+                        $scope.tpl.obj.properties.thumbSrc = data.data
+                    }, function() {
+                        $scope.tpl.obj.properties.thumbSrc = null;
                     });
+                };
+
+                $(win).bind("beforeunload", function() {return "请确认您的场景已保存";});
+                $scope.$on("$destroy", function() {
+                    $(win).unbind("beforeunload");
+                    s.clearHistory();
+                });
+
                 $scope.sortableOptions = {
                         placeholder: "ui-state-highlight ui-sort-position",
                         containment: "#containment",
@@ -1373,17 +1450,18 @@
                                 d = f.pages[b.item.sortable.index].id;
                             f.saveScene(null, function() {
                                 k.changePageSort(c, d).then(function() {
-                                    t(c, !1, !1, !0), j.$$search = {}, j.search("pageId", c), f.pageNum = c
+                                    loadPageInfo(c, !1, !1, !0), j.$$search = {}, j.search("pageId", c), f.pageNum = c
                                 })
                             })
                         }
                     };
-                $scope.$on("history.changed", function() {
-                        f.canBack = s.canBack(f.tpl.obj.id), f.canForward = s.canForward(f.tpl.obj.id)
-                    });
 
-                $scope.back = function() {k.historyBack();};
-                $scope.forward = function() {k.historyForward();}
+                $scope.$on("history.changed", function() {
+                    $scope.canBack = s.canBack($scope.tpl.obj.id);
+                    $scope.canForward = s.canForward($scope.tpl.obj.id);
+                });
+                $scope.back = function() {sceneService.historyBack();};
+                $scope.forward = function() {sceneService.historyForward();}
             }])
         .directive("changeColor", function() {
             return {
@@ -1408,24 +1486,22 @@
                 }
             }
         }]);
-    ng.module("confirm-dialog", [])
-        .controller("ConfirmDialogCtrl", ["$scope", "confirmObj", function(a, b) {
+
+    ng.module("confirm-dialog", []).controller("ConfirmDialogCtrl", ["$scope", "confirmObj", function(a, b) {
             a.confirmObj = b, a.ok = function() {
                 a.$close()
             }, a.cancel = function() {
                 a.$dismiss()
             }
         }]);
-    ng.module("message-dialog", [])
-        .controller("MessageDialogCtrl", ["$scope", "msgObj", function(a, b) {
+    ng.module("message-dialog", []).controller("MessageDialogCtrl", ["$scope", "msgObj", function(a, b) {
             a.msgObj = b, a.close = function() {
                 a.$close()
             }, a.cancel = function() {
                 a.$dismiss()
             }
         }]);
-    ng.module("services.modal", ["confirm-dialog", "message-dialog"])
-        .factory("ModalService", ["$modal", function(a) {
+    ng.module("services.modal", ["confirm-dialog", "message-dialog"]).factory("ModalService", ["$modal", function(a) {
         var b = {};
         return b.openConfirmDialog = function(b, c, d) {
             a.open({
@@ -1458,11 +1534,11 @@
                 }).result.then(c, d)
             }, b
     }]);
+
     ng.module("services.pagetpl", []);
-    ng.module("services.pagetpl")
-        .factory("pageTplService", ["$http", "$rootScope", "$modal", "$q", function(a) {
-        var b = {};
-        return b.getPageTpls = function(b) {
+    ng.module("services.pagetpl").factory("pageTplService", ["$http", "$rootScope", "$modal", "$q", function(a) {
+        var PageTplService = {};
+        PageTplService.getPageTpls = function(b) {
             var c = "m/scene/pageTplList/" + b,
                 d = new Date;
             return c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime(), a({
@@ -1470,55 +1546,56 @@
                 method: "GET",
                 url: PREFIX_URL + c
             })
-        },
-            b.getMyTplList = function(b) {
-                var c = "/m/scene/pageList/" + b,
-                    d = new Date;
-                return c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime(), a({
-                    withCredentials: !0,
-                    method: "GET",
-                    url: PREFIX_URL + c
-                })
-            },
-            b.getPageTplTypes = function() {
-                var b = "base/class/tpl_page",
-                    c = new Date;
-                return b += (/\?/.test(b) ? "&" : "?") + "time=" + c.getTime(), a({
-                    withCredentials: !0,
-                    method: "GET",
-                    url: PREFIX_URL + b
-                })
-            },
-            //TODO:/m/scene/tag/sys/list
-            b.getPageTagLabel = function(b) {
-                var c = "/m/scene/tag/sys/list?type=1";
-                null != b && (c += (/\?/.test(c) ? "&" : "?") + "bizType=" + b);
-                var d = new Date;
-                return c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime(), a({
-                    withCredentials: !0,
-                    method: "GET",
-                    url: PREFIX_URL + c
-                })
-            },
-            b.getPageTagLabelCheck = function(b) {
-                var c = "/m/scene/tag/page/list?id=" + b,
-                    d = new Date;
-                return c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime(), a({
-                    withCredentials: !0,
-                    method: "GET",
-                    url: PREFIX_URL + c
-                })
-            },
-            //TODO: /m/scene/tpl/page/list
-            b.getPageTplTypestemp = function(b, c) {
-                var d = "/m/scene/tpl/page/list/",
-                    e = new Date;
-                return null != b && (d += (/\?/.test(d) ? "&" : "?") + "tagId=" + b), null != c && (d += (/\?/.test(d) ? "&" : "?") + "bizType=" + c), d += (/\?/.test(d) ? "&" : "?") + "time=" + e.getTime(), a({
-                    withCredentials: !0,
-                    method: "GET",
-                    url: PREFIX_URL + d
-                })
-            }, b.updataChildLabel = function(b, c) {
+        };
+        PageTplService.getMyTplList = function(b) {
+            var c = "/m/scene/pageList/" + b,
+                d = new Date;
+            return c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + c
+            })
+        };
+        PageTplService.getPageTplTypes = function() {
+            var b = "base/class/tpl_page",
+                c = new Date;
+            return b += (/\?/.test(b) ? "&" : "?") + "time=" + c.getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + b
+            })
+        };
+        //TODO:/m/scene/tag/sys/list
+        PageTplService.getPageTagLabel = function(b) {
+            var c = "m/scene/tag/sys/list?type=1";
+            null != b && (c += (/\?/.test(c) ? "&" : "?") + "bizType=" + b);
+            var d = new Date;
+            return c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + c
+            })
+        };
+        PageTplService.getPageTagLabelCheck = function(b) {
+            var c = "/m/scene/tag/page/list?id=" + b,
+                d = new Date;
+            return c += (/\?/.test(c) ? "&" : "?") + "time=" + d.getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + c
+            })
+        };
+        //TODO: /m/scene/tpl/page/list
+        PageTplService.getPageTplTypestemp = function(b, c) {
+            var d = "m/scene/tpl/page/list/",
+                e = new Date;
+            return null != b && (d += (/\?/.test(d) ? "&" : "?") + "tagId=" + b), null != c && (d += (/\?/.test(d) ? "&" : "?") + "bizType=" + c), d += (/\?/.test(d) ? "&" : "?") + "time=" + e.getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + d
+            })
+        };
+        PageTplService.updataChildLabel = function(b, c) {
             var d = "/m/eqs/tag/page/set/?ids=" + b;
             null != c && (d += (/\?/.test(d) ? "&" : "?") + "pageId=" + c);
             var e = new Date;
@@ -1527,9 +1604,49 @@
                 method: "POST",
                 url: PREFIX_URL + d
             })
-        }, b
+        };
+        return  PageTplService;
     }]);
 
+    ng.module("app.directives.editor", []).directive("toolbar", ["$compile", function($compile) {
+        return {
+            restrict: "EA",
+            replace: !0,
+            templateUrl: "directives/toolbar.tpl.html",
+            link: function(scope) {
+                scope.internalLinks = ng.copy(scope.pages);
+                if(!(scope.internalLink || scope.externalLink)){
+                    scope.internalLink = scope.internalLinks[0];
+                    scope.externalLink = "http://";
+                }
+                var colors = ["#000000", "#7e2412", "#ff5400", "#225801", "#0c529e", "#333333", "#b61b52", "#f4711f", "#3bbc1e", "#23a3d3", "#888888", "#d34141", "#f7951e", "#29b16a", "#97daf3", "#cccccc", "#ec7c7c", "#fdea02", "#79c450", "#563679", "#ffffff", "#ffcccc", "#d9ef7f", "#c3f649"],
+                    $colorMenu = $(".color-menu"),
+                    $bgcolorMenu = $(".bgcolor-menu");
+                $.each(colors, function(key, value) {
+                    $colorMenu.append($('<li><a dropdown-toggle class="btn" data-edit="foreColor ' + value + '" style="background-color: ' + value + '"></a></li>'));
+                });
+                $compile($colorMenu.append($('<li><a dropdown-toggle class="btn glyphicon glyphicon-remove" data-edit="foreColor transparent" style="background-color: transparent"></a></li>')))(scope);
+
+                var toRGB = function(color) {
+                    var colorReg = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+                    color = color.replace(colorReg, function(a, b, c, d) {
+                        return b + b + c + c + d + d
+                    });
+                    var rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+                    return rgb ? {
+                        r: parseInt(rgb[1], 16),
+                        g: parseInt(rgb[2], 16),
+                        b: parseInt(rgb[3], 16)
+                    } : null;
+                };
+                $.each(colors, function(key, value) {
+                    var color = toRGB(value);
+                    $bgcolorMenu.append($('<li><a dropdown-toggle class="btn" data-edit="backColor rgba(' + color.r + "," + color.g + "," + color.b + ', 0.3)" style="background-color: rgba(' + color.r + "," + color.g + "," + color.b + ', 0.3)"></a></li>'))
+                });
+                $compile($bgcolorMenu.append($('<li><a dropdown-toggle class="btn glyphicon glyphicon-remove" data-edit="backColor transparent" style="background-color: transparent"></a></li>')))(scope);
+            }
+        }
+    }]);
     ng.module("app.directives.component", ["services.scene"])
         .directive("compDraggable", function () {
             return {
@@ -1813,7 +1930,7 @@
                             caleOffset.y = event.center.y - (parseFloat($element.css("top")) + pOffset.top);
                         }
                     });
-                    m.on("panmove", function(event) {
+                    hammer.on("panmove", function(event) {
                         event.preventDefault();
                         if("img" == event.target.tagName.toLowerCase()){
                             event.target.ondragstart = function() {return !1;};
@@ -1827,7 +1944,7 @@
                             }
                         }
                     });
-                    m.on("panend", function(event) {
+                    hammer.on("panend", function(event) {
                         if ($element.hasClass("no-drag")) return void $element.removeClass("no-drag");
                         $element.css("opacity", 1);
                         $("body").css({"user-select": "initial",cursor: "default"});
@@ -2114,8 +2231,7 @@
         }]);
 
     ng.module("services.scene", [/*"scene.create.console", "services.history"*/]);
-    ng.module("services.scene")
-        .factory("sceneService", ["$http", "$rootScope", "$modal", "$q","$cacheFactory", /*"historyService",*/function($http, $rootScope, $modal, $q, $cacheFactory/*, historyService*/){
+    ng.module("services.scene").factory("sceneService", ["$http", "$rootScope", "$modal", "$q","$cacheFactory", /*"historyService",*/function($http, $rootScope, $modal, $q, $cacheFactory/*, historyService*/){
             function addComponentHandle(type, component, gFlag) {
                 var li = JsonParser.wrapComp(component, "edit");
                 $("#nr .edit_area").append(li);
@@ -2460,6 +2576,15 @@
             }//C
 
             {var SceneService = {}, JsonParser = eqShow.templateParser("jsonParser"), G = null, H = null, I = {};}
+            SceneService.resetCss = function() {
+                $("#nr .edit_area li").each(function(key, value) {
+                    var component = I[value.id.replace(/inside_/g, "")];
+                    if(component){
+                        if(!component.css)component.css = {};
+                        component.css.zIndex = value.style.zIndex ? value.style.zIndex : "0";
+                    }
+                });
+            };
 
             var Modal = null, GlobalEvt = null;
             JsonParser.addInterceptor(function(wrapComponent, element, mode){
@@ -2644,7 +2769,7 @@
                         $popMenu.find(".link").hide();
                         $popMenu.find(".cut").hide();
                     }
-                    if( "p" == e.type ){
+                    if( "p" == element.type ){
                         $popMenu.find(".animation").hide();
                         $popMenu.find(".style").hide();
                     }
@@ -2802,7 +2927,7 @@
                 var defer = $q.defer(),tt = new Date;
                 url += (/\?/.test(url) ? "&" : "?") + "time=" + tt.getTime();
                 $http({
-                    withCredentials: !0,
+                    //withCredentials: !0,
                     method: "GET",
                     url: PREFIX_URL + url
                 }).then(function(a) {
@@ -2816,14 +2941,154 @@
                 });
                 return defer.promise;
             };
+            SceneService.getSceneTpl = function(b) {
+                var tplCache = $cacheFactory.get("tplCache")
+                        ? $cacheFactory.get("tplCache")
+                        : $cacheFactory("tplCache"),
+                    defer = $q.defer();
+
+                if (tplCache.get(b)) {
+                    var f = $.extend(!0, {}, tplCache.get(b));
+                    if(f.data.obj.scene
+                        && f.data.obj.scene.image
+                        && f.data.obj.scene.image.bgAudio){
+                        if(!G.obj.scene.image)G.obj.scene.image = {};
+                        G.obj.scene.image.bgAudio = f.data.obj.scene.image.bgAudio
+                    }
+                    for (var h = 0; h < f.data.obj.elements.length; h++) {
+                        var i = f.data.obj.elements[h];
+                        i.id = Math.ceil(100 * Math.random());
+                        i.sceneId = G.obj.sceneId;
+                        i.pageId = G.obj.id;
+                    }
+                    H = f.data.obj.elements;
+                    for (var j = 0; j < H.length; j++) I[H[j].id] = H[j];
+                    defer.resolve(f)
+                } else {
+                    var k = "m/scene/pageTpl/" + b,
+                        l = new Date;
+                    k += (/\?/.test(k) ? "&" : "?") + "time=" + l.getTime(),
+                    $http({
+                        withCredentials: !0,
+                        method: "GET",
+                        url: PREFIX_URL + k
+                    }).then(function(a) {
+                        tplCache.put(a.data.obj.id, $.extend(!0, {}, a));
+                        if(a.data.obj.scene
+                            && a.data.obj.scene.image
+                            && a.data.obj.scene.image.bgAudio){
+                            if(!G.obj.scene.image)G.obj.scene.image = {};
+                            G.obj.scene.image.bgAudio = a.data.obj.scene.image.bgAudio
+                        }
+                        for (var b = 0; b < a.data.obj.elements.length; b++) {
+                            var e = a.data.obj.elements[b];
+                            e.id = Math.ceil(100 * Math.random());
+                            e.sceneId = G.obj.sceneId;
+                            e.pageId = G.obj.id;
+                        }
+                        H = a.data.obj.elements;
+                        for (var f = 0; f < H.length; f++) I[H[f].id] = H[f];
+                        defer.resolve(a)
+                    }, function(a) {
+                        defer.reject(a)
+                    });
+                }
+                return defer.promise;
+            };
+            SceneService.getElements = function() {
+                return H;
+            };
+            SceneService.getSceneObj = function() {
+                return G;
+            };
+
+            SceneService.saveScene = function(json) {
+                console.log(JSON.stringify(json));
+                var url = "m/scene/save";
+                return $http({
+                    withCredentials: !0,
+                    method: "POST",
+                    url: PREFIX_URL + url,
+                    headers: {
+                        "Content-Type": "text/plain; charset=UTF-8"
+                    },
+                    data: JSON.stringify(json)
+                });
+            };
+
+            SceneService.updateCompSize = function(elementId, props) {
+                for (var d = 0; d < H.length; d++) {
+                    if("inside_" + H[d].id == elementId){
+                        if(!H[d].css)H[d].css = {};
+                        H[d].css.width = props.width;
+                        H[d].css.height = props.height;
+
+                        H[d].properties.width = props.width;
+                        H[d].properties.height = props.height;
+                        if(props.imgStyle)H[d].properties.imgStyle = props.imgStyle;
+                        //h.addPageHistory(G.obj.id, H)
+                    }
+                }
+                $rootScope.$apply();
+            };
+            SceneService.updateCompPosition = function(elementId, props) {
+                for (var d = 0; d < H.length; d++) {
+                    if ("inside_" + H[d].id == elementId) {
+                        if(H[d].css){
+                            H[d].css.left = props.left;
+                            H[d].css.top = props.top;
+                            //h.addPageHistory(G.obj.id, H);
+                        }else{
+                            H[d].css = props;
+                            //h.addPageHistory(G.obj.id, H);
+                        }
+                    }
+                }
+                $rootScope.$apply();
+            };
+            SceneService.updateCompAngle = function(elementId, angle) {
+                for (var d = 0; d < H.length; d++){
+                    if("inside_" + H[d].id == elementId){
+                        if(H[d].css){
+                            H[d].css.transform = "rotateZ(" + angle + "deg)"
+                        }else{
+                            H[d].css = {};
+                        }
+                        //h.addPageHistory(G.obj.id, H);
+                    }
+                }
+                $rootScope.$apply();
+            };
+
             return SceneService;
         }]);
 
-    ng.module("templates-app", ["scene/create.tpl.html"]);
+    ng.module("templates-app", [
+        "dialog/confirm.tpl.html"
+        ,"scene/create.tpl.html"
+        ,"scene/effect/falling.tpl.html"
+        ,"scene/console/bg.tpl.html"
+    ]);
+    ng.module("dialog/confirm.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("dialog/confirm.tpl.html", '<div class="modal-header">\n    <span class="glyphicon glyphicon-exclamation-sign"></span>\n    <span>提示</span>\n</div>\n<div class="modal-body" ng-if="confirmObj.msg">\n <!-- confirm message -->\n  <div class="confirm-msg">{{confirmObj.msg}}</div>\n</div>\n<div class="modal-footer">\n    <a ng-click="ok();" class="btn-main"\n    style="width: 88px;">\n        {{confirmObj.confirmName || \'是\'}}\n    </a>\n    <a ng-click="cancel();" class="btn-grey0"\n    style="width: 88px;margin-left: 15px;">\n        {{confirmObj.cancelName || \'取消\'}}\n    </a>\n</div>')
+    }]);
     ng.module("scene/create.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/create.tpl.html", '<div class="creat_head">\n  <div class="creat_head_con clearfix">\n    <div class="creat_logo"><a href="#/main" ng-click="stopCopy()"><img ng-src="{{CLIENT_CDN}}assets/images/logo.png" /></a></div>\n    <div class="creat_con clearfix">\n        <ul class="comp_panel clearfix">\n          <li comp-draggable="panel" ctype="2" class="comp-draggable text" title="请拖动到编辑区域" ng-click="createComp(\'2\');">\n            <span>文本</span>\n          </li>\n          <li comp-draggable="panel" ctype="3" class="comp-draggable bg" title="请拖动到编辑区域" ng-click="createComp(\'3\');">\n            <span>背景</span>\n          </li>\n          <li comp-draggable="panel" ctype="9" class="comp-draggable music" title="请拖动到编辑区域" ng-click="createComp(\'9\');">\n            <span>音乐</span>\n          </li>  \n          <li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="v" class="comp-draggable vedio" title="请拖动到编辑区域" ng-click="createComp(\'v\');">\n            <span>视频</span>\n          </li>        \n          <li comp-draggable="panel" ctype="4" class="comp-draggable image" title="请拖动到编辑区域" ng-click="createComp(\'4\');">\n            <span>图片</span>\n          </li>\n          <li comp-draggable="panel" ctype="5" class="comp-draggable textarea" title="请拖动到编辑区域" ng-click="createComp(\'5\');">\n            <span>输入框</span>\n          </li>\n          <li comp-draggable="panel" ctype="6" class="comp-draggable button" title="请拖动到编辑区域" ng-click="createComp(\'6\');">\n            <span>按钮</span>\n          </li>\n          <li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="p" class="comp-draggable images" title="请拖动到编辑区域" ng-click="createComp(\'p\');">\n            <span>图集</span>\n          </li>\n          <li comp-draggable="panel" ctype="8" class="comp-draggable phone" title="请拖动到编辑区域" ng-click="createComp(\'8\');">\n            <span>电话</span>\n          </li>          \n          <li comp-draggable="panel" ctype="g101" class="comp-draggable contact" title="请拖动到编辑区域" ng-click="createCompGroup(\'g101\');">\n            <span>联系人</span>\n          </li>          \n          <li ng-click="openPageSetPanel()" class="texiao">\n            <span><a id = "toggle_button" class="page_effect" >特效</a></span></li>\n        </ul>\n  </div>\n    <div class="create-action">\n        <ul>\n            <li class="act-border save"><span class="create-save" ng-click="saveScene(true)">保存</span></li>\n            <li class="publish"><span class="create-publish" ng-click="publishScene()">发布</span></li>\n            <li class="act-border quit"><span class="create-quit" ng-click="exitScene()">退出</span></li> \n        </ul>\n    </div>\n    <div ng-hide="showToolBar();">\n        <div ng-show="isEditor" style="position: absolute;right: -200px;top: 20px;">\n            <select ng-model="tpl.obj.scene.isTpl">\n                <option value="0">非模板</option>\n                <option value="1">保存为pc模板</option>\n                <option value="2">保存为移动端模板</option>\n            </select>\n        </div>\n    </div>\n</div>\n</div>\n<div class="create_scene">\n  <div class="main clearfix">\n      <div class="content">\n          <div class="create_left">\n            <tabset justified="true">\n              <tab heading="页面模版" class="hint--bottom hint--rounded" style = "width: 290px;">\n                  <tabset justified="true" class="tpl_tab">\n                    <tab ng-repeat="pageTplType in pageTplTypes" heading="{{pageTplType.name}}" ng-click="getPageTplsByType(pageTplType.value)">\n                      <div class="nav2 clearfix" dropdown >\n                        <div class="others dropdown-toggle" ng-show="otherCategory.length > 0"><span></span></div>\n                        <ul class="clearfix nav2_list">\n                          <li ng-class="{active:childCat.id == categoryId}" ng-click="getPageTplTypestemp(childCat.id ,bizType)" ng-repeat="childCat in childCatrgoryList">{{childCat.name}}</li>\n                        </ul>\n                        <ul class="clearfix nav2_other dropdown-menu">\n                          <li ng-class="{active:othercat.id == categoryId}" ng-click="getPageTplTypestemp(othercat.id ,bizType)" ng-repeat="othercat in otherCategory">{{othercat.name}}</li>\n                        </ul>                        \n                      </div>\n                      <ul id="tpl_panel" class="page_tpl_container clearfix">\n                        <li class="page_tpl_item" ng-repeat="pageTpl in pageTpls" class="comp-draggable" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);">\n                          <img ng-src="{{PREFIX_FILE_HOST + pageTpl.properties.thumbSrc}}" />\n                        </li>\n                      </ul>\n                    </tab>\n                    <tab ng-repeat="myname in myName" heading="{{myName[0].name}}" active="myname.active" ng-if = "pageTplTypes" ng-click = "getPageTplsByMyType()">\n                      <div style="padding:10px;" ng-hide="myPageTpls">在页面管理中选中页面，点击生成模板，即可生成我的页面模板！</div>\n                      <ul id="tpl_panel" class="page_tpl_container clearfix">\n                        <li thumb-tpl my-attr="pageTpl" style="position: relative;" id="my-tpl" class="nr page_tpl_item comp-draggable" ng-repeat="pageTpl in myPageTpls" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);">\n                        </li>\n                      </ul>\n                    </tab>\n                  </tabset>\n              </tab>\n            </tabset>\n          </div> \n          <div class="phoneBox">\n            <div >\n                <div class="top"></div>\n                <div class = "phone_menubar"></div>\n                <div class="scene_title_baner">\n                  <div ng-bind="tpl.obj.scene.name" class="scene_title"></div>\n                </div>\n                <div class="nr sortable" id="nr"></div>\n                <div class="bottom"></div>\n                <div class = "tips">为了获得更好的使用，建议使用谷歌浏览器（chrome）、360浏览器、IE11浏览器。</div>\n            </div>\n            <div class="phone_texiao">\n                <div id="editBG" style="display: none;"><span class="hint--right hint--rounded" data-hint="选择新背景">背景</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的背景"><span ng-click="removeBG($event)" class="glyphicon glyphicon-remove"></span></a></div>\n                <div id="editBGAudio" ng-click="openAudioModal()" ng-show="tpl.obj.scene.image.bgAudio"><span class="hint--right hint--rounded" data-hint="选择新音乐">音乐</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的音乐"><span ng-click="removeBGAudio($event)" class="glyphicon glyphicon-remove"></span></a></div>\n                <div id="editScratch" ng-click="openOneEffectPanel(tpl.obj.properties)" ng-show="tpl.obj.properties"><span class="hint--right hint--rounded" data-hint="选择新特效">{{effectName}}</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面特效"><span ng-click="removeScratch($event)" class="glyphicon glyphicon-remove"></span></a></div>\n            </div>\n              <div class="history">\n                  <a title="撤销(ctrl+z)" ng-click="back()"><i class="fa fa-reply" ng-class="{active: canBack}"></i></a>\n                  <a title="恢复(ctrl+y)" ng-click="forward()"><i class="fa fa-share" ng-class="{active: canForward}"></i></a>\n              </div>\n          </div>\n\n          <div id = "containment" class="create_right"> \n            <div class="guanli">页面管理</div>\n            <div class = "nav_top">\n              <div class="nav_top_list">\n                <a ng-click="duplicatePage()" class="">复制</a>\n                <a class="" ng-click = "deletePage($event)" ng-show = "pages.length != 1">删除</a>\n                <a ng-click = "creatMyTemplate()">生成模版</a>\n              </div>\n             \n              <div class = "btn-group">\n                <div class="dropdown">\n                  <div id = "page_panel" ng-show="showPageEffect" class="dropdown-menu1 panel panel-default">\n                    <ul class = "effect_list">\n                      <li class = "effect" ng-repeat = "effect in effectList" ng-click = "openOneEffectPanel(effect)">\n                        <div class = "effect_img"><img ng-src="{{effect.src}}"></div>\n                        <div class = "effect_info">{{effect.name}}</div>\n                      </li>\n                    </ul>\n                  </div>\n\n                  <div id = "page_panel" ng-if="effectType == \'scratch\'" class="dropdown-menu1 panel panel-default">\n\n                    <div class="panel-heading">涂抹设置</div>\n                    <div class="panel-body">\n                      <form class="form-horizontal" role="form">\n                        <div class="form-group form-group-sm clearfix" style="margin-bottom:0;">\n                          <label class="col-sm-5 control-label">覆盖特效</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "scratch.image" ng-options = "scracthImage.name for scracthImage in scratches"  style="width:115px;">\n                            </select>\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;margin-top:5px;">\n                          <label class="col-sm-5 control-label" style="padding-top:6px;">覆盖图片</label>\n                          <div class="col-sm-7">\n                            <a ng-click = "openUploadModal()" class = "auto_img btn-main btn-success ">自定义图片</a>\n                          </div>\n                        </div>\n                        <div class = "divider" style="margin-top:6px;"></div>\n                        <div class = "well" style="margin-bottom:0px;">\n                          <img class = "scratch" ng-src="{{scratch.image.path}}"/>\n                        </div>\n                        <div class = "divider"></div>\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label for="inputEmail3" class="col-sm-5 control-label">涂抹比例</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "scratch.percentage" ng-options = "percentage.name for percentage in percentages">\n                            </select>\n                          </div>\n                        </div>\n                         <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label for="inputEmail3" class="col-sm-5 control-label">提示文字</label>\n                          <div class="col-sm-7">\n                            <input type="text" ng-model = "scratch.tip" id="inputEmail3" placeholder="提示文字" maxlength = "15">\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                            <a dropdown-toggle type="button" ng-click = "saveEffect(scratch)" class="btn-main" style="width:88px;border:none;">保存</a>\n                            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                          </div>\n                        </div>\n                      </form>\n                    </div>\n                  </div>\n\n                  <div id = "page_panel" ng-if="effectType==\'finger\'" class="dropdown-menu1 panel panel-default">\n\n                    <div class="panel-heading">指纹设置</div>\n                    <div class="panel-body">\n                      <form class="form-horizontal" role="form">\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label class="col-sm-5 control-label">背景图片</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "finger.bgImage" ng-options = "bgImage.name for bgImage in fingerBackgrounds">\n                            </select>\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label class="col-sm-5 control-label">指纹图片</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "finger.zwImage" ng-options = "zwImage.name for zwImage in fingerZws">\n                            </select>\n                          </div>\n                        </div>\n                        <div class = "divider"></div>\n                        <div class = "well" style="margin-bottom:15px;">\n                          <img class = "finger_bg" ng-src="{{finger.bgImage.path}}"/>\n                        \n                            <img class = "finger_zw" ng-src="{{finger.zwImage.path}}"/>\n                          \n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                            <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(finger)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n                            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                          </div>\n                        </div>\n                      </form>\n                    </div>\n                  </div>\n                  <div id = "page_panel" ng-show="effectType == \'money\'" class="dropdown-menu1 panel panel-default">\n                    <div class="panel-heading">数钱设置</div>\n                    <div class="panel-body">\n                      <div class = "well" style="margin-bottom:15px;">\n                          <img ng-src="{{CLIENT_CDN + \'assets/images/create/money_thumb2.jpg\'}}"/>      \n                      </div>\n                      <div>\n                        <span>文字提示：</span>\n                        <span class="fr" style="width: 140px;"><input type="text" ng-model="money.tip" placeholder="让你数到手抽筋"></span>\n                      </div>\n                      <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                        <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                          <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(money)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n                          <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                        </div>\n                      </div>\n                    </div>\n                  </div>\n                  <div ng-include="\'scene/effect/falling.tpl.html\'"></div>\n                </div>\n              </div>\n            </div>\n\n            <div class="nav_content">\n              <ul id = "pageList" ui-sortable = "sortableOptions" ng-model="pages">\n                <li class = "blurClass" ng-repeat="page in pages track by $index" ng-click="navTo(page, $index, $event)" ng-init = "editableStatus[$index] = false" ng-class="{current: pageNum-1 == $index}" blur-children>\n                    <span style = "float: left; margin-top: 17px; background: #fff; color: #666; font-weight: 200;border-radius:9px;width:18px;height:18px;padding:0px;text-align:center;line-height:18px;" class = "badge">{{$index+1}}</span>\n                    <span style = "margin-left: 17px;font-size:14px;" ng-click = "editableStatus[$index] = true" ng-show = "!editableStatus[$index]">{{page.name}}</span>\n                    <input style = "width: 80px; height: 25px; margin-top: 8px; margin-left: 10px; color: #999;" type = "text" ng-model = "page.name" ng-show = "editableStatus[$index]" ng-blur = "editableStatus[$index] = false;savePageNames(page, $index)" ng-focus = "getOriginPageName(page)" maxlength = "7" custom-focus/>                   \n                </li>\n              </ul>\n              <div class = "page-list-label" ng-show="isEditor && pageList == true">  \n                  <label ng-repeat = "allchild in pageLabelAll">\n                      <input type="checkbox" name="" value="" ng-model = "allchild.ischecked">{{allchild.name}}\n                  </label>                                                 \n                  <div class="select-labels">\n                      <a ng-click="pageChildLabel()">确定</a>\n                  </div>\n              </div>               \n            </div>\n            <div class="nav_bottom">\n              <a ng-click="insertPage()" class="" title="增加一页">+</a>\n             <!--  <a ng-click="duplicatePage()" class="duplicate_page">复制一页</a> -->\n            </div>\n\n            <div ng-show="isEditor">\n              <div class="btn-main" ng-click="chooseThumb()">选择本页缩略图</div>\n              <img width="100" ng-src="{{PREFIX_FILE_HOST + tpl.obj.properties.thumbSrc}}"></img>\n            </div>\n          </div>\n      </div>\n  </div>\n</div>\n</div>\n');
 
     }]);
+    ng.module("scene/effect/falling.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/effect/falling.tpl.html", '<div id = "page_panel" ng-if="effectType == \'fallingObject\'" class="dropdown-menu1 panel panel-default">\n    <div class="panel-heading">落物设置</div>\n    <div class="panel-body">\n      <form class="form-horizontal" role="form">\n        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n          <label class="col-sm-5 control-label">环境图片</label>\n          <div class="col-sm-7">\n            <select ng-model = "falling.src" ng-options = "fallingObj.name for fallingObj in fallings">\n            </select>\n          </div>\n        </div>\n        <div class = "divider"></div>\n        <div class = "well" style="margin-bottom:15px;text-align: center;background-color: #ddd">\n          <img ng-src="{{falling.src.path}}"/>\n        </div>\n        <div class = "divider"></div>\n        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n          <label class="col-sm-5 control-label">环境氛围</label>\n          <div class="col-sm-7">\n           <div style="line-height: 24px;font-size: 12px;"><span style="margin-right:39px;">弱</span><span style="margin-right:37px;">中</span><span>强</span></div>\n            <div style="width: 100px;" ui-slider min="1" max="3" ng-model="falling.density"></div>\n\n          </div>\n        </div>\n        \n        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n            <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(falling)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n          </div>\n        </div>\n      </form>\n    </div>\n  </div>')
+    }]);
+    /* 修改元素*/
+    ng.module("scene/console/bg.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/bg.tpl.html", '<!-- <div class="bg_console">\n  <div class="img_list">\n        <div class="category_list">\n           <div ng-show="fileType == \'0\'" class="category_item" ng-click="changeCategory(\'c\')" ng-class="{active: \'c\' == categoryId}">\n             <span>纯色背景</span>\n         </div>\n            <ul class="category_list_container">\n              <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value)">\n                   {{category.name}}\n             </li>\n         </ul>\n         <div class="btn-group fl" dropdown ng-show="otherCategory.length > 0">\n              <span class="dropdown-toggle" ng-disabled="disabled">\n               其它 <span class="caret"></span>\n              </span>\n           <ul class="dropdown-menu">\n              <li ng-repeat="category in otherCategory">\n                  <a href ng-click="changeCategory(category.value)">{{category.name}}</a>\n             </li>\n           </ul>\n           </div>\n            <div class="category_item" ng-click="changeCategory(\'0\')" ng-class="{active: \'0\' == categoryId}">\n             <span ng-show="fileType == \'0\'">我的背景</span>\n             <span ng-show="fileType == \'1\'">我的图片</span>\n         </div>\n        </div>\n        <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n           <ul class="img_box">\n              <li ng-show="isEditor || categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                  <span class="glyphicon glyphicon-upload"></span>\n              </li>\n             <li ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" photo-draggable="{{img.path}}" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId"  ng-repeat="img in imgList track by $index" ng-click="replaceBgColor(img.color, $event)">\n               </li>\n         </ul>\n         \n      </div>\n        <div class="pagination_container" ng-show="numPages>1">\n           <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="10" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="changeCategory(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n           <div class="current_page">\n                <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? changeCategory(categoryId, toPage) : null">\n             <a ng-click="changeCategory(categoryId,toPage)" class="go">GO</a>\n             <span>当前: {{currentPage}} / {{numPages}} 页</span>\n         </div>\n        </div>\n        <div ng-show="fileType == \'1\'" class="bottom_area" style="position: relative; min-height: 80px;">\n           <div class="crop_drop" crop-droppable style = "min-height: 80px;">\n                <p ng-hide="cropMode" class="">拖动图片到此区域剪裁</p>\n             <div class="image_crop">\n                  <img id="target"></img>\n               </div>\n            </div>\n            <div class="fr" style="width: 180px;">\n                <p>*单击图片替换</p>\n                <p>*或拖动图片到左侧区域剪裁</p>\n              <a ng-show="cropMode" class="btn-main" style="width: 105px;position: absolute;bottom: 0;" ng-click="crop()">剪裁并替换</a>\n         </div>\n        </div>\n    </div>\n</div> -->\n<div class="bg_console clearfix" style="background-color:#E7E7E7;">\n   <div class="fl" style="width:188px;">\n      <ul class="nav nav-tabs tabs-left" style="padding-top:0px;"><!-- \'tabs-right\' for right tabs -->\n           <li class="active" ng-click="changeCategory(\'0\')">\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = false;" data-toggle="tab">我的背景</a>\n                <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = false;" data-toggle="tab">我的图片</a>\n            </li>\n         <li>\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">背景库</a>\n              <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">图片库</a>\n          </li>\n       </ul>\n   </div>\n    <div class="fl" style="width:710px;padding:0 10px;background-color:#FFF;">\n        <div class="tab-content" id="bg_contain">\n         <div class="tab-pane active" ng-show="!systemImages">\n             <div class="img_list" style="padding-bottom: 0px;">\n                   <div class="category_list clearfix">\n                      <ul class="category_list_container clearfix" style="width:610px;float:left;">\n                         <li ng-class="{active: tagIndex == -1}" class="category_item" ng-click="changeCategory(\'0\');">\n                              全部\n                            </li>\n                         <li ng-class="{active: tagIndex == $index}" class="category_item" ng-repeat="myTag in myTags" ng-mouseenter="hoverTag(myTag)" ng-mouseleave="hoverTag(myTag)" ng-click="getImagesByTag(myTag.id, $index)">\n                                {{myTag.name}}<span ng-if="myTag.hovered" ng-click="deleteTag(myTag.id, $index, $event)">x</span>\n                         </li>                       \n                      </ul>\n                     <div class="category_item active" ng-click="createCategory();" style="float:right;">\n                          创建分类\n                      </div>                      \n                  </div>\n                    <div class="edit">\n                        <input type="checkbox" ng-model="allImages.checked" ng-change="selectAll()"/>&nbsp;&nbsp;<span ng-click="deleteImage()"><a href="">删除</a></span>\n                      <div class="btn-group">\n                           <div class="dropdown-toggle"  data-toggle="dropdown" ng-click="setIndex($event);">分类到</div>\n                           <div class="dropdown-menu" role="menu">\n                               <ul forbidden-close>\n                                  <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;" ng-click="setCategory(dropTagIndex)"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                        <div ng-if="tagIndex > -1" style="display: inline-block; margin-left: 20px;"><a href="" ng-click="unsetTag()">取消分类</a></div>\n                  </div>\n                </div>\n            </div>\n            <div class="tab-pane" ng-class="{active: systemImages}" ng-show="systemImages">\n               <div class="img_list">\n                    <div class="category_list">             \n                      <ul class="category_list_container clearfix">\n                         <li class="category_item"  ng-click="changeCategory(\'all\')" ng-class="{active: \'all\' == categoryId}">\n                         最新\n                            </li>\n                         <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value); getChildCategory(category.value);sysTagIndex = -1;">\n                               {{category.name}}\n                         </li>\n                         <li ng-show="fileType == \'0\'" class="category_item"  ng-click="changeCategory(\'c\');numPages=2;" ng-class="{active: \'c\' == categoryId}">\n                         纯色背景\n                          </li>\n                     </ul>   \n                  </div>\n                    <div class="cat_two_list clearfix" ng-if="\'c\' != categoryId && \'all\' != categoryId">\n                      <ul>\n                          <li ng-class="{active: sysTagIndex == $index}" ng-repeat = "childCatrgory in childCatrgoryList" ng-click="getImagesBySysTag(childCatrgory.id, $index, 1, categoryId)" style="cursor:pointer;">\n                                {{childCatrgory.name}}\n                            </li>\n                     </ul>\n                 </div>\n                </div>\n            </div>\n        </div>\n        <div class="img_list" style="padding-top:0px;">\n           <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n               <ul class="img_box clearfix">\n                 <li ng-show="categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                      <span class=""><img ng-src="{{CLIENT_CDN}}assets/images/bg_15.jpg" alt="" /></span>\n                   </li>\n                 <li class="imageList" ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                       <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}" />\n                       <div class="edit_content" ng-if="(img.showOp || img.selected) && categoryId == \'0\'">\n                            <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                          <div ng-if="categoryId == \'0\'" class="set btn-group" class="dropdown-toggle"  data-toggle="dropdown" ng-click="prevent(img, $event)">\n                               <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>  \n                          <div class="dropdown-menu set_category" id="{{img.id}}" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;"><a href="" style="color:#FFF;" ng-click="setCategory(dropTagIndex, img.id)">确定</a></div>\n                         </div>\n                                \n                      </div>\n                    </li>\n                 <li class="imageList" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                     <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"/>\n                        <div class="edit_content" ng-show="(img.showOp || img.selected) && categoryId == \'0\'">\n                          <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)" ng-click="deleteImg()"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                           <div class="set btn-group" ng-if="categoryId == \'0\'" class="dropdown-toggle" ng-click="prevent(img, $event)" data-toggle="dropdown">\n                                <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>\n                            <div class="dropdown-menu set_category" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory()" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                                </ul>\n                             <div class="fl btn-main" ng-click="setCategory(dropTagIndex, img.id)" style="width:100%;"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                    </li>\n                 <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected, mr0: $index%9 == 8}" ng-click="switchSelect(img, $event)"  ng-repeat="img in imgList track by $index">\n                 </li>\n             </ul>\n         </div>\n            <div class="fanye_foot clearfix" style="margin-top: 20px;">\n               <div class="fr btn-main" ng-click="replaceImage();"><a href="" style="color:#FFF;">确定</a></div>\n               <div class="pagination_container fl">\n                 <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="5" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="getImagesByPage(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n                   <div class="current_page">\n                        <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? getImagesByPage(categoryId, toPage) : null">\n                        <a ng-click="getImagesByPage(categoryId,toPage)" class="go">GO</a>\n                        <span>当前: {{currentPage}} / {{numPages}} 页</span>\n                 </div>\n                </div>\n            </div>\n        </div>\n    </div>\n</div>')
+    }]);
 
+    ng.module("templates-common", [
+        "directives/toolbar.tpl.html"
+    ]);
+    ng.module("directives/toolbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("directives/toolbar.tpl.html", '<div class="btn-toolbar" id="btn-toolbar"  data-role="editor-toolbar">\n    <div class="btn-group">\n        <div class="dropdown">\n            <a class="btn dropdown-toggle first-child" data-toggle="dropdown" title="文字大小">\n                <i class="glyphicon glyphicon-text-width">\n                </i>\n                &nbsp;\n                <b class="caret">\n                </b>\n            </a>\n            <ul class="dropdown-menu size-menu">\n                <li>\n                    <a dropdown-toggle data-edit="fontSize 7">\n                        48px\n                    </a>\n                </li>\n                <li>\n                    <a dropdown-toggle data-edit="fontSize 6">\n                        32px\n                    </a>\n                </li>\n                <li>\n                    <a dropdown-toggle data-edit="fontSize 5">\n                        24px\n                    </a>\n                </li>\n                <li>\n                    <a dropdown-toggle data-edit="fontSize 4">\n                        18px\n                    </a>\n                </li>\n                <li>\n                    <a dropdown-toggle data-edit="fontSize 3">\n                        16px\n                    </a>\n                </li>\n                <li>\n                    <a dropdown-toggle data-edit="fontSize 2">\n                        13px\n                    </a>\n                </li>\n                <li>\n                    <a dropdown-toggle data-edit="fontSize 1">\n                        12px\n                    </a>\n                </li>\n            </ul>\n        </div>\n    </div>\n    <div class="btn-group">\n        <div class="dropdown">\n            <a class="btn dropdown-toggle" data-toggle="dropdown" title="文字颜色">\n                <i class="glyphicon glyphicon-font color-btn">\n                </i>\n                &nbsp;\n                <b class="caret">\n                </b>\n            </a>\n            <ul class="dropdown-menu color-menu">\n            </ul>\n        </div>\n    </div>\n    <div class="btn-group">\n        <div class="dropdown">\n            <a class="btn dropdown-toggle" data-toggle="dropdown" title="文字背景颜色">\n                <i class="glyphicon glyphicon-font bgcolor-btn">\n                </i>\n                &nbsp;\n                <b class="caret">\n                </b>\n            </a>\n            <ul class="dropdown-menu bgcolor-menu">\n            </ul>\n        </div>\n    </div>\n    <div class="btn-group">\n        <a class="btn" data-edit="bold" title="文字加粗">\n            <i class="glyphicon glyphicon-bold">\n            </i>\n        </a>\n    </div>\n    <div class="btn-group">\n        <a class="btn" data-edit="justifyleft" title="文字居左">\n            <i class="glyphicon glyphicon-align-left">\n            </i>\n        </a>\n        <a class="btn" data-edit="justifycenter" title="文字居中">\n            <i class="glyphicon glyphicon-align-center">\n            </i>\n        </a>\n        <a class="btn" data-edit="justifyright" title="文字居右">\n            <i class="glyphicon glyphicon-align-right">\n            </i>\n        </a>\n    </div>\n    <div class="btn-group">\n        <div class="dropdown">\n            <a class="btn dropdown-toggle createLink" data-toggle="dropdown" sceneid = "{{sceneId}}" title="先选中要加连接的文字"><i class="fa fa-link"></i></a>\n            <div class="dropdown-menu input-append" style="min-width: 335px;padding:4px 4px 14px 19px;">\n                <div class = "span4" style="margin-top:10px;">\n                    <input name = "external" ng-model = "link" class = "span2" type = "radio" value = "external" style="vertical-align:middle;margin:0px;"> 网站地址：\n                    <input class="span2" placeholder="URL" sceneid="{{sceneId}}" type="text" data-edit="createLink" value = "http://" style="border-radius:0px;width:200px;height:35px;" />\n                </div>\n                <!-- <input class="span2" placeholder="URL" sceneid="{{sceneId}}" type="text" data-edit="createLink" value="http://"/>   --> \n                <div class = "span4" style = "margin-top: 10px;">\n                     <input name = "internal" ng-model = "link" class = "span2" type = "radio" value = "internal" style="vertical-align:middle;margin:0px;"> 场景页面：\n                    <select class = "span2" style = "width: 200px;height:35px;" ng-options = "page.name for page in internalLinks" sceneid="{{sceneId}}" data-edit = "createLink" pageid="{{internalLink.id}}" ng-model = "internalLink"></select> \n                </div>           \n                <div style="text-align:center"><a class="btn-main" style="color:#FFF; margin-top:20px;" dropdown-toggle>确定</a></div>\n            </div>\n        </div>        \n    </div>\n    <div class="btn-group">\n        <a class="btn" data-edit="unlink" title="清除超链接"><i class="fa fa-unlink"></i></a>\n    </div>\n    <div class="btn-group">\n        <a class="btn last-child" data-edit="RemoveFormat" title="清除样式">\n            <i class="fa fa-eraser">\n            </i>\n        </a>\n    </div>\n</div>')
+    }]);
 
 }(window, window.angular);
