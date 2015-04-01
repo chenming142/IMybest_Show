@@ -3213,7 +3213,7 @@
             $("#editBG").hide(),
             f.pageId = f.pages[a - 1].id,
             k.getSceneByPage(f.pageId, c, d).then(function(g) {
-            f.loading = !1,
+                f.loading = !1,
                 f.tpl = g.data,
                 x = JSON.stringify(f.tpl),
                 f.sceneId = f.tpl.obj.sceneId,
@@ -3458,8 +3458,12 @@
             A ? (e.$broadcast("changeElemDef", b), A.show()) : A = d("<div crop-image></div>")(f), c.append(A)
         }),
         f.navTo = function(a, b) {
-            f.pageList = !0, !f.isEditor || 1101 !== f.sceneId && 1102 !== f.sceneId && 1103 !== f.sceneId || (f.pageLabelAll.length = 0, f.pageIdTag = a.id, f.getPageTagLabel()), a.id != f.tpl.obj.id && f.saveScene(null, function() {
-                t(b + 1), j.$$search = {}, j.search("pageId", a.num)
+            f.pageList = !0,
+            !f.isEditor || 1101 !== f.sceneId && 1102 !== f.sceneId && 1103 !== f.sceneId || (f.pageLabelAll.length = 0, f.pageIdTag = a.id, f.getPageTagLabel()),
+            a.id != f.tpl.obj.id && f.saveScene(null, function() {
+                t(b + 1),
+                j.$$search = {},
+                j.search("pageId", a.num)
             })
         },
         f.stopCopy = function() {
@@ -3531,15 +3535,21 @@
                 ),
                 void(C = !1);
                 "" === f.tpl.obj.scene.name && (f.tpl.obj.scene.name = w),
-                    f.tpl.obj.scene.name = f.tpl.obj.scene.name.replace(/(<([^>]+)>)/gi, ""),
-                    k.getSceneObj().obj.scene.image && k.getSceneObj().obj.scene.image.bgAudio
-                        && (
-                            f.tpl.obj.scene.image || (f.tpl.obj.scene.image = {}),
-                            f.tpl.obj.scene.image.bgAudio = k.getSceneObj().obj.scene.image.bgAudio
-                        ),
-                    k.resetCss(),
-                    f.tpl.obj.scene.image.isAdvancedUser = e.isAdvancedUser || e.isVendorUser ? !0 : !1, k.saveScene(f.tpl.obj).then(function() {
-                    C = !1, f.tpl.obj.scene.updateTime = (new Date).getTime(), x = b.toJson(f.tpl), v && (k.recordTplUsage(v), v = null), c && c(), a && u()
+                f.tpl.obj.scene.name = f.tpl.obj.scene.name.replace(/(<([^>]+)>)/gi, ""),
+                k.getSceneObj().obj.scene.image && k.getSceneObj().obj.scene.image.bgAudio
+                    && (
+                        f.tpl.obj.scene.image || (f.tpl.obj.scene.image = {}),
+                        f.tpl.obj.scene.image.bgAudio = k.getSceneObj().obj.scene.image.bgAudio
+                    ),
+                k.resetCss(),
+                f.tpl.obj.scene.image.isAdvancedUser = e.isAdvancedUser || e.isVendorUser ? !0 : !1,
+                k.saveScene(f.tpl.obj).then(function() {
+                    C = !1,
+                    f.tpl.obj.scene.updateTime = (new Date).getTime(),
+                    x = b.toJson(f.tpl),
+                    v && (k.recordTplUsage(v), v = null),
+                    c && c(),
+                    a && u()
                 }, function() {
                     C = !1
                 })
@@ -4213,7 +4223,9 @@
             })
         }
     }]),
-    b.module("app.directives.addelement", []).directive("addElement", ["$compile", function(a) {
+
+    b.module("app.directives.addelement", [])
+        .directive("addElement", ["$compile", function(a) {
         return {
             restrict: "EA",
             link: function(c, d, e) {
@@ -4227,35 +4239,37 @@
                 })
             }
         }
-    }]).directive("showIcon", ["$compile", "$timeout", function(a) {
-        return {
-            restrict: "EA",
-            require: "ngModel",
-            scope: {
-                check: "&callbackFn"
-            },
-            link: function(b, c, d, e) {
-                var f, g, h = a('<a><span class = "glyphicon glyphicon-ok-circle" ng-show="enabled" style = "margin-top: 8px; color: #9ad64b; font-size: 15px;"></span></a>')(b);
-                b.update = function() {
-                    c[0].blur(), b.check({
-                        arg1: {
-                            name: e.$name
-                        }
+    }])
+        .directive("showIcon", ["$compile", "$timeout", function(a) {
+            return {
+                restrict: "EA",
+                require: "ngModel",
+                scope: {
+                    check: "&callbackFn"
+                },
+                link: function(b, c, d, e) {
+                    var f, g, h = a('<a><span class = "glyphicon glyphicon-ok-circle" ng-show="enabled" style = "margin-top: 8px; color: #9ad64b; font-size: 15px;"></span></a>')(b);
+                    b.update = function() {
+                        c[0].blur(), b.check({
+                            arg1: {
+                                name: e.$name
+                            }
+                        })
+                    }, c.bind("focus", function() {
+                        f = e.$viewValue, c.parent().after(h), b.enabled = !0, ("email" === d.name || "mobile" === d.name || "tel" === d.name) && (b.enabled = !1), b.$apply()
+                    }).bind("blur", function() {
+                        b.enabled = !1, g = e.$viewValue;
+                        var a = new RegExp(/(\d{11})|^((\d{7,8})|(\d{4}|\d{3})-(\d{7,8})|(\d{4}|\d{3})-(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1})|(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1}))$/g);
+                        if ("mobile" === d.name && g && !a.test(c.val())) return void alert("手机号码格式错误");
+                        if ("email" === d.name && g) {
+                            var h = new RegExp(/^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/g);
+                            if (!h.test(c.val())) return void alert("邮箱格式错误")
+                        }(g || f) && f !== g && b.update(), b.$apply()
                     })
-                }, c.bind("focus", function() {
-                    f = e.$viewValue, c.parent().after(h), b.enabled = !0, ("email" === d.name || "mobile" === d.name || "tel" === d.name) && (b.enabled = !1), b.$apply()
-                }).bind("blur", function() {
-                    b.enabled = !1, g = e.$viewValue;
-                    var a = new RegExp(/(\d{11})|^((\d{7,8})|(\d{4}|\d{3})-(\d{7,8})|(\d{4}|\d{3})-(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1})|(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1}))$/g);
-                    if ("mobile" === d.name && g && !a.test(c.val())) return void alert("手机号码格式错误");
-                    if ("email" === d.name && g) {
-                        var h = new RegExp(/^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/g);
-                        if (!h.test(c.val())) return void alert("邮箱格式错误")
-                    }(g || f) && f !== g && b.update(), b.$apply()
-                })
+                }
             }
-        }
-    }]).directive("ngHover", function() {
+        }])
+        .directive("ngHover", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4266,7 +4280,8 @@
                 })
             }
         }
-    }).directive("imgClick", function() {
+    })
+        .directive("imgClick", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4275,7 +4290,8 @@
                 })
             }
         }
-    }).directive("customFocus", function() {
+    })
+        .directive("customFocus", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4284,7 +4300,8 @@
                 })
             }
         }
-    }).directive("blurChildren", function() {
+    })
+        .directive("blurChildren", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4293,7 +4310,8 @@
                 })
             }
         }
-    }).directive("forbiddenClose", function() {
+    })
+        .directive("forbiddenClose", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4302,7 +4320,8 @@
                 })
             }
         }
-    }).directive("customeImage", function() {
+    })
+        .directive("customeImage", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4311,7 +4330,8 @@
                 }, function() {})
             }
         }
-    }).directive("slides", function() {
+    })
+        .directive("slides", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4323,7 +4343,8 @@
                 })
             }
         }
-    }).directive("addClass", function() {
+    })
+        .directive("addClass", function() {
         return {
             restrict: "EA",
             link: function(a, b) {
@@ -4334,22 +4355,25 @@
                 })
             }
         }
-    }).directive("loadScript", ["$http", "$timeout", "$rootScope", function(a) {
-        return {
-            link: function(c, d) {
-                var e = function() {
-                    c.captchaLoaded = !0
-                };
-                c.$watch(function() {
-                    return d[0].getAttribute("src")
-                }, function(b) {
-                    b && a.jsonp(d[0].getAttribute("src")).success(e).error(e)
-                }), c.$on("$destroy", function() {
-                    b.element(".gt_widget").remove()
-                })
+    })
+        .directive("loadScript", ["$http", "$timeout", "$rootScope", function(a) {
+            return {
+                link: function(c, d) {
+                    var e = function() {
+                        c.captchaLoaded = !0
+                    };
+                    c.$watch(function() {
+                        return d[0].getAttribute("src")
+                    }, function(b) {
+                        b && a.jsonp(d[0].getAttribute("src")).success(e).error(e)
+                    }),
+                    c.$on("$destroy", function() {
+                        b.element(".gt_widget").remove()
+                    })
+                }
             }
-        }
     }]),
+
     b.module("colorpicker.module", []).factory("Helper", function() {
         return {
             closestSlider: function(a) {
@@ -6405,11 +6429,12 @@
                     inHistory: !1,
                     pageHistory: []
                 }, b.addPageHistory(d, e)), a.$broadcast("history.changed"), JSON.parse(c[d].pageHistory[c[d].currentPos])
-            }, b.addPageHistory = function(b, e) {
-                d = c[b], d.inHistory && (d.inHistory = !1, d.pageHistory.length = d.currentPos + 1);
-                var f = JSON.stringify(e);
-                f != d.pageHistory[d.pageHistory.length - 1] && d.pageHistory.push(f), d.currentPos = d.pageHistory.length - 1, a.$broadcast("history.changed")
-            }, b.clearHistory = function() {
+            },
+                b.addPageHistory = function(b, e) {
+                    d = c[b], d.inHistory && (d.inHistory = !1, d.pageHistory.length = d.currentPos + 1);
+                    var f = JSON.stringify(e);
+                    f != d.pageHistory[d.pageHistory.length - 1] && d.pageHistory.push(f), d.currentPos = d.pageHistory.length - 1, a.$broadcast("history.changed")
+                }, b.clearHistory = function() {
                 c = {}
             }, b.canBack = function(a) {
                 return d = c[a], d.currentPos > 0
@@ -7131,9 +7156,22 @@
             h.canForward(G.obj.id) && (H = h.forward(G.obj.id), i(H))
         },
         $(document).keydown(function(a) {
-            $("#nr .edit_area").length && ((a.ctrlKey || a.metaKey) && 90 == a.keyCode && E.historyBack(),
-            (a.ctrlKey || a.metaKey) && 89 == a.keyCode && E.historyForward(),
-            !a.ctrlKey && !a.metaKey || 86 != a.keyCode || !E.elemDefTpl || $("#btn-toolbar")[0] || $(".modal-dialog")[0] || (a.preventDefault(), q && (a.preventDefault(), E.pasteElement(E.originalElemDef, E.copyElemDef))), !a.ctrlKey && !a.metaKey || 67 != a.keyCode || !E.elemDefTpl || $("#btn-toolbar")[0] || $(".modal-dialog")[0] || (a.preventDefault(), E.pageId = G.obj.id, E.sameCopyCount = 0, E.copyElement(E.elemDefTpl)), c.$apply())
+            $("#nr .edit_area").length
+                && (
+                    (a.ctrlKey || a.metaKey) && 90 == a.keyCode && E.historyBack(),
+                    (a.ctrlKey || a.metaKey) && 89 == a.keyCode && E.historyForward(),
+                    !a.ctrlKey && !a.metaKey || 86 != a.keyCode || !E.elemDefTpl || $("#btn-toolbar")[0] || $(".modal-dialog")[0] || (
+                    a.preventDefault(),
+                        q && (a.preventDefault(), E.pasteElement(E.originalElemDef, E.copyElemDef))
+                    ),
+                    !a.ctrlKey && !a.metaKey || 67 != a.keyCode || !E.elemDefTpl || $("#btn-toolbar")[0] || $(".modal-dialog")[0] || (
+                    a.preventDefault(),
+                        E.pageId = G.obj.id,
+                        E.sameCopyCount = 0,
+                        E.copyElement(E.elemDefTpl)
+                    ),
+                    c.$apply()
+                )
         });
         var J = E.createCompGroup = function(a, b) {
                 for (var d = n(a), e = 0; e < d.length; e++) {
@@ -7240,7 +7278,12 @@
             q = !0, E.originalElemDef = a, E.copyElemDef = c
         },
         E.pasteElement = function(a, c) {
-            c.id = Math.ceil(100 * Math.random()), c.pageId = G.obj.id, c.id = Math.ceil(100 * Math.random()), E.pageId == c.pageId ? k(a, c) : (E.sameCopyCount = 0, c.css = b.copy(a.css));
+            c.id = Math.ceil(100 * Math.random()),
+            c.pageId = G.obj.id,
+            c.id = Math.ceil(100 * Math.random()),
+            E.pageId == c.pageId
+                ? k(a, c)
+                : (E.sameCopyCount = 0, c.css = b.copy(a.css));
             var d = b.copy(c);
             H.push(d), I[d.id] = d, m(d.type, d), E.pageId = G.obj.id
         };

@@ -24,4 +24,5 @@ _site
 sea-modules
 spm_modules
 .cache
+*.log
 dist

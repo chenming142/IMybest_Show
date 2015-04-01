@@ -3,13 +3,50 @@ var router = express.Router();
 
 router.route('/scene/pageList/:sceneId')
     .get(function(req, res, next){
-        var JSON = {"success":true,"code":200,"msg":"操作成功","obj":null,"map":null,"list":[{"id":43101838,"sceneId":2915210,"num":1,"name":null,"properties":null,"elements":null,"scene":null}]};
+        var JSON = {
+                "success":true,
+                "code":200,
+                "msg":"操作成功",
+                "obj":null,
+                "map":null,
+                "list":[
+                    {"id":43101838,"sceneId":2915210,"num":1,"name":null,"properties":null,"elements":null,"scene":null},
+                    {"id":49324920,"sceneId":2915210,"num":2,"name":null,"properties":null,"elements":null,"scene":null}
+                ]};
+        res.json(JSON);
+    });
+
+router.route('/scene/createPage/:pageId')
+    .get(function (req, res, next) {
+        var JSONPages = {
+            "P_43101838" : {"id":43101838,"sceneId":2915210,"num":1,"name":null,"properties":null,"elements":[{"id":32,"pageId":43101838,"sceneId":2915210,"type":"3","css":{"zIndex":"1"},"properties":{"imgSrc":"group1/M00/A2/F8/yq0KA1Qb6OyAGsbHAAEcu3t5djY719.jpg"}},{"id":100,"pageId":43101838,"sceneId":2915210,"type":"4","css":{"zIndex":"2","height":"129","width":"128","left":"18px","top":"11px"},"properties":{"anim":{"type":1,"direction":2,"duration":2,"delay":0},"height":"100px","imgStyle":{"width":222,"height":129,"marginTop":"0px","marginLeft":"-47px"},"width":"100px","src":"group1/M00/BB/5F/yq0KA1Ru0uiAAQ8iAABut3_qYpY389.png"}},{"id":48,"pageId":43101838,"sceneId":2915210,"type":"2","content":"<font size=\"4\" color=\"#3bbc1e\"><span style=\"line-height: 18px;\"><b>Sponsors of tomorrow</b></span></font><br><div><font color=\"#333333\" size=\"4\"><span style=\"line-height: 18px;\"><br></span></font><div><font color=\"#ffffff\" size=\"6\">Look Inside</font></div><div><font color=\"#ffffff\" size=\"2\">人生就像一FDSAFDSAFDSAFDSDSFSDA场旅行,不必在乎目的地,在乎的,是沿途的风景,以及看风景的心情。</font></div></div>","css":{"zIndex":"3","height":146,"width":298,"left":"11px","top":"142px"},"properties":{"anim":{"type":1,"direction":0,"duration":"2","delay":"1"},"width":298,"height":146}}],"scene":{"id":2915210,"name":"ss","createUser":"4a2d8af94bc9d828014bfd542d520ade","createTime":1427189428000,"type":101,"pageMode":2,"image":{"imgSrc":"group1/M00/61/8A/yq0KA1T2vYSAEgo7AACovQVgHxk048.jpg","isAdvancedUser":false},"isTpl":0,"isPromotion":0,"status":1,"openLimit":0,"startDate":null,"endDate":null,"updateTime":1427189503000,"publishTime":null,"applyTemplate":0,"applyPromotion":0,"sourceId":null,"code":"iMZmtIa9","description":null,"sort":0,"bgAudio":null,"cover":null,"property":null,"pageCount":0,"dataCount":0,"showCount":0,"userLoginName":null,"userName":null}}
+        };
+        //console.log(req);
+        var pageId = req.params.pageId;
+        console.log("pageId: "+pageId);
+        var pageInfo = JSONPages["P_"+ pageId];
+        var JSON = {"success":true,"code":200,"msg":"操作成功","obj":{},"map":null,"list":null};
+        JSON['obj']['id'] = '49324920';
+        JSON['obj']['sceneId'] = '2915210';
+        JSON['obj']['num'] = '2';
+
+        JSON['obj']['name'] = null;
+        JSON['obj']['properties'] = null;
+        JSON['obj']['elements'] = null;
+        JSON['obj']['scene'] = pageInfo['scene'];
+
         res.json(JSON);
     });
 
 router.route('/scene/design/:pageId')
     .get(function (req, res, next) {
-        var JSON = {"success":true,"code":200,"msg":"操作成功","obj":{"id":43101838,"sceneId":2915210,"num":1,"name":null,"properties":null,"elements":[{"id":32,"pageId":43101838,"sceneId":2915210,"type":"3","css":{"zIndex":"1"},"properties":{"imgSrc":"group1/M00/A2/F8/yq0KA1Qb6OyAGsbHAAEcu3t5djY719.jpg"}},{"id":100,"pageId":43101838,"sceneId":2915210,"type":"4","css":{"zIndex":"2","height":"129","width":"128","left":"18px","top":"11px"},"properties":{"anim":{"type":1,"direction":2,"duration":2,"delay":0},"height":"100px","imgStyle":{"width":222,"height":129,"marginTop":"0px","marginLeft":"-47px"},"width":"100px","src":"group1/M00/BB/5F/yq0KA1Ru0uiAAQ8iAABut3_qYpY389.png"}},{"id":48,"pageId":43101838,"sceneId":2915210,"type":"2","content":"<font size=\"4\" color=\"#3bbc1e\"><span style=\"line-height: 18px;\"><b>Sponsors of tomorrow</b></span></font><br><div><font color=\"#333333\" size=\"4\"><span style=\"line-height: 18px;\"><br></span></font><div><font color=\"#ffffff\" size=\"6\">Look Inside</font></div><div><font color=\"#ffffff\" size=\"2\">人生就像一FDSAFDSAFDSAFDSDSFSDA场旅行,不必在乎目的地,在乎的,是沿途的风景,以及看风景的心情。</font></div></div>","css":{"zIndex":"3","height":146,"width":298,"left":"11px","top":"142px"},"properties":{"anim":{"type":1,"direction":0,"duration":"2","delay":"1"},"width":298,"height":146}}],"scene":{"id":2915210,"name":"ss","createUser":"4a2d8af94bc9d828014bfd542d520ade","createTime":1427189428000,"type":101,"pageMode":2,"image":{"imgSrc":"group1/M00/61/8A/yq0KA1T2vYSAEgo7AACovQVgHxk048.jpg","isAdvancedUser":false},"isTpl":0,"isPromotion":0,"status":1,"openLimit":0,"startDate":null,"endDate":null,"updateTime":1427189503000,"publishTime":null,"applyTemplate":0,"applyPromotion":0,"sourceId":null,"code":"iMZmtIa9","description":null,"sort":0,"bgAudio":null,"cover":null,"property":null,"pageCount":0,"dataCount":0,"showCount":0,"userLoginName":null,"userName":null}},"map":null,"list":null};
+        var JSONPagesInfo = {
+            "Info_43101838": {"success":true,"code":200,"msg":"操作成功","obj":{"id":43101838,"sceneId":2915210,"num":1,"name":null,"properties":null,"elements":[{"id":32,"pageId":43101838,"sceneId":2915210,"type":"3","css":{"zIndex":"1"},"properties":{"imgSrc":"group1/M00/A2/F8/yq0KA1Qb6OyAGsbHAAEcu3t5djY719.jpg"}},{"id":100,"pageId":43101838,"sceneId":2915210,"type":"4","css":{"zIndex":"2","height":"129","width":"128","left":"18px","top":"11px"},"properties":{"anim":{"type":1,"direction":2,"duration":2,"delay":0},"height":"100px","imgStyle":{"width":222,"height":129,"marginTop":"0px","marginLeft":"-47px"},"width":"100px","src":"group1/M00/BB/5F/yq0KA1Ru0uiAAQ8iAABut3_qYpY389.png"}},{"id":48,"pageId":43101838,"sceneId":2915210,"type":"2","content":"<font size=\"4\" color=\"#3bbc1e\"><span style=\"line-height: 18px;\"><b>Sponsors of tomorrow</b></span></font><br><div><font color=\"#333333\" size=\"4\"><span style=\"line-height: 18px;\"><br></span></font><div><font color=\"#ffffff\" size=\"6\">Look Inside</font></div><div><font color=\"#ffffff\" size=\"2\">人生就像一FDSAFDSAFDSAFDSDSFSDA场旅行,不必在乎目的地,在乎的,是沿途的风景,以及看风景的心情。</font></div></div>","css":{"zIndex":"3","height":146,"width":298,"left":"11px","top":"142px"},"properties":{"anim":{"type":1,"direction":0,"duration":"2","delay":"1"},"width":298,"height":146}}],"scene":{"id":2915210,"name":"ss","createUser":"4a2d8af94bc9d828014bfd542d520ade","createTime":1427189428000,"type":101,"pageMode":2,"image":{"imgSrc":"group1/M00/61/8A/yq0KA1T2vYSAEgo7AACovQVgHxk048.jpg","isAdvancedUser":false},"isTpl":0,"isPromotion":0,"status":1,"openLimit":0,"startDate":null,"endDate":null,"updateTime":1427189503000,"publishTime":null,"applyTemplate":0,"applyPromotion":0,"sourceId":null,"code":"iMZmtIa9","description":null,"sort":0,"bgAudio":null,"cover":null,"property":null,"pageCount":0,"dataCount":0,"showCount":0,"userLoginName":null,"userName":null}},"map":null,"list":null},
+            "Info_49324920": {"success":true,"code":200,"msg":"操作成功","obj":{"id":49324920,"sceneId":2915210,"num":2,"name":null,"properties":null,"elements":null,"scene":{"id":2915210,"name":"ss","createUser":"4a2d8af94bc9d828014bfd542d520ade","createTime":1427189428000,"type":101,"pageMode":2,"image":{"imgSrc":"group1/M00/61/8A/yq0KA1T2vYSAEgo7AACovQVgHxk048.jpg","isAdvancedUser":false},"isTpl":0,"isPromotion":0,"status":1,"openLimit":0,"startDate":null,"endDate":null,"updateTime":1427855971000,"publishTime":null,"applyTemplate":0,"applyPromotion":0,"sourceId":null,"code":"iMZmtIa9","description":null,"sort":0,"bgAudio":null,"cover":null,"property":null,"pageCount":0,"dataCount":0,"showCount":0,"userLoginName":null,"userName":null}},"map":null,"list":null}
+        };
+        var pageId = req.params.pageId;
+        console.log("pageId: "+pageId);
+        var JSON = JSONPagesInfo["Info_"+pageId];
         res.json(JSON);
     });
 

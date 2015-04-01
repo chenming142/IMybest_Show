@@ -708,19 +708,22 @@
     ng.module("scene.create", [
         "app.directives.editor",
         "services.scene",
+        "confirm-dialog",
+        "services.modal",
         "app.directives.component",
         "services.pagetpl",
-        "services.modal"
+        "app.directives.addelement",
+        "services.history"
     ]);
     ng.module("scene.create")
-        .controller("CreateSceneCtrl", ["$timeout", "$compile", "$rootScope", "$scope", "$routeParams", "$route", "$location", "sceneService", "pageTplService", "$modal", "ModalService", "$window",
-            function($timeout, $compile, $rootScope, $scope, $routeParams, h, $location, sceneService, pageTplService, m, ModalService, o, p, r, s) {
+        .controller("CreateSceneCtrl", ["$timeout", "$compile", "$rootScope", "$scope", "$routeParams", "$route", "$location", "sceneService", "pageTplService", "$modal", "ModalService", "$window","historyService",
+            function($timeout, $compile, $rootScope, $scope, $routeParams, $route, $location, sceneService, pageTplService, $modal, ModalService, $window, historyService) {
                 //TODO: 根据指定的场景的指定 pageIdx，加载场景页面信息并解析执行
-                function loadPageInfo(pageIdx, c, d) {
+                function loadPageInfo(pageIdx, isNewPage, d) {
                     $scope.loading = !0;
                     $("#editBG").hide();
                     $scope.pageId = $scope.pages[pageIdx - 1].id;
-                    sceneService.getSceneByPage($scope.pageId, c, d).then(function(data) {
+                    sceneService.getSceneByPage($scope.pageId, isNewPage, d).then(function(data) {
                         $scope.loading = !1;
                         $scope.tpl = data.data;
 
@@ -782,17 +785,17 @@
                             $scope.falling = {src: $scope.fallings[0],density: 2};
                         }
 
-                        if(c || d){
+                        if(isNewPage || d){
                             $location.$$search = {};
-                            $location.search("pageId", ++pageIdx);
-                            $scope.getPageNames();
+                            $location.search("pageIdx", ++pageIdx);
+                            $scope.getScenePages();
                         }
                         $scope.pageNum = pageIdx;
                         curSceneName = $scope.tpl.obj.scene.name;
                         $("#nr").empty();
 
-                        var h = ng.copy($scope.tpl.obj);
-                        //h.elements = s.addPage(h.id, h.elements);
+                        var pageTpl = ng.copy($scope.tpl.obj);
+                        pageTpl.elements = historyService.addPage(pageTpl.id, pageTpl.elements);
                         sceneService.templateEditor.parse({
                             def: $scope.tpl.obj,
                             appendTo: "#nr",
@@ -804,14 +807,14 @@
                     });
                 }
 
-                function u() {
+                function emitRoute() {
                     //r.pushForCurrentRoute("scene.save.success.nopublish", "notify.success");
                 }
                 $scope.loading = !1;
                 $scope.PREFIX_FILE_HOST = PREFIX_FILE_HOST;
                 $scope.tpl = {};
 
-                var v, curSceneName = "",curPageTpl = "",y = "";
+                var curPageTplId, curSceneName = "",curPageTpl = "",originPageName = "";
 
                 $scope.templateType = 1;
                 $scope.categoryId = -1;
@@ -954,9 +957,17 @@
                 $scope.finger.zwImage = $scope.fingerZws[0];
                 $scope.finger.bgImage = $scope.fingerBackgrounds[0];
 
-                $scope.$on("dom.changed", function() {
-                    $compile($("#nr"))($scope);
-                });
+                $scope.showPageEffect = !1;
+                $scope.openPageSetPanel = function() {
+                    f.showPageEffect || (f.showPageEffect = !0, $('<div id="modalBackdrop" class="modal-backdrop fade in" ng-class="{in: animate}" ng-style="{\'z-index\': 1040 + (index &amp;&amp; 1 || 0) + index*10}" modal-backdrop="" style="z-index: 1040;"></div>').appendTo("body").click(function() {
+                        f.showPageEffect = !1, f.$apply(), $(this).remove()
+                    }))
+                };
+                $scope.openOneEffectPanel = function(a) {
+                    f.showPageEffect = !1, $("#modalBackdrop").remove(), f.effectType = a.type ? a.type : a.image || a.scratch ? "scratch" : a.finger ? "finger" : a.fallingObject ? "fallingObject" : a.effect.name, $('<div id="modalBackdrop1" class="modal-backdrop fade in" ng-class="{in: animate}" ng-style="{\'z-index\': 1040 + (index &amp;&amp; 1 || 0) + index*10}" modal-backdrop="" style="z-index: 1040;"></div>').appendTo("body").click(function() {
+                        f.effectType = "", f.$apply(), $(this).remove()
+                    })
+                };
 
                 var uploadModal = null;
                 $scope.openUploadModal = function() {
@@ -1032,43 +1043,9 @@
                     $stylePanel && $stylePanel.hide()
                 });
 
-                $scope.navTo = function(a, b) {
-                    f.pageList = !0;
-                    !f.isEditor || 1101 !== f.sceneId && 1102 !== f.sceneId && 1103 !== f.sceneId || (f.pageLabelAll.length = 0, f.pageIdTag = a.id, f.getPageTagLabel()),
-                    a.id != f.tpl.obj.id && f.saveScene(null, function() {
-                        loadPageInfo(b + 1), j.$$search = {}, j.search("pageId", a.num)
-                    });
-                };
-                $scope.stopCopy = function() {
-                    q = !1;
-                };
-                $scope.getOriginPageName = function(a) {
-                    y = a.name
-                };
-                $scope.getPageNames = function() {
-                    var sceneId = $routeParams.sceneId;
-                    //根据指定sceneId，获取该场景的所有页面信息
-                    sceneService.getPageNames(sceneId).then(function(data) {
-                        $scope.pages = data.data.list;
-                        ng.forEach($scope.pages, function(value, key) {
-                            value.name || (value.name = "第" + (key + 1) + "页");
-                        });
-                        var pageIdx = $location.search().pageId ? $location.search().pageId : $scope.pages[0].num;
-                        loadPageInfo(pageIdx);
-                    });
-                };
-                //TODO: 获取指定场景的所有页面
-                $scope.getPageNames();
-                $scope.editableStatus = [];
-                $scope.savePageNames = function(a, b) {
-                    a.name || (a.name = "第" + (b + 1) + "页");
-                    $scope.tpl.obj.name = a.name;
-                    y != a.name && sceneService.savePageNames($scope.tpl.obj).then(function() {});
-                };
-                $scope.removeScratch = function(event) {
-                    event.stopPropagation();
-                    $scope.tpl.obj.properties = null;
-                };
+                $scope.$on("dom.changed", function() {
+                    $compile($("#nr"))($scope);
+                });
                 $scope.$on("text.click", function(event, element) {
                     $("#btn-toolbar").remove();
                     $("body").append($compile("<toolbar></toolbar>")($scope));
@@ -1084,22 +1061,42 @@
                         element.focus();
                     });
                 });
+
+                $scope.getScenePages = function() {
+                    var sceneId = $routeParams.sceneId;
+                    //根据指定sceneId，获取该场景的所有页面信息
+                    sceneService.getScenePages(sceneId).then(function(data) {
+                        $scope.pages = data.data.list;
+                        ng.forEach($scope.pages, function(value, key) {
+                            value.name || (value.name = "第" + (key + 1) + "页");
+                        });
+                        var pageIdx = $location.search().pageIdx ? $location.search().pageIdx : $scope.pages[0].num;
+                        loadPageInfo(pageIdx);
+                    });
+                };
+                //TODO: 获取指定场景的所有页面
+                $scope.getScenePages();
+                $scope.editableStatus = [];
+                $scope.removeScratch = function(event) {
+                    event.stopPropagation();
+                    $scope.tpl.obj.properties = null;
+                };
                 $scope.updatePosition = function(a) {
-                        var b, c, d = f.tpl.obj.elements,
-                            e = [];
+                    var b, c, d = f.tpl.obj.elements,
+                        e = [];
+                    for (c = 0; c < d.length; c++)
+                        if ("3" == d[c].type) {
+                            d[c].num = 0, e.push(d[c]), d.splice(c, 1);
+                            break
+                        }
+                    for (b = 0; b < a.length; b++)
                         for (c = 0; c < d.length; c++)
-                            if ("3" == d[c].type) {
-                                d[c].num = 0, e.push(d[c]), d.splice(c, 1);
+                            if (d[c].num == a[b]) {
+                                d[c].num = b + 1, e.push(d[c]), d.splice(c, 1);
                                 break
                             }
-                        for (b = 0; b < a.length; b++)
-                            for (c = 0; c < d.length; c++)
-                                if (d[c].num == a[b]) {
-                                    d[c].num = b + 1, e.push(d[c]), d.splice(c, 1);
-                                    break
-                                }
-                        f.tpl.obj.elements = e
-                    };
+                    f.tpl.obj.elements = e
+                };
                 $scope.updateEditor = function() {
                     $("#nr").empty();
                     sceneService.templateEditor.parse({
@@ -1110,18 +1107,23 @@
                     $compile($("#nr"))($scope);
                 };
 
+                $scope.stopCopy = function() {q = !1;};
+                $scope.getOriginPageName = function(page) {originPageName = page.name;};
                 var C = !1;
                 $scope.saveScene = function(save, callback) {
                     if (!C) {
-                        if (C = !0, curPageTpl == JSON.stringify($scope.tpl)) return callback && callback();
-                        if(save){
-                            if(!$scope.tpl.obj.scene.publishTime || $scope.tpl.obj.scene.updateTime > $scope.tpl.obj.scene.publishTime){
-                                u();
-                            }else{
-                                //r.pushForCurrentRoute("scene.save.success.published", "notify.success");
+                        C = !0;
+                        if (curPageTpl == JSON.stringify($scope.tpl)){
+                            callback && callback();
+                            if(save){
+                                if(!$scope.tpl.obj.scene.publishTime || $scope.tpl.obj.scene.updateTime > $scope.tpl.obj.scene.publishTime){
+                                    emitRoute();
+                                }else{
+                                    //r.pushForCurrentRoute("scene.save.success.published", "notify.success");
+                                }
                             }
+                            return void(C = !1);
                         }
-                        void(C = !1);
                         if("" === $scope.tpl.obj.scene.name)$scope.tpl.obj.scene.name = curSceneName;
                         $scope.tpl.obj.scene.name = $scope.tpl.obj.scene.name.replace(/(<([^>]+)>)/gi, "");
 
@@ -1136,9 +1138,9 @@
                             C = !1;
                             $scope.tpl.obj.scene.updateTime = (new Date).getTime();
                             curPageTpl = ng.toJson($scope.tpl);
-                            v && (sceneService.recordTplUsage(v), v = null);
+                            curPageTplId && (sceneService.recordTplUsage(curPageTplId), curPageTplId = null);
                             callback && callback();
-                            save && u();
+                            save && emitRoute();
                         }, function() {
                             C = !1;
                         });
@@ -1152,34 +1154,31 @@
                         })
                     };
                 $scope.exitScene = function() {
-                        q = !1;
-                        JSON.parse(curPageTpl);
-                        curPageTpl == b.toJson(f.tpl) ? p.history.back() : n.openConfirmDialog({
+                    q = !1;
+                    JSON.parse(curPageTpl);
+                    if(curPageTpl == ng.toJson($scope.tpl)){
+                        $window.history.back();
+                    }else{
+                        ModalService.openConfirmDialog({
                             msg: "是否保存更改内容？",
                             confirmName: "保存",
                             cancelName: "不保存"
                         }, function() {
-                            f.saveScene(), p.history.back()
+                            $scope.saveScene();
+                            $window.history.back();
                         }, function() {
-                            p.history.back()
-                        })
-                    };
+                            $window.history.back();
+                        });
+                    }
+                };
                 $scope.duplicatePage = function() {
-                        f.saveScene(null, function() {
-                            loadPageInfo(f.pageNum, !1, !0)
-                        })
-                    };
-                $scope.insertPage = function() {
-                        f.saveScene(null, function() {
-                            loadPageInfo(f.pageNum, !0, !1)
-                        }), $("#pageList").height() >= 360 && c(function() {
-                            var a = document.getElementById("pageList");
-                            a.scrollTop = a.scrollHeight
-                        }, 200)
-                    };
+                    f.saveScene(null, function() {
+                        loadPageInfo(f.pageNum, !1, !0)
+                    })
+                };
                 $scope.deletePage = function(a) {
                         a.stopPropagation(), f.loading || (f.loading = !0, k.deletePage(f.tpl.obj.id).then(function() {
-                            f.loading = !1, j.$$search = {}, f.pages.length == f.pageNum ? (f.pages.pop(), j.search("pageId", --f.pageNum), loadPageInfo(f.pageNum, !1, !1)) : (f.pages.splice(f.pageNum - 1, 1), j.search("pageId", f.pageNum), loadPageInfo(f.pageNum, !1, !1))
+                            f.loading = !1, j.$$search = {}, f.pages.length == f.pageNum ? (f.pages.pop(), j.search("pageIdx", --f.pageNum), loadPageInfo(f.pageNum, !1, !1)) : (f.pages.splice(f.pageNum - 1, 1), j.search("pageIdx", f.pageNum), loadPageInfo(f.pageNum, !1, !1))
                         }, function() {
                             f.loading = !1
                         }))
@@ -1202,67 +1201,146 @@
                 $scope.removeBGAudio = function(a) {
                         a.stopPropagation(), delete f.tpl.obj.scene.image.bgAudio
                     };
+                $scope.exitPageTplPreview = function() {
+                    $("#nr").empty();
+                    sceneService.templateEditor.parse({
+                        def: $scope.tpl.obj,
+                        appendTo: "#nr",
+                        mode: "edit"
+                    });
+                    $rootScope.$broadcast("dom.changed");
+                };
+                $scope.chooseThumb = function() {
+                    $modal.open({
+                        windowClass: "console",
+                        templateUrl: "scene/console/bg.tpl.html",
+                        controller: "BgConsoleCtrl",
+                        resolve: {
+                            obj: function() {
+                                return {
+                                    fileType: "0"
+                                }
+                            }
+                        }
+                    }).result.then(function(data) {
+                            if(!$scope.tpl.obj.properties)$scope.tpl.obj.properties = {};
+                            $scope.tpl.obj.properties.thumbSrc = data.data
+                        }, function() {
+                            $scope.tpl.obj.properties.thumbSrc = null;
+                        });
+                };
+                $scope.sortableOptions = {
+                    placeholder: "ui-state-highlight ui-sort-position",
+                    containment: "#containment",
+                    update: function(a, b) {
+                        var c = b.item.sortable.dropindex + 1,
+                            d = f.pages[b.item.sortable.index].id;
+                        f.saveScene(null, function() {
+                            k.changePageSort(c, d).then(function() {
+                                loadPageInfo(c, !1, !1, !0), j.$$search = {}, j.search("pageIdx", c), f.pageNum = c
+                            })
+                        })
+                    }
+                };
+                $scope.pageChildLabel = function() {
+                    var a, b = [];
+                    for (a = 0; a < $scope.pageLabelAll.length; a++){
+                        if($scope.pageLabelAll[a].ischecked)b.push($scope.pageLabelAll[a].id);
+                    }
+                    pageTplService.updataChildLabel(b, $scope.pageIdTag).then(function() {
+                        alert("分配成功！");
+                        $route.reload();
+                    }, function() {});
+                };
 
+                $scope.myName = [{name: "我的"}];
+                //$scope.$watch(function() {return o.currentUser}, function(a) {a && (f.userProperty = a)}, !0);
                 $(".scene_title").on("paste", function(event) {
                     event.preventDefault();
                     var pasteEvent = (event.originalEvent || event).clipboardData.getData("text/plain") || prompt("Paste something..");
                     document.execCommand("insertText", !1, pasteEvent);
                 });
 
-                $scope.showPageEffect = !1;
+                var generateTemplate = function() {
+                    if(!$rootScope.mySceneId && $scope.userProperty.property){
+                        $scope.userPropertyObj = JSON.parse($scope.userProperty.property);
+                        $rootScope.mySceneId = $scope.userPropertyObj.myTplId;
+                    }
+                    var tplInfo = $.extend(!0, {}, $scope.tpl.obj);
+                    tplInfo.sceneId = $rootScope.mySceneId ? $rootScope.mySceneId : null;
 
-                $scope.openPageSetPanel = function() {
-                        f.showPageEffect || (f.showPageEffect = !0, $('<div id="modalBackdrop" class="modal-backdrop fade in" ng-class="{in: animate}" ng-style="{\'z-index\': 1040 + (index &amp;&amp; 1 || 0) + index*10}" modal-backdrop="" style="z-index: 1040;"></div>').appendTo("body").click(function() {
-                            f.showPageEffect = !1, f.$apply(), $(this).remove()
-                        }))
-                    };
-                $scope.openOneEffectPanel = function(a) {
-                        f.showPageEffect = !1, $("#modalBackdrop").remove(), f.effectType = a.type ? a.type : a.image || a.scratch ? "scratch" : a.finger ? "finger" : a.fallingObject ? "fallingObject" : a.effect.name, $('<div id="modalBackdrop1" class="modal-backdrop fade in" ng-class="{in: animate}" ng-style="{\'z-index\': 1040 + (index &amp;&amp; 1 || 0) + index*10}" modal-backdrop="" style="z-index: 1040;"></div>').appendTo("body").click(function() {
-                            f.effectType = "", f.$apply(), $(this).remove()
+                    sceneService.saveMyTpl(tplInfo).then(function(data) {
+                        alert("成功生成我的模板");
+                        $rootScope.mySceneId = data.data.obj;
+
+                        sceneService.previewScene($rootScope.mySceneId).then(function(info) {
+                            $scope.myName[0].active = !0;
+                            $scope.myPageTpls = mySceneOrTplInfo[$rootScope.mySceneId] = info.data.list
                         })
-                    };
-                $scope.creatMyTemplate = function() {
-                        D()
-                    };
+                    })
+                },mySceneOrTplInfo = {};
+                $scope.creatMyTemplate = function() {generateTemplate();};
 
-                $scope.myName = [{name: "我的"}];
-                $scope.$watch(function() {
-                        return o.currentUser
-                    }, function(a) {
-                        a && (f.userProperty = a)
-                    }, !0);
-
-                var D = function() {
-                        !e.mySceneId && f.userProperty.property && (f.userPropertyObj = JSON.parse(f.userProperty.property), e.mySceneId = f.userPropertyObj.myTplId);
-                        var a = $.extend(!0, {}, f.tpl.obj);
-                        a.sceneId = e.mySceneId ? e.mySceneId : null, k.saveMyTpl(a).then(function(a) {
-                            alert("成功生成我的模板");
-                            e.mySceneId = a.data.obj, k.previewScene(e.mySceneId).then(function(a) {
-                                f.myName[0].active = !0;
-                                f.myPageTpls = E[e.mySceneId] = a.data.list
-                            })
-                        })
-                    },
-                    E = {};
-
-                $scope.getPageTplsByMyType = function() {
-                    f.userPropertyObj = JSON.parse(f.userProperty.property);
-                    var a = e.mySceneId || f.userPropertyObj;
-                    if (a) {
-                        var b = e.mySceneId || f.userPropertyObj.myTplId;
-                        k.previewScene(b).then(function(a) {
-                            f.myPageTpls = E[b] = a.data.list
-                        })
-                    } else f.myPageTpls = []
-                };
                 /**
-                 * 根据指定的 tplPageType， 获取该类型下的所有页面
+                 * 根据指定的 tplPageType， 获取该类型下的所有TagLabel
                  * @param tplPageType
                  */
-                $scope.getPageTplsByType = function(tplPageType) {
-                    getPageTpls(tplPageType);
+                $scope.getPageTagLabel = function(tplPageType) {
+                    if(PageLabels[tplPageType]){
+                        $scope.pageLabel = PageLabels[tplPageType];
+                        K();
+                    }else{
+                        pageTplService.getPageTagLabel(tplPageType).then(function(data) {
+                            $scope.pageLabel = PageLabels[tplPageType] = data.data.list;
+                            K();
+                        });
+                    }
+                };
+                $scope.pageLabelAll = [];
+                var J, K = function() {
+                    //TODO: $scope.pageIdTag ??
+                    console.log("$scope.pageIdTag: "+$scope.pageIdTag);
+                    //获取指定 pageIdTag 下的所有pageTpl
+                    pageTplService.getPageTagLabelCheck($scope.pageIdTag).then(function(data) {
+                        J = data.data.list;
+                        for (var b = 0; b < $scope.pageLabel.length; b++) {
+                            var c = {
+                                id: $scope.pageLabel[b].id,
+                                name: $scope.pageLabel[b].name
+                            };
+                            for (var d = 0; d < J.length; d++) {
+                                if (J[d].id === $scope.pageLabel[b].id) {
+                                    c.ischecked = !0;
+                                    break;
+                                }
+                                c.ischecked = !1
+                            }
+                            $scope.pageLabelAll.push(c);
+                        }
+                    });
                 };
 
+                /**
+                 * 获取指定的 TagLabelId 和 tplPageType， 获取满足的所有PageTpl
+                 * @param id
+                 * @param bizType
+                 */
+                $scope.getPageTplTypestemp = function(id, bizType) {
+                    pageTplService.getPageTplTypestemp(id, bizType).then(function(data) {
+                        $scope.categoryId = id;
+                        $scope.pageTpls = data.data.list && data.data.list.length > 0 ? data.data.list : [];
+
+                        if ($scope.otherCategory.length > 0) {
+                            var c = $scope.childCatrgoryList[0];
+                            for (var d = 0; d < $scope.otherCategory.length; d++){
+                                if($scope.categoryId == $scope.otherCategory[d].id){
+                                    $scope.childCatrgoryList[0] = $scope.otherCategory[d];
+                                    $scope.otherCategory[d] = c;
+                                }
+                            }
+                        }
+                    });
+                };
                 var ensureCatrgory = function() {
                         //TODO: $scope.type??
                         console.log("$scope.type: "+$scope.type);
@@ -1294,72 +1372,24 @@
                         }
                     },
                     PageLabels = {};
-                /**
-                 * 根据指定的 tplPageType， 获取该类型下的所有TagLabel
-                 * @param tplPageType
-                 */
-                $scope.getPageTagLabel = function(tplPageType) {
-                    if(PageLabels[tplPageType]){
-                        $scope.pageLabel = PageLabels[tplPageType];
-                        K();
-                    }else{
-                        pageTplService.getPageTagLabel(tplPageType).then(function(data) {
-                            $scope.pageLabel = PageLabels[tplPageType] = data.data.list;
-                            K();
+                $scope.getPageTplsByMyType = function() {
+                    $scope.userPropertyObj = JSON.parse($scope.userProperty.property);
+                    var property = $rootScope.mySceneId || $scope.userPropertyObj;
+                    if (property) {
+                        var mySceneOrTplId = $rootScope.mySceneId || $scope.userPropertyObj.myTplId;
+
+                        sceneService.previewScene(mySceneOrTplId).then(function(data) {
+                            $scope.myPageTpls = mySceneOrTplInfo[mySceneOrTplId] = data.data.list
                         });
+                    } else {
+                        $scope.myPageTpls = [];
                     }
                 };
-                $scope.pageLabelAll = [];
-
-
-                var J, K = function() {
-                    //TODO: $scope.pageIdTag ??
-                    console.log("$scope.pageIdTag: "+$scope.pageIdTag);
-                    //获取指定 pageIdTag 下的所有pageTpl
-                    pageTplService.getPageTagLabelCheck($scope.pageIdTag).then(function(data) {
-                        J = data.data.list;
-                        for (var b = 0; b < $scope.pageLabel.length; b++) {
-                            var c = {id: $scope.pageLabel[b].id,name: $scope.pageLabel[b].name};
-                            for (d = 0; d < J.length; d++) {
-                                if (J[d].id === $scope.pageLabel[b].id) {
-                                    c.ischecked = !0;
-                                    break;
-                                }
-                                c.ischecked = !1
-                            }
-                            $scope.pageLabelAll.push(c);
-                        }
-                    });
-                };
-
-                $scope.pageChildLabel = function() {
-                    var a, b = [];
-                    for (a = 0; a < f.pageLabelAll.length; a++) f.pageLabelAll[a].ischecked && b.push(f.pageLabelAll[a].id);
-                    l.updataChildLabel(b, f.pageIdTag).then(function() {
-                        alert("分配成功！"), h.reload()
-                    }, function() {})
-                };
                 /**
-                 * 获取指定的 TagLabelId 和 tplPageType， 获取满足的所有PageTpl
-                 * @param id
-                 * @param bizType
+                 * 根据指定的 tplPageType， 获取该类型下的所有页面
+                 * @param tplPageType
                  */
-                $scope.getPageTplTypestemp = function(id, bizType) {
-                    pageTplService.getPageTplTypestemp(id, bizType).then(function(data) {
-                        $scope.categoryId = id;
-                        $scope.pageTpls = data.data.list && data.data.list.length > 0 ? data.data.list : [];
-
-                        if ($scope.otherCategory.length > 0) {
-                            var c = $scope.childCatrgoryList[0];
-                            for (var d = 0; d < $scope.otherCategory.length; d++){
-                                if($scope.categoryId == $scope.otherCategory[d].id){
-                                    $scope.childCatrgoryList[0] = $scope.otherCategory[d];
-                                    $scope.otherCategory[d] = c;
-                                }
-                            }
-                        }
-                    });
-                };
+                $scope.getPageTplsByType = function(tplPageType) {getPageTpls(tplPageType);};
                 //TODO:获取所有页面的类型
                 pageTplService.getPageTplTypes().then(function(data) {
                     $scope.pageTplTypes = data.data.list && data.data.list.length > 0
@@ -1369,16 +1399,6 @@
                     //获取指定类型下的所有模板页面
                     $scope.getPageTplsByType($scope.pageTplTypes[0].value);
                 });
-
-                $scope.exitPageTplPreview = function() {
-                    $("#nr").empty();
-                    sceneService.templateEditor.parse({
-                        def: $scope.tpl.obj,
-                        appendTo: "#nr",
-                        mode: "edit"
-                    });
-                    $rootScope.$broadcast("dom.changed");
-                };
                 /**
                  * 选择并插入模板页
                  * @param pageTplId
@@ -1390,10 +1410,11 @@
                         sceneService.getSceneTpl(pageTplId).then(function(data) {
                             $scope.loading = !1;
                             //TODO: 当前使用的PageTplId
-                            v = data.data.obj.id;
+                            curPageTplId = data.data.obj.id;
+                            console.log("curPageTplId: "+curPageTplId);
                             $scope.tpl.obj.elements = sceneService.getElements();
                             $("#nr").empty();
-                            //s.addPageHistory(f.tpl.obj.id, f.tpl.obj.elements);
+                            historyService.addPageHistory($scope.tpl.obj.id, $scope.tpl.obj.elements);
                             sceneService.templateEditor.parse({
                                 def: $scope.tpl.obj,
                                 appendTo: "#nr",
@@ -1416,49 +1437,54 @@
                         loadPageTpl(pageTplId);
                     }
                 };
-                $scope.chooseThumb = function() {
-                    $modal.open({
-                        windowClass: "console",
-                        templateUrl: "scene/console/bg.tpl.html",
-                        controller: "BgConsoleCtrl",
-                        resolve: {
-                            obj: function() {
-                                return {
-                                    fileType: "0"
-                                }
-                            }
-                        }
-                    }).result.then(function(data) {
-                        if(!$scope.tpl.obj.properties)$scope.tpl.obj.properties = {};
-                        $scope.tpl.obj.properties.thumbSrc = data.data
-                    }, function() {
-                        $scope.tpl.obj.properties.thumbSrc = null;
+                //增加一页
+                $scope.insertPage = function() {
+                    $scope.saveScene(null, function() {
+                        loadPageInfo($scope.pageNum, !0, !1);
                     });
+                    if($("#pageList").height() >= 360){
+                        $timeout(function() {
+                            var $pageList = document.getElementById("pageList");
+                            $pageList.scrollTop = $pageList.scrollHeight;
+                        }, 200);
+                    }
+                };
+                //切换上下或指定页
+                $scope.navTo = function(page, index) {
+                    $scope.pageList = !0;
+                    if($scope.isEditor && (1101 === $scope.sceneId || 1102 === $scope.sceneId || 1103 === $scope.sceneId)){
+                        $scope.pageLabelAll.length = 0;
+                        $scope.pageIdTag = page.id;
+                        $scope.getPageTagLabel();
+                    }
+
+                    if(page.id != $scope.tpl.obj.id){
+                        $scope.saveScene(null, function() {
+                            loadPageInfo(index + 1);
+                            $location.$$search = {};
+                            $location.search("pageIdx", page.num);
+                        });
+                    }
+                };
+                //保存指定页名称
+                $scope.savePageNames = function(page, index) {
+                    if(!page.name)page.name = "第" + (index + 1) + "页";
+                    $scope.tpl.obj.name = page.name;
+
+                    if(originPageName != page.name){
+                        sceneService.savePageNames($scope.tpl.obj).then(function() {});
+                    }
                 };
 
                 $(win).bind("beforeunload", function() {return "请确认您的场景已保存";});
                 $scope.$on("$destroy", function() {
                     $(win).unbind("beforeunload");
-                    s.clearHistory();
+                    historyService.clearHistory();
                 });
 
-                $scope.sortableOptions = {
-                        placeholder: "ui-state-highlight ui-sort-position",
-                        containment: "#containment",
-                        update: function(a, b) {
-                            var c = b.item.sortable.dropindex + 1,
-                                d = f.pages[b.item.sortable.index].id;
-                            f.saveScene(null, function() {
-                                k.changePageSort(c, d).then(function() {
-                                    loadPageInfo(c, !1, !1, !0), j.$$search = {}, j.search("pageId", c), f.pageNum = c
-                                })
-                            })
-                        }
-                    };
-
                 $scope.$on("history.changed", function() {
-                    $scope.canBack = s.canBack($scope.tpl.obj.id);
-                    $scope.canForward = s.canForward($scope.tpl.obj.id);
+                    $scope.canBack = historyService.canBack($scope.tpl.obj.id);
+                    $scope.canForward = historyService.canForward($scope.tpl.obj.id);
                 });
                 $scope.back = function() {sceneService.historyBack();};
                 $scope.forward = function() {sceneService.historyForward();}
@@ -1486,7 +1512,1001 @@
                 }
             }
         }]);
+    ng.module("services.history", []).factory("historyService", ["$rootScope", function($rootScope) {
+        var HistoryService = {}, PageHistorys = {},PageHistory = {};
+        HistoryService.addPage = function(tplPageId, elements) {
+            if(!PageHistorys[tplPageId]){
+                PageHistorys[tplPageId] = {currentPos: 0,inHistory: !1,pageHistory: []};
+                HistoryService.addPageHistory(tplPageId, elements);
+            }
+            $rootScope.$broadcast("history.changed");
+            return JSON.parse(PageHistorys[tplPageId].pageHistory[PageHistorys[tplPageId].currentPos]);
+        };
+        HistoryService.addPageHistory = function(tplPageId, elements) {
+            PageHistory = PageHistorys[tplPageId];
+            if(PageHistory.inHistory){
+                PageHistory.inHistory = !1;
+                PageHistory.pageHistory.length = PageHistory.currentPos + 1
+            }
+            var elementTpl = JSON.stringify(elements);
+            if(elementTpl != PageHistory.pageHistory[PageHistory.pageHistory.length - 1]){
+                PageHistory.pageHistory.push(elementTpl);
+            }
+            PageHistory.currentPos = PageHistory.pageHistory.length - 1;
+            $rootScope.$broadcast("history.changed");
+        };
+        HistoryService.clearHistory = function() {PageHistorys = {};};
+        HistoryService.canBack = function(tplPageId) {
+            PageHistory = PageHistorys[tplPageId];
+            return PageHistory.currentPos > 0;
+        };
+        HistoryService.canForward = function(tplPageId) {
+            PageHistory = PageHistorys[tplPageId];
+            return PageHistory.currentPos < PageHistory.pageHistory.length - 1;
+        };
+        HistoryService.back = function(tplPageId) {
+            PageHistory = PageHistorys[tplPageId];
+            if (PageHistory.pageHistory.length) {
+                PageHistory.inHistory = !0;
+                var elementTpl = 0 === PageHistory.currentPos
+                        ? PageHistory.pageHistory[0]
+                        : PageHistory.pageHistory[--PageHistory.currentPos];
+                $rootScope.$broadcast("history.changed");
+                return JSON.parse(elementTpl);
+            }
+        };
+        HistoryService.forward = function(tplPageId) {
+            PageHistory = PageHistorys[tplPageId];
+            if (PageHistory.pageHistory.length) {
+                PageHistory.inHistory = !0;
+                var elementTpl = PageHistory.currentPos == PageHistory.pageHistory.length - 1
+                        ? PageHistory.pageHistory[PageHistory.currentPos]
+                        : PageHistory.pageHistory[++PageHistory.currentPos];
+                $rootScope.$broadcast("history.changed");
+                return JSON.parse(elementTpl);
+            }
+        };
+        return HistoryService;
+    }]);
+    ng.module("services.scene", [/*"scene.create.console", */"services.history"]);
+    ng.module("services.scene").factory("sceneService", ["$http", "$rootScope", "$modal", "$q","$cacheFactory", "historyService", function($http, $rootScope, $modal, $q, $cacheFactory, historyService){
+        function addComponentHandle(type, component, gFlag) {
+            var li = JsonParser.wrapComp(component, "edit");
+            $("#nr .edit_area").append(li);
+            for (var interceptors = JsonParser.getInterceptors(), i = 0; i < interceptors.length; i++){
+                interceptors[i](li, component);
+            }
+            JsonParser.getEventHandlers()[("" + type).charAt(0)](li, component);
+            if("g101" != gFlag){
+                historyService.addPageHistory(CurPageTplInfo.obj.id, CurPageTplInfo.obj.elements);
+                $rootScope.$broadcast("dom.changed");
+            }
+        }//m
 
+        function editableHandle(element, component) {
+            $(element).css("cursor", "text");
+            if(!$(element).parents("li").hasClass("inside-active")){
+                $(element).bind("click", function(event) {
+                    event.stopPropagation()
+                });
+            }
+            $(document).bind("mousedown", function() {
+                $(element).css("cursor", "default");
+                $("#btn-toolbar").find("input[type=text][data-edit]").blur();
+                if($("#btn-toolbar"))$("#btn-toolbar").remove();
+                $(element).unbind("click");
+
+                component.content = $(element).html();
+                $(element).parents("li").removeClass("inside-active").css("user-select", "none");
+                $(element).removeAttr("contenteditable");
+                $(document).unbind("mousedown");
+            });
+
+            $(element).parents("li").addClass("inside-active").css("user-select", "initial");
+            $rootScope.$broadcast("text.click", element);
+        }//o
+        function imageHandle(component) {
+            openModal(component, function(modal) {
+                component.properties.src = modal.data;
+                var rate = modal.width / modal.height,
+                    $component = $("#" + component.id);
+                if ($component.length > 0) {
+                    var width = $("#inside_" + component.id).width(),height = $("#inside_" + component.id).height(),r = width / height;
+                    if( rate >= r ){
+                        $component.outerHeight(height);
+                        $component.outerWidth(height * rate);
+
+                        $component.css("marginLeft", -($component.outerWidth() - width) / 2);
+                        $component.css("marginTop", 0);
+                    }else{
+                        $component.outerWidth(width);
+                        $component.outerHeight(width / rate);
+                        $component.css("marginTop", -($component.outerHeight() - height) / 2);
+                        $component.css("marginLeft", 0)
+                    }
+                    $component.attr("src", PREFIX_FILE_HOST + modal.data);
+                    component.properties.imgStyle = {};
+                    component.properties.imgStyle.width = $component.outerWidth();
+                    component.properties.imgStyle.height = $component.outerHeight();
+                    component.properties.imgStyle.marginTop = $component.css("marginTop");
+                    component.properties.imgStyle.marginLeft = $component.css("marginLeft");
+                } else {
+                    if(modal.width > $("#nr .edit_area").width()){
+                        modal.width = $("#nr .edit_area").width();
+                        modal.height = modal.width / rate;
+                    }
+                    if(modal.height > $("#nr .edit_area").height()){
+                        modal.height = $("#nr .edit_area").height();
+                        modal.width = modal.height * rate;
+                    }
+                    component.css.width = modal.width;
+                    component.css.height = modal.height;
+
+                    component.properties.imgStyle = {};
+                    component.properties.imgStyle.width = modal.width;
+                    component.properties.imgStyle.height = modal.height;
+                    component.properties.imgStyle.marginTop = "0";
+                    component.properties.imgStyle.marginLeft = "0";
+
+                    addComponentHandle(component.type, component);
+                }
+            }, function() {
+                component.properties.src || (CurPageElementInfo.splice(CurPageElementInfo.indexOf(I[component.id]), 1), delete I[component.id]);
+            })
+        }//p
+        function bgHandle(component) {
+            openModal(component, function(data) {
+                var $target = $("#nr .edit_area").parent()[0];
+                if ("imgSrc" == data.type) {
+                    var imgSrc = data.data;
+                    $target.style.backgroundImage = "url(" + PREFIX_FILE_HOST + imgSrc + ")";
+                    component.properties.bgColor = null;
+                    component.properties.imgSrc = imgSrc;
+                }
+                if("backgroundColor" == data.type){
+                    $target.style.backgroundImage = "none";
+                    $target.style.backgroundColor = data.color;
+                    component.properties.imgSrc = null;
+                    component.properties.bgColor = data.color;
+                }
+                historyService.addPageHistory(CurPageTplInfo.obj.id, CurPageTplInfo.obj.elements);
+                $("#editBG").unbind("click");
+                $("#editBG").show().bind("click", function() {
+                    bgHandle(component);
+                });
+            }, function() {});
+        }//x
+        function inputHandle(component) {
+            if(!Modal){
+                Modal = $modal.open({
+                    windowClass: "console",
+                    templateUrl: "scene/console/input.tpl.html",
+                    controller: "InputConsoleCtrl",
+                    resolve: {
+                        obj: function() {return component;}
+                    }
+                }).result.then(function(data) {
+                        Modal = null;
+                        data.type && (component.type = data.type);
+
+                        component.properties.placeholder = data.title;
+                        component.properties.required = data.required;
+                        component.title = data.title;
+
+                        if($("#" + component.id).length > 0){
+                            $("#" + component.id).attr("placeholder", data.title);
+                            $("#" + component.id).attr("required", data.required);
+                        }else{
+                            addComponentHandle(component.type, component);
+                        }
+                    }, function() {
+                    Modal = null;
+                    $("#" + component.id).length || (CurPageElementInfo.splice(CurPageElementInfo.indexOf(I[component.id]), 1), delete I[component.id]);
+                });
+            }
+        }//t
+        function buttonHandle(component) {
+            $modal.open({
+                windowClass: "console",
+                templateUrl: "scene/console/button.tpl.html",
+                controller: "ButtonConsoleCtrl",
+                resolve: {
+                    obj: function() {return component;}
+                }
+            }).result.then(function(data) {
+                    component.properties.title = data.title;
+                    var title = data.title.replace(/ /g, "&nbsp;");
+                    $("#" + component.id).html(title);
+                });
+        }//r
+        function telHandle(component) {
+            if(!Modal){
+                Modal = $modal.open({
+                    windowClass: "console",
+                    templateUrl: "scene/console/tel.tpl.html",
+                    controller: "TelConsoleCtrl",
+                    resolve: {
+                        obj: function() {return component;}
+                    }
+                }).result.then(function(data) {
+                        Modal = null;
+                        component.properties.title = data.title;
+                        component.properties.number = data.number;
+                        data.title.replace(/ /g, "&nbsp;");
+                        $.extend(!0, component.css, b.btnStyle);
+                        $("#" + component.id).length > 0 && $("#" + component.id).parents("li").remove();
+
+                        addComponentHandle(component.type, component);
+                    }, function() {
+                        Modal = null;
+                        $("#" + component.id).length || (CurPageElementInfo.splice(CurPageElementInfo.indexOf(I[component.id]), 1), delete I[component.id]);
+                    });
+            }
+        }//s
+        function carouselHandle(component) {
+            if(!Modal){
+                Modal = $modal.open({
+                    windowClass: "console",
+                    templateUrl: "scene/console/pic_lunbo.tpl.html",
+                    controller: "picsCtrl",
+                    resolve: {
+                        obj: function() {
+                            return component;
+                        }
+                    }
+                }).result.then(function(data) {
+                        Modal = null;
+                        component.properties = data;
+                        var element = $("#inside_" + component.id);
+                        element.length && element.remove();
+
+                        addComponentHandle(component.type, component);
+                    }, function() {
+                    Modal = null;
+                    $("#" + component.id).length || (CurPageElementInfo.splice(CurPageElementInfo.indexOf(I[component.id]), 1), delete I[component.id]);
+                })
+            }
+        }//u
+        function videoHandle(component) {
+            if( Modal ){
+                $modal.open({
+                    windowClass: "console",
+                    templateUrl: "scene/console/video.tpl.html",
+                    controller: "VideoCtrl",
+                    resolve: {
+                        obj: function() {
+                            return component;
+                        }
+                    }
+                }).result.then(function(data) {
+                        Modal = null;
+                        component.properties.src = data;
+                        if(!$("#" + component.id).length){
+                            addComponentHandle(component.type, component);
+                        }
+                    }, function() {
+                    Modal = null;
+                    $("#" + component.id).length || (CurPageElementInfo.splice(CurPageElementInfo.indexOf(I[component.id]), 1), delete I[component.id])
+                });
+            }
+        }//v
+        function linkHandle(component) {
+            component.sceneId = CurPageTplInfo.obj.sceneId;
+            $modal.open({
+                windowClass: "console",
+                templateUrl: "scene/console/link.tpl.html",
+                controller: "LinkConsoleCtrl",
+                resolve: {
+                    obj: function() {return component;}
+                }
+            }).result.then(function(data) {
+                    if(data && "http://" != data){
+                        if(isNaN(b)){
+                            component.properties.url = PREFIX_S1_URL + "eqs/link?id=" + component.sceneId + "&url=" + encodeURIComponent(data)
+                        }else{
+                            component.properties.url = data;
+                            console.log(data);
+                        }
+                        $("#inside_" + component.id).find(".fa-link").removeClass("fa-link").addClass("fa-anchor");
+                    }else{
+                        delete component.properties.url;
+                        $("#inside_" + component.id).find(".fa-anchor").removeClass("fa-anchor").addClass("fa-link");
+                    }
+                });
+        }//D
+        function microwebHandle(component) {
+            $modal.open({
+                windowClass: "console",
+                templateUrl: "scene/console/microweb.tpl.html",
+                controller: "MicroConsoleCtrl",
+                resolve: {
+                    obj: function() {
+                        if(!component.properties.labels){
+                            component.properties.labels = [{
+                                id: 1,
+                                title: "栏目一",
+                                color: {
+                                    backgroundColor: "#23A3D3",
+                                    color: ""
+                                },
+                                link: ""
+                            }, {
+                                id: 2,
+                                title: "栏目二",
+                                color: {
+                                    backgroundColor: "#23A3D3",
+                                    color: ""
+                                },
+                                link: ""
+                            }];
+                        }
+                        return component;
+                    }
+                }
+            }).result.then(function(data) {
+                    if($("#" + component.id).length > 0){
+                        component.properties.labels = [];
+                        ng.forEach(data, function(d) {
+                            delete d.selected;
+                            delete d.mousedown;
+                            delete d.$$hashKey;
+                            component.properties.labels.push(d);
+                        });
+                        $("#" + component.id).parents("li").remove();
+                        addComponentHandle(component.type, component);
+                    }else{
+                        component.css = {left: "0px",width: "100%",bottom: "0px",height: "50px",zIndex: 999};
+                        component.properties.labels = [];
+                        ng.forEach(data, function(d) {
+                            delete d.selected;
+                            delete d.mousedown;
+                            delete d.$$hashKey;
+                            component.properties.labels.push(d);
+                        });
+                        position = null;
+                        addComponentHandle(component.type, component);
+                    }
+                }, function() {
+                    if(!$("#" + component.id).length){
+                        CurPageElementInfo.splice(CurPageElementInfo.indexOf(I[component.id]), 1);
+                        delete I[component.id];
+                        console.log(component)
+                    }
+                });
+        }//w
+        function openModal(component, successFn, failFn) {
+            if (!Modal) {
+                var fileType = "0";
+                if(3 == component.type)fileType = "0";
+                if(4 == component.type)fileType = "1";
+                Modal = $modal.open({
+                    windowClass: "console img_console",
+                    templateUrl: "scene/console/bg.tpl.html",
+                    controller: "BgConsoleCtrl",
+                    resolve: {
+                        obj: function() {
+                            return {fileType: fileType,elemDef: component}
+                        }
+                    }
+                }).result.then(function(data) {
+                        Modal = null;
+                        successFn(data);
+                    }, function(data) {
+                        Modal = null;
+                        failFn(data);
+                    });
+            }
+        }//z
+
+        function activeStyleTab(component) {
+            SceneService.currentElemDef = component;
+            $rootScope.$broadcast("showStylePanel", {activeTab: "style"});
+        }//A
+        function activeAnimTab(component) {
+            SceneService.currentElemDef = component;
+            $rootScope.$broadcast("showStylePanel", {activeTab: "anim"});
+        }//B
+        function activeCrop(component) {
+            console.log(component);
+            SceneService.currentElemDef = component;
+            GlobalEvt = $rootScope.$broadcast("showCropPanel", component);
+        }//C
+
+        function reParseElements(elements){
+            CurPageTplInfo.obj.elements = elements;
+            $("#nr").empty();
+            JsonParser.parse({
+                def: CurPageTplInfo.obj,
+                appendTo: "#nr",
+                mode: "edit"
+            });
+            $("#editBG").hide();
+            for (var elem in elements){
+                if (3 == elements[elem].type) {
+                    $("#editBG").show();
+                    break;
+                }
+            }
+            $rootScope.$broadcast("dom.changed");
+        }//i
+        function revisePosition(originalElemDef, copyElemDef){
+            var top = parseInt(originalElemDef.css.top.substring(0, originalElemDef.css.top.length - 2), 10) + 34 * SceneService.sameCopyCount,
+                left = parseInt(originalElemDef.css.left.substring(0, originalElemDef.css.left.length - 2), 10);
+            if(top + 34 > $("#nr .edit_area").outerHeight()){
+                copyElemDef.css.top = top + "px";
+                copyElemDef.css.left = left + 10 + "px"
+            }else{
+                copyElemDef.css.top = top + 34 + "px";
+                copyElemDef.css.left = originalElemDef.css.left;
+                SceneService.sameCopyCount++;
+            }
+        }
+
+        {var SceneService = {}, JsonParser = eqShow.templateParser("jsonParser"), CurPageTplInfo = null, CurPageElementInfo = null, I = {};}
+
+        SceneService.historyBack = function() {
+            if(historyService.canBack(CurPageTplInfo.obj.id)){
+                CurPageElementInfo = historyService.back(CurPageTplInfo.obj.id);
+                reParseElements(CurPageElementInfo);
+            }
+        };
+        SceneService.historyForward = function() {
+            if(historyService.canForward(CurPageTplInfo.obj.id)){
+                CurPageElementInfo = historyService.forward(CurPageTplInfo.obj.id);
+                reParseElements(CurPageElementInfo);
+            }
+        };
+        SceneService.copyElement = function(elemDefTpl) {
+            var copyElemDef = ng.copy(elemDefTpl);
+            q = !0;
+            SceneService.originalElemDef = elemDefTpl;
+            SceneService.copyElemDef = copyElemDef;
+        };
+        SceneService.pasteElement = function(originalElemDef, copyElemDef) {
+            copyElemDef.id = Math.ceil(100 * Math.random());
+            copyElemDef.pageId = CurPageTplInfo.obj.id;
+            if(SceneService.pageId == copyElemDef.pageId){
+                revisePosition(originalElemDef, copyElemDef);
+            }else{
+                SceneService.sameCopyCount = 0;
+                copyElemDef.css = ng.copy(originalElemDef.css);
+            }
+            var finalElem = ng.copy(copyElemDef);
+            CurPageElementInfo.push(finalElem);
+            I[finalElem.id] = finalElem;
+            addComponentHandle(finalElem.type, finalElem);
+            SceneService.pageId = CurPageTplInfo.obj.id;
+        };
+        $(document).keydown(function(event) {
+            if($("#nr .edit_area").length){
+                if((event.ctrlKey || event.metaKey) && 90 == event.keyCode)SceneService.historyBack();//z
+                if((event.ctrlKey || event.metaKey) && 89 == event.keyCode)SceneService.historyForward();//y
+                if((event.ctrlKey || event.metaKey)
+                    && SceneService.elemDefTpl
+                    && !$("#btn-toolbar")[0]
+                    && !$(".modal-dialog")[0]){
+                    if(86 == event.keyCode){//v
+                        event.preventDefault();
+                        if(q)SceneService.pasteElement(SceneService.originalElemDef, SceneService.copyElemDef);
+                    }
+                    if(67 == event.keyCode){//c
+                        event.preventDefault();
+                        SceneService.pageId = CurPageTplInfo.obj.id;
+                        SceneService.sameCopyCount = 0;
+                        SceneService.copyElement(SceneService.elemDefTpl);
+                    }
+                }
+                $rootScope.$apply();
+            }
+        });
+        SceneService.resetCss = function() {
+            $("#nr .edit_area li").each(function(key, value) {
+                var component = I[value.id.replace(/inside_/g, "")];
+                if(component){
+                    if(!component.css)component.css = {};
+                    component.css.zIndex = value.style.zIndex ? value.style.zIndex : "0";
+                }
+            });
+        };
+
+
+        var Modal = null, GlobalEvt = null;
+        JsonParser.addInterceptor(function(wrapComponent, element, mode){
+            function generatePopMenu() {
+                var $popMenu = $(
+                        '<ul id="popMenu" class="dropdown-menu" style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1">' +
+                        '<li class="edit" role="presentation">' +
+                        '<a role="menuitem" tabindex="-1">' +
+                        '<div class="glyphicon glyphicon-edit" style="color: #08a1ef;"></div>&nbsp;&nbsp;编辑' +
+                        '</a>' +
+                        '</li>' +
+                        '<li class="style" role="presentation">' +
+                        '<a role="menuitem" tabindex="-1">' +
+                        '<div class="fa fa-paint-brush" style="color: #08a1ef;"></div>&nbsp;&nbsp;样式' +
+                        '</a>' +
+                        '</li>' +
+                        '<li class="animation" role="presentation">' +
+                        '<a role="menuitem" tabindex="-1">' +
+                        '<div class="fa fa-video-camera" style="color: #08a1ef;"></div>&nbsp;&nbsp;动画' +
+                        '</a>' +
+                        '</li>' +
+                        '<li class="link" role="presentation">' +
+                        '<a role="menuitem" tabindex="-1">' +
+                        '<div class="fa fa-link" style="color: #08a1ef;"></div>&nbsp;&nbsp;链接' +
+                        '</a>' +
+                        '</li>' +
+                        '<li class="copy" role="presentation" style="margin-bottom:5px;">' +
+                        '<a role="menuitem" tabindex="-1">' +
+                        '<div class="fa fa-copy" style="color: #08a1ef;"></div>&nbsp;&nbsp;复制' +
+                        '</a>' +
+                        '</li>' +
+                        '<li class="cut" role="presentation" style="margin-bottom:5px;">' +
+                        '<a role="menuitem" tabindex="-1">' +
+                        '<div class="fa fa-cut" style="color: #08a1ef;"></div>&nbsp;&nbsp;裁剪' +
+                        '</a>' +
+                        '</li>' +
+                        '<li role="presentation" class="bottom_bar">' +
+                        '<a title="上移一层">' +
+                        '<div class="up" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -26px no-repeat;"></div>' +
+                        '</a>' +
+                        '<a title="下移一层">' +
+                        '<div class="down" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -80px no-repeat;"></div>' +
+                        '</a>' +
+                        '<a title="删除">' +
+                        '<div class="remove" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -1px no-repeat;"></div>' +
+                        '</a>' +
+                        '</li>' +
+                        '</ul>')
+                    .css({position: "absolute","user-select": "none"});
+                if( q ){
+                    $popMenu.find(".copy").after($('<li class="paste" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-paste" style="color: #08a1ef;"></div>&nbsp;&nbsp;粘贴</a></li>'));
+                }
+
+                $popMenu.find(".edit").click(function(event) {
+                    event.stopPropagation();
+                    switch (element.type.toString().charAt(0)) {
+                        case "1":break;
+                        case "2":editableHandle(wrapComponent.find(".element").get(0), element);break;
+                        case "3":break;
+                        case "4":imageHandle(element);break;
+                        case "5":inputHandle(element);break;
+                        case "6":buttonHandle(element);break;
+                        case "7":break;
+                        case "8":telHandle(element);break;
+                        case "9":break;
+                        case "g":break;
+                        case "p":carouselHandle(element);break;
+                        case "v":videoHandle(element);break;
+                    }
+                    $popMenu.hide();
+                });
+                $popMenu.find(".style").click(function(event) {
+                    if(security.isAllowToAccess(security.accessDef.CREATE_STYLE_SETTING)){
+                        event.stopPropagation();
+                        activeStyleTab(element, function(b) {
+                            if (1 == element.type){
+                                for (var label in element.properties.labels) {
+                                    if(b.backgroundColor){
+                                        element.properties.labels[label].color.backgroundColor = b.backgroundColor;
+                                        $(".label_content").css("background-color", b.backgroundColor);
+                                    }
+                                    if(b.color){
+                                        element.properties.labels[label].color.color = b.color;
+                                        $(".label_content").css("color", b.color);
+                                    }
+                                }
+                            }else{
+                                $(".element-box", wrapComponent).css(b), $.extend(!0, element.css, b)
+                            }
+                        });
+                    }else{
+                        event.stopPropagation();
+                        $modal.open({
+                            windowClass: "console",
+                            templateUrl: "scene/console/fake.tpl.html",
+                            controller: "FakeConsoleCtrl",
+                            resolve: {
+                                type: function() {return "style";}
+                            }
+                        });
+                    }
+                    $popMenu.hide();
+                });
+                $popMenu.find(".animation").click(function(event) {
+                    event.stopPropagation();
+                    activeAnimTab(element, function(a) {
+                        element.properties.anim = a;
+                    });
+                    $popMenu.hide();
+                });
+                $popMenu.find(".link").click(function(event) {
+                    event.stopPropagation();
+                    linkHandle(element);
+                    $popMenu.hide();
+                });
+
+                $popMenu.find(".remove").click(function(event) {
+                    event.stopPropagation();
+                    historyService.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                    wrapComponent.remove();
+                    CurPageElementInfo.splice(CurPageElementInfo.indexOf(I[element.id]), 1);
+                    historyService.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                    NTERVAL_OBJ[element.id] && (clearInterval(INTERVAL_OBJ[element.id]), delete INTERVAL_OBJ[element.id]);
+                    $popMenu.hide();
+                    $rootScope.$apply();
+                    $rootScope.$broadcast("hideStylePanel");
+                });
+                $popMenu.find(".down").click(function() {
+                    var prev = wrapComponent.prev();
+                    if (!(prev.length <= 0)) {
+                        var zIndex = wrapComponent.css("zIndex");
+                        wrapComponent.css("zIndex", prev.css("zIndex"));
+                        prev.css("zIndex", zIndex);
+                        prev.before(wrapComponent);
+
+                        for (var i = 0; i < CurPageElementInfo.length; i++) {
+                            if (CurPageElementInfo[i].id == element.id && i > 0) {
+                                var zIndex = CurPageElementInfo[i].css.zIndex;
+                                CurPageElementInfo[i].css.zIndex = CurPageElementInfo[i - 1].css.zIndex;
+                                CurPageElementInfo[i - 1].css.zIndex = zIndex;
+                                break;
+                            }
+                        }
+                    }
+                });
+                $popMenu.find(".up").click(function() {
+                    var next = wrapComponent.next();
+                    if (!(next.length <= 0)) {
+                        var zIndex = wrapComponent.css("zIndex");
+                        wrapComponent.css("zIndex", next.css("zIndex"));
+                        next.css("zIndex", zIndex);
+                        next.after(wrapComponent);
+
+                        for (var i = 0; i < CurPageElementInfo.length; i++)
+                            if (CurPageElementInfo[i].id == element.id && i < CurPageElementInfo.length - 1) {
+                                var zIndex = CurPageElementInfo[i].css.zIndex;
+                                CurPageElementInfo[i].css.zIndex = CurPageElementInfo[i + 1].css.zIndex;
+                                CurPageElementInfo[i + 1].css.zIndex = zIndex;
+                                break
+                            }
+                    }
+                });
+                $popMenu.find(".copy").click(function(event) {
+                    event.stopPropagation();
+                    SceneService.sameCopyCount = 0;
+                    SceneService.pageId = CurPageTplInfo.obj.id;
+                    if(!$(".modal-dialog")[0])SceneService.copyElement(element);
+                    $popMenu.hide();
+                });
+                $popMenu.find(".paste").click(function(event) {
+                    event.stopPropagation();
+                    if(!$(".modal-dialog")[0])SceneService.pasteElement(SceneService.originalElemDef, SceneService.copyElemDef);
+                    $popMenu.hide();
+                });
+                $popMenu.find(".cut").click(function(event) {
+                    event.stopPropagation();
+                    activeCrop(element);
+                    $popMenu.hide();
+                });
+
+                if( 4 != element.type ){
+                    $popMenu.find(".link").hide();
+                    $popMenu.find(".cut").hide();
+                }
+                if( "p" == element.type ){
+                    $popMenu.find(".animation").hide();
+                    $popMenu.find(".style").hide();
+                }
+                return $popMenu;
+            }
+            if("view" != mode){
+                var $eq_main = $("#eq_main");
+                wrapComponent.on("click contextmenu", ".element-box", function(event) {
+                    event.stopPropagation();
+                    //TODO: SceneService.elemDefTpl
+                    if($("#btn-toolbar")[0])SceneService.elemDefTpl = ng.copy(element);
+                    if($("#comp_setting:visible").length > 0 && "p" != element.type){
+                        SceneService.currentElemDef = element;
+                        $rootScope.$broadcast("showStylePanel");
+                    }
+                    var PopMenu = generatePopMenu(), $popMenu = $("#popMenu");
+                    if($popMenu.length > 0)$popMenu.remove();
+                    $eq_main.append(PopMenu);
+                    PopMenu.css({
+                        left: event.pageX + $eq_main.scrollLeft() + 15,
+                        top: event.pageY + $eq_main.scrollTop()
+                    }).show();
+                    $eq_main.mousemove(function(event) {
+                        if(event.pageX < PopMenu.offset().left - 20
+                            || event.pageX > PopMenu.offset().left + PopMenu.width() + 20
+                            || event.pageY < PopMenu.offset().top - 20
+                            || event.pageY > PopMenu.offset().top + PopMenu.height() + 20){
+                            PopMenu.hide();
+                            $(this).unbind("mousemove");
+                        }
+                    });
+                    return !1;
+                });
+                wrapComponent.attr("title", "按住鼠标进行拖动，点击鼠标进行编辑")
+            }
+        });
+        JsonParser.bindEditEvent("1", function(element, component) {
+            $(element).unbind("dblclick");
+            $(element).show().bind("dblclick", function() {
+                microwebHandle(component);
+            });
+        });
+        JsonParser.bindEditEvent("2", function(element, component) {
+            var target = $(".element", element)[0];
+            $(target).mousedown(function(event) {
+                $(this).parents("li").hasClass("inside-active") && event.stopPropagation();
+            });
+            $(target).bind("contextmenu", function(event) {
+                $(this).parents("li").hasClass("inside-active")
+                    ? event.stopPropagation()
+                    : $(this).blur();
+            });
+            target.addEventListener("dblclick", function(event) {
+                editableHandle(target, component);
+                $("#popMenu").hide();
+                event.stopPropagation();
+            });
+        });
+        JsonParser.bindEditEvent("3", function(element, component) {
+            $("#editBG").unbind("click");
+            $("#editBG").show().bind("click", function() {
+                bgHandle(component);
+            });
+        });
+        JsonParser.bindEditEvent("v", function(element, component) {
+            var target = $(".element", element)[0];
+            $(target).unbind("dblclick");
+            $(target).bind("dblclick", function() {
+                videoHandle(component);
+                $("#popMenu").hide();
+            })
+        });
+        JsonParser.bindEditEvent("4", function(element, component) {
+            var target = $(".element", element)[0];
+            $(target).unbind("dblclick");
+            $(target).bind("dblclick", function() {
+                imageHandle(component);
+                $("#popMenu").hide()
+            })
+        });
+        JsonParser.bindEditEvent("5", function(element, component) {
+            var target = $(".element", element)[0];
+            $(target).unbind("dblclick");
+            $(target).bind("dblclick", function() {
+                inputHandle(element);
+                $("#popMenu").hide();
+            });
+        });
+        JsonParser.bindEditEvent("p", function(element, component) {
+            var target = $(".element", element)[0];
+            $(target).unbind("dblclick");
+            $(target).bind("dblclick", function() {
+                carouselHandle(component);
+                $("#popMenu").hide();
+            })
+        });
+        JsonParser.bindEditEvent("6", function(element, component) {
+            var target = $(".element", element)[0];
+            $(target).unbind("dblclick");
+            $(target).bind("dblclick", function() {
+                buttonHandle(component);
+                $("#popMenu").hide()
+            });
+        });
+        JsonParser.bindEditEvent("7", function(element, component) {
+            var target = $(".element", element)[0];
+            target.addEventListener("click", function() {
+                if(!Modal){
+                    $modal.open({
+                        windowClass: "",
+                        templateUrl: "scene/console/map.tpl.html",
+                        controller: "MapConsoleCtrl"
+                    }).result.then(function(data) {
+                            var element = new BMap.Map("map_" + component.id);
+                            element.clearOverlays();
+
+                            var point = new BMap.Point(data.lng, data.lat),
+                                marker = new BMap.Marker(point);
+
+                            element.addOverlay(marker);
+                            var label = new BMap.Label(data.address, {offset: new BMap.Size(20, -10)});
+                            marker.setLabel(label);
+                            element.centerAndZoom(point, 12);
+                            component.properties.pointX = data.lng;
+                            component.properties.pointY = data.lat;
+                            component.properties.x = data.lng;
+                            component.properties.y = data.lat;
+                            component.properties.markTitle = data.address;
+                        });
+                }
+            })
+        });
+        JsonParser.bindEditEvent("8", function(element, component) {
+            var target = $(".element", element)[0];
+            $(target).unbind("dblclick");
+            $(target).bind("dblclick", function() {
+                telHandle(component);
+                $("#popMenu").hide()
+            });
+        });
+        SceneService.templateEditor = JsonParser;
+
+        SceneService.getScenePages = function(sceneId) {
+            var url = "m/scene/pageList/" + sceneId + "?date=" + (new Date).getTime();
+            return $http({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + url
+            });
+        };
+        SceneService.getSceneByPage = function(pageId, isNewPage, d) {
+            var url = "";
+            if(isNewPage || d){
+                url = "m/scene/createPage/" + pageId;
+                if(d)url += "?copy=true";
+            }else{
+                url = "m/scene/design/" + pageId;
+            }
+            var defer = $q.defer(),tt = new Date;
+            url += (/\?/.test(url) ? "&" : "?") + "time=" + tt.getTime();
+            $http({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + url
+            }).then(function(a) {
+                defer.resolve(a);
+                CurPageTplInfo = a.data;
+                CurPageTplInfo.obj.elements || (CurPageTplInfo.obj.elements = []);
+                CurPageElementInfo = CurPageTplInfo.obj.elements;
+                for (var b = 0; CurPageElementInfo && b < CurPageElementInfo.length; b++) I[CurPageElementInfo[b].id] = CurPageElementInfo[b];
+            }, function(a) {
+                defer.reject(a)
+            });
+            return defer.promise;
+        };
+        SceneService.getSceneTpl = function(pageTplId) {
+            var tplCache = $cacheFactory.get("tplCache") ? $cacheFactory.get("tplCache") : $cacheFactory("tplCache"),
+                defer = $q.defer();
+
+            if (tplCache.get(pageTplId)) {
+                var pageTplInfo = $.extend(!0, {}, tplCache.get(pageTplId));
+                if(pageTplInfo.data.obj.scene
+                    && pageTplInfo.data.obj.scene.image
+                    && pageTplInfo.data.obj.scene.image.bgAudio){
+                    if(!CurPageTplInfo.obj.scene.image)CurPageTplInfo.obj.scene.image = {};
+                    CurPageTplInfo.obj.scene.image.bgAudio = pageTplInfo.data.obj.scene.image.bgAudio
+                }
+                for (var h = 0; h < pageTplInfo.data.obj.elements.length; h++) {
+                    var element = pageTplInfo.data.obj.elements[h];
+                    element.id = Math.ceil(100 * Math.random());
+                    element.sceneId = CurPageTplInfo.obj.sceneId;
+                    element.pageId = CurPageTplInfo.obj.id;
+                }
+                CurPageElementInfo = pageTplInfo.data.obj.elements;
+                for (var j = 0; j < CurPageElementInfo.length; j++) I[CurPageElementInfo[j].id] = CurPageElementInfo[j];
+                defer.resolve(pageTplInfo);
+            } else {
+                var url = "m/scene/pageTpl/" + b, tt = new Date;
+                url += (/\?/.test(url) ? "&" : "?") + "time=" + tt.getTime();
+                $http({
+                    withCredentials: !0,
+                    method: "GET",
+                    url: PREFIX_URL + url
+                }).then(function(data) {
+                    tplCache.put(data.data.obj.id, $.extend(!0, {}, data));
+
+                    if(data.data.obj.scene
+                        && data.data.obj.scene.image
+                        && data.data.obj.scene.image.bgAudio){
+                        if(!CurPageTplInfo.obj.scene.image)CurPageTplInfo.obj.scene.image = {};
+                        CurPageTplInfo.obj.scene.image.bgAudio = data.data.obj.scene.image.bgAudio
+                    }
+                    for (var b = 0; b < data.data.obj.elements.length; b++) {
+                        var element = data.data.obj.elements[b];
+                        element.id = Math.ceil(100 * Math.random());
+                        element.sceneId = CurPageTplInfo.obj.sceneId;
+                        element.pageId = CurPageTplInfo.obj.id;
+                    }
+                    CurPageElementInfo = data.data.obj.elements;
+                    for (var f = 0; f < CurPageElementInfo.length; f++){
+                        I[CurPageElementInfo[f].id] = CurPageElementInfo[f];
+                    }
+                    defer.resolve(data)
+                }, function(data) {
+                    defer.reject(data);
+                });
+            }
+            return defer.promise;
+        };
+        SceneService.getElements = function() {
+            return CurPageElementInfo;
+        };
+        SceneService.getSceneObj = function() {
+            return CurPageTplInfo;
+        };
+        SceneService.savePageNames = function(info) {
+            var url = "m/scene/savePage",
+                pageInfo = {
+                    id: info.id,
+                    sceneId: info.sceneId,
+                    name: info.name
+                };
+            return $http({
+                withCredentials: !0,
+                method: "POST",
+                url: PREFIX_URL + url,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                data: $.param(pageInfo)
+            });
+        };
+
+        SceneService.saveScene = function(json) {
+            console.log(JSON.stringify(json));
+            var url = "m/scene/save";
+            return $http({
+                withCredentials: !0,
+                method: "POST",
+                url: PREFIX_URL + url,
+                headers: {
+                    "Content-Type": "text/plain; charset=UTF-8"
+                },
+                data: JSON.stringify(json)
+            });
+        };
+
+        SceneService.updateCompSize = function(elementId, props) {
+            for (var d = 0; d < CurPageElementInfo.length; d++) {
+                if("inside_" + CurPageElementInfo[d].id == elementId){
+                    if(!CurPageElementInfo[d].css)CurPageElementInfo[d].css = {};
+                    CurPageElementInfo[d].css.width = props.width;
+                    CurPageElementInfo[d].css.height = props.height;
+
+                    CurPageElementInfo[d].properties.width = props.width;
+                    CurPageElementInfo[d].properties.height = props.height;
+                    if(props.imgStyle)CurPageElementInfo[d].properties.imgStyle = props.imgStyle;
+                    //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo)
+                }
+            }
+            $rootScope.$apply();
+        };
+        SceneService.updateCompPosition = function(elementId, props) {
+            for (var d = 0; d < CurPageElementInfo.length; d++) {
+                if ("inside_" + CurPageElementInfo[d].id == elementId) {
+                    if(CurPageElementInfo[d].css){
+                        CurPageElementInfo[d].css.left = props.left;
+                        CurPageElementInfo[d].css.top = props.top;
+                        //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                    }else{
+                        CurPageElementInfo[d].css = props;
+                        //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                    }
+                }
+            }
+            $rootScope.$apply();
+        };
+        SceneService.updateCompAngle = function(elementId, angle) {
+            for (var d = 0; d < CurPageElementInfo.length; d++){
+                if("inside_" + CurPageElementInfo[d].id == elementId){
+                    if(CurPageElementInfo[d].css){
+                        CurPageElementInfo[d].css.transform = "rotateZ(" + angle + "deg)"
+                    }else{
+                        CurPageElementInfo[d].css = {};
+                    }
+                    //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                }
+            }
+            $rootScope.$apply();
+        };
+
+        return SceneService;
+    }]);
     ng.module("confirm-dialog", []).controller("ConfirmDialogCtrl", ["$scope", "confirmObj", function(a, b) {
             a.confirmObj = b, a.ok = function() {
                 a.$close()
@@ -1534,7 +2554,6 @@
                 }).result.then(c, d)
             }, b
     }]);
-
     ng.module("services.pagetpl", []);
     ng.module("services.pagetpl").factory("pageTplService", ["$http", "$rootScope", "$modal", "$q", function(a) {
         var PageTplService = {};
@@ -1565,7 +2584,6 @@
                 url: PREFIX_URL + b
             })
         };
-        //TODO:/m/scene/tag/sys/list
         PageTplService.getPageTagLabel = function(b) {
             var c = "m/scene/tag/sys/list?type=1";
             null != b && (c += (/\?/.test(c) ? "&" : "?") + "bizType=" + b);
@@ -1585,7 +2603,6 @@
                 url: PREFIX_URL + c
             })
         };
-        //TODO: /m/scene/tpl/page/list
         PageTplService.getPageTplTypestemp = function(b, c) {
             var d = "m/scene/tpl/page/list/",
                 e = new Date;
@@ -1647,6 +2664,172 @@
             }
         }
     }]);
+    ng.module("app.directives.addelement", [])
+        .directive("addElement", ["$compile", function($compile) {
+            return {
+                restrict: "EA",
+                link: function(scope, element, attr) {
+                    var $elem = $("#emailAddress"),cnt = $("#emailAddress").size() + 1;
+                    element.bind("click", function() {
+                        var $p_scnt = ng.element('<div><input type="text" id="p_scnt" style="width:100%; height: 30px; margin-top: 15px;" ng-model="attrs.addElement" name="p_scnt_' + cnt + '" placeholder="Input Value" /></div>');
+                        $elem.append($p_scnt);
+                        var $input = element.find("input");
+                        console.log(attr.addElement);
+                        $compile($input)(scope);
+                        cnt++;
+                    });
+                }
+            };
+        }])
+        .directive("showIcon", ["$compile", function($compile) {
+            return {
+                restrict: "EA",
+                require: "ngModel",
+                scope: {
+                    check: "&callbackFn"
+                },
+                link: function(scope, element, attr, ctrl) {
+                    var originVal, finalVal,
+                        $icon = $compile('<a><span class = "glyphicon glyphicon-ok-circle" ng-show="enabled" style = "margin-top: 8px; color: #9ad64b; font-size: 15px;"></span></a>')(scope);
+                    scope.update = function() {
+                        element[0].blur();
+                        scope.check({
+                            arg1: {
+                                name: ctrl.$name
+                            }
+                        });
+                    };
+                    element.bind("focus", function() {
+                        originVal = ctrl.$viewValue;
+                        element.parent().after($icon);
+                        scope.enabled = !0;
+                        if("email" === attr.name || "mobile" === attr.name || "tel" === attr.name)scope.enabled = !1;
+                        scope.$apply();
+                    })
+                    .bind("blur", function() {
+                        scope.enabled = !1;
+                        finalVal = ctrl.$viewValue;
+                        var mobileReg = new RegExp(/(\d{11})|^((\d{7,8})|(\d{4}|\d{3})-(\d{7,8})|(\d{4}|\d{3})-(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1})|(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1}))$/g);
+                        if ("mobile" === attr.name && g && !mobileReg.test(element.val())) return void alert("手机号码格式错误");
+                        if ("email" === attr.name && g) {
+                            var emailReg = new RegExp(/^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/g);
+                            if (!emailReg.test(element.val())) return void alert("邮箱格式错误")
+                        }
+                        if((finalVal || originVal) && originVal !== finalVal)scope.update();
+                        scope.$apply();
+                    });
+                }
+            };
+        }])
+        .directive("ngHover", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).hover(function() {
+                        $(element.children()[0]).css("display", "block");
+                        $(element.children()[3]).css("display", "block");
+                        $(element.children()[4]).css("display", "block")
+                    }, function() {
+                        $(element.children()[0]).css("display", "none");
+                        $(element.children()[3]).css("display", "none");
+                        $(element.children()[4]).css("display", "none")
+                    });
+                }
+            };
+        })
+        .directive("imgClick", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).bind("click", function() {
+                        $(element).find("img").css("border", "4px solid #F60");
+                        $(element).siblings().find("img").css("border", 0);
+                    });
+                }
+            };
+        })
+        .directive("customFocus", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).siblings().bind("click", function() {element[0].focus()});
+                }
+            }
+        })
+        .directive("blurChildren", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).on("click", function(event) {
+                        if(event.target == element[0] || $(event.target).hasClass("badge")){
+                            $(".blurClass").find("input:visible").blur();
+                        }
+                    });
+                }
+            };
+        })
+        .directive("forbiddenClose", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).on("click", function(event) {event.stopPropagation();});
+                }
+            };
+        })
+        .directive("customeImage", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).hover(function() {
+                        $("<div><a></a></div>");
+                    }, function() {});
+                }
+            };
+        })
+        .directive("slides", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).slides({
+                        preload: !0,
+                        play: 5e3,
+                        pause: 2500,
+                        hoverPause: !0
+                    });
+                }
+            };
+        })
+        .directive("addClass", function() {
+            return {
+                restrict: "EA",
+                link: function(scope, element) {
+                    $(element).closest(".textbox-wrap").find("[autofocus]").focus();
+                    $(element).on("blur", function() {
+                        $(element).closest(".textbox-wrap").removeClass("focused");
+                    })
+                    .on("focus", function() {
+                        $(element).closest(".textbox-wrap").addClass("focused");
+                    });
+                }
+            };
+        })
+        .directive("loadScript", ["$http",function($http) {
+            return {
+                link: function(scope, element) {
+                    var callback = function() {
+                        scope.captchaLoaded = !0
+                    };
+                    scope.$watch(function() {
+                        return element[0].getAttribute("src");
+                    }, function(src) {
+                        src && $http.jsonp(element[0].getAttribute("src")).success(callback).error(callback);
+                    });
+                    scope.$on("$destroy", function() {
+                        ng.element(".gt_widget").remove();
+                    });
+                }
+            }
+        }]);
     ng.module("app.directives.component", ["services.scene"])
         .directive("compDraggable", function () {
             return {
@@ -2230,839 +3413,6 @@
             }
         }]);
 
-    ng.module("services.scene", [/*"scene.create.console", "services.history"*/]);
-    ng.module("services.scene").factory("sceneService", ["$http", "$rootScope", "$modal", "$q","$cacheFactory", /*"historyService",*/function($http, $rootScope, $modal, $q, $cacheFactory/*, historyService*/){
-            function addComponentHandle(type, component, gFlag) {
-                var li = JsonParser.wrapComp(component, "edit");
-                $("#nr .edit_area").append(li);
-                for (var interceptors = JsonParser.getInterceptors(), i = 0; i < interceptors.length; i++){
-                    interceptors[i](li, component);
-                }
-                JsonParser.getEventHandlers()[("" + type).charAt(0)](li, component);
-                if("g101" != gFlag){
-                    historyService.addPageHistory(G.obj.id, G.obj.elements);
-                    $rootScope.$broadcast("dom.changed");
-                }
-            }//m
-
-            function editableHandle(element, component) {
-                $(element).css("cursor", "text");
-                if(!$(element).parents("li").hasClass("inside-active")){
-                    $(element).bind("click", function(event) {
-                        event.stopPropagation()
-                    });
-                }
-                $(document).bind("mousedown", function() {
-                    $(element).css("cursor", "default");
-                    $("#btn-toolbar").find("input[type=text][data-edit]").blur();
-                    if($("#btn-toolbar"))$("#btn-toolbar").remove();
-                    $(element).unbind("click");
-
-                    component.content = $(element).html();
-                    $(element).parents("li").removeClass("inside-active").css("user-select", "none");
-                    $(element).removeAttr("contenteditable");
-                    $(document).unbind("mousedown");
-                });
-
-                $(element).parents("li").addClass("inside-active").css("user-select", "initial");
-                $rootScope.$broadcast("text.click", element);
-            }//o
-            function imageHandle(component) {
-                openModal(component, function(modal) {
-                    component.properties.src = modal.data;
-                    var rate = modal.width / modal.height,
-                        $component = $("#" + component.id);
-                    if ($component.length > 0) {
-                        var width = $("#inside_" + component.id).width(),height = $("#inside_" + component.id).height(),r = width / height;
-                        if( rate >= r ){
-                            $component.outerHeight(height);
-                            $component.outerWidth(height * rate);
-
-                            $component.css("marginLeft", -($component.outerWidth() - width) / 2);
-                            $component.css("marginTop", 0);
-                        }else{
-                            $component.outerWidth(width);
-                            $component.outerHeight(width / rate);
-                            $component.css("marginTop", -($component.outerHeight() - height) / 2);
-                            $component.css("marginLeft", 0)
-                        }
-                        $component.attr("src", PREFIX_FILE_HOST + modal.data);
-                        component.properties.imgStyle = {};
-                        component.properties.imgStyle.width = $component.outerWidth();
-                        component.properties.imgStyle.height = $component.outerHeight();
-                        component.properties.imgStyle.marginTop = $component.css("marginTop");
-                        component.properties.imgStyle.marginLeft = $component.css("marginLeft");
-                    } else {
-                        if(modal.width > $("#nr .edit_area").width()){
-                            modal.width = $("#nr .edit_area").width();
-                            modal.height = modal.width / rate;
-                        }
-                        if(modal.height > $("#nr .edit_area").height()){
-                            modal.height = $("#nr .edit_area").height();
-                            modal.width = modal.height * rate;
-                        }
-                        component.css.width = modal.width;
-                        component.css.height = modal.height;
-
-                        component.properties.imgStyle = {};
-                        component.properties.imgStyle.width = modal.width;
-                        component.properties.imgStyle.height = modal.height;
-                        component.properties.imgStyle.marginTop = "0";
-                        component.properties.imgStyle.marginLeft = "0";
-                        
-                        addComponentHandle(component.type, component);
-                    }
-                }, function() {
-                    component.properties.src || (H.splice(H.indexOf(I[component.id]), 1), delete I[component.id]);
-                })
-            }//p
-            function bgHandle(component) {
-                openModal(component, function(data) {
-                    var $target = $("#nr .edit_area").parent()[0];
-                    if ("imgSrc" == data.type) {
-                        var imgSrc = data.data;
-                        $target.style.backgroundImage = "url(" + PREFIX_FILE_HOST + imgSrc + ")";
-                        component.properties.bgColor = null;
-                        component.properties.imgSrc = imgSrc;
-                    }
-                    if("backgroundColor" == data.type){
-                        $target.style.backgroundImage = "none";
-                        $target.style.backgroundColor = data.color;
-                        component.properties.imgSrc = null;
-                        component.properties.bgColor = data.color;
-                    }
-                    historyService.addPageHistory(G.obj.id, G.obj.elements);
-                    $("#editBG").unbind("click");
-                    $("#editBG").show().bind("click", function() {
-                        bgHandle(component);
-                    });
-                }, function() {});
-            }//x
-            function inputHandle(component) {
-                if(!Modal){
-                    Modal = $modal.open({
-                        windowClass: "console",
-                        templateUrl: "scene/console/input.tpl.html",
-                        controller: "InputConsoleCtrl",
-                        resolve: {
-                            obj: function() {return component;}
-                        }
-                    }).result.then(function(data) {
-                            Modal = null;
-                            data.type && (component.type = data.type);
-
-                            component.properties.placeholder = data.title;
-                            component.properties.required = data.required;
-                            component.title = data.title;
-
-                            if($("#" + component.id).length > 0){
-                                $("#" + component.id).attr("placeholder", data.title);
-                                $("#" + component.id).attr("required", data.required);
-                            }else{
-                                addComponentHandle(component.type, component);
-                            }
-                    }, function() {
-                            Modal = null;
-                            $("#" + component.id).length || (H.splice(H.indexOf(I[component.id]), 1), delete I[component.id]);
-                    });
-                }
-            }//t
-            function buttonHandle(component) {
-                $modal.open({
-                    windowClass: "console",
-                    templateUrl: "scene/console/button.tpl.html",
-                    controller: "ButtonConsoleCtrl",
-                    resolve: {
-                        obj: function() {return component;}
-                    }
-                }).result.then(function(data) {
-                    component.properties.title = data.title;
-                    var title = data.title.replace(/ /g, "&nbsp;");
-                    $("#" + component.id).html(title);
-                });
-            }//r
-            function telHandle(component) {
-                if(!Modal){
-                    Modal = $modal.open({
-                        windowClass: "console",
-                        templateUrl: "scene/console/tel.tpl.html",
-                        controller: "TelConsoleCtrl",
-                        resolve: {
-                            obj: function() {return component;}
-                        }
-                    }).result.then(function(data) {
-                            Modal = null;
-                            component.properties.title = data.title;
-                            component.properties.number = data.number;
-                            data.title.replace(/ /g, "&nbsp;");
-                            $.extend(!0, component.css, b.btnStyle);
-                            $("#" + component.id).length > 0 && $("#" + component.id).parents("li").remove();
-
-                            addComponentHandle(component.type, component);
-                        }, function() {
-                            Modal = null;
-                            $("#" + component.id).length || (H.splice(H.indexOf(I[component.id]), 1), delete I[component.id]);
-                        });
-                }
-            }//s
-            function carouselHandle(component) {
-                if(!Modal){
-                    Modal = $modal.open({
-                        windowClass: "console",
-                        templateUrl: "scene/console/pic_lunbo.tpl.html",
-                        controller: "picsCtrl",
-                        resolve: {
-                            obj: function() {
-                                return component;
-                            }
-                        }
-                    }).result.then(function(data) {
-                            Modal = null;
-                            component.properties = data;
-                            var element = $("#inside_" + component.id);
-                            element.length && element.remove();
-
-                            addComponentHandle(component.type, component);
-                        }, function() {
-                            Modal = null;
-                            $("#" + component.id).length || (H.splice(H.indexOf(I[component.id]), 1), delete I[component.id]);
-                        })
-                }
-            }//u
-            function videoHandle(component) {
-                if( Modal ){
-                    $modal.open({
-                        windowClass: "console",
-                        templateUrl: "scene/console/video.tpl.html",
-                        controller: "VideoCtrl",
-                        resolve: {
-                            obj: function() {
-                                return component;
-                            }
-                        }
-                    }).result.then(function(data) {
-                            Modal = null;
-                            component.properties.src = data;
-                            if(!$("#" + component.id).length){
-                                addComponentHandle(component.type, component);
-                            }
-                        }, function() {
-                            Modal = null;
-                            $("#" + component.id).length || (H.splice(H.indexOf(I[component.id]), 1), delete I[component.id])
-                        });
-                }
-            }//v
-            function linkHandle(component) {
-                component.sceneId = G.obj.sceneId;
-                $modal.open({
-                    windowClass: "console",
-                    templateUrl: "scene/console/link.tpl.html",
-                    controller: "LinkConsoleCtrl",
-                    resolve: {
-                        obj: function() {return component;}
-                    }
-                }).result.then(function(data) {
-                        if(data && "http://" != data){
-                            if(isNaN(b)){
-                                component.properties.url = PREFIX_S1_URL + "eqs/link?id=" + component.sceneId + "&url=" + encodeURIComponent(data)
-                            }else{
-                                component.properties.url = data;
-                                console.log(data);
-                            }
-                            $("#inside_" + component.id).find(".fa-link").removeClass("fa-link").addClass("fa-anchor");
-                        }else{
-                            delete component.properties.url;
-                            $("#inside_" + component.id).find(".fa-anchor").removeClass("fa-anchor").addClass("fa-link");
-                        }
-                    });
-            }//D
-            function microwebHandle(component) {
-                $modal.open({
-                    windowClass: "console",
-                    templateUrl: "scene/console/microweb.tpl.html",
-                    controller: "MicroConsoleCtrl",
-                    resolve: {
-                        obj: function() {
-                            if(!component.properties.labels){
-                                component.properties.labels = [{
-                                    id: 1,
-                                    title: "栏目一",
-                                    color: {
-                                        backgroundColor: "#23A3D3",
-                                        color: ""
-                                    },
-                                    link: ""
-                                }, {
-                                    id: 2,
-                                    title: "栏目二",
-                                    color: {
-                                        backgroundColor: "#23A3D3",
-                                        color: ""
-                                    },
-                                    link: ""
-                                }];
-                            }
-                            return component;
-                        }
-                    }
-                }).result.then(function(data) {
-                    if($("#" + component.id).length > 0){
-                        component.properties.labels = [];
-                        ng.forEach(data, function(d) {
-                            delete d.selected;
-                            delete d.mousedown;
-                            delete d.$$hashKey;
-                            component.properties.labels.push(d);
-                        });
-                        $("#" + component.id).parents("li").remove();
-                        addComponentHandle(component.type, component);
-                    }else{
-                        component.css = {left: "0px",width: "100%",bottom: "0px",height: "50px",zIndex: 999};
-                        component.properties.labels = [];
-                        ng.forEach(data, function(d) {
-                            delete d.selected;
-                            delete d.mousedown;
-                            delete d.$$hashKey;
-                            component.properties.labels.push(d);
-                        });
-                        position = null;
-                        addComponentHandle(component.type, component);
-                    }
-                }, function() {
-                    if(!$("#" + component.id).length){
-                        H.splice(H.indexOf(I[component.id]), 1);
-                        delete I[component.id];
-                        console.log(component)
-                    }
-                });
-            }//w
-
-            function openModal(component, successFn, failFn) {
-                if (!Modal) {
-                    var fileType = "0";
-                    if(3 == component.type)fileType = "0";
-                    if(4 == component.type)fileType = "1";
-                    Modal = $modal.open({
-                        windowClass: "console img_console",
-                        templateUrl: "scene/console/bg.tpl.html",
-                        controller: "BgConsoleCtrl",
-                        resolve: {
-                            obj: function() {
-                                return {fileType: fileType,elemDef: component}
-                            }
-                        }
-                    }).result.then(function(data) {
-                        Modal = null;
-                        successFn(data);
-                    }, function(data) {
-                        Modal = null;
-                        failFn(data);
-                    });
-                }
-            }//z
-
-            function activeStyleTab(component) {
-                SceneService.currentElemDef = component;
-                $rootScope.$broadcast("showStylePanel", {activeTab: "style"});
-            }//A
-            function activeAnimTab(component) {
-                SceneService.currentElemDef = component;
-                $rootScope.$broadcast("showStylePanel", {activeTab: "anim"});
-            }//B
-            function activeCrop(component) {
-                console.log(component);
-                SceneService.currentElemDef = component;
-                GlobalEvt = $rootScope.$broadcast("showCropPanel", component);
-            }//C
-
-            {var SceneService = {}, JsonParser = eqShow.templateParser("jsonParser"), G = null, H = null, I = {};}
-            SceneService.resetCss = function() {
-                $("#nr .edit_area li").each(function(key, value) {
-                    var component = I[value.id.replace(/inside_/g, "")];
-                    if(component){
-                        if(!component.css)component.css = {};
-                        component.css.zIndex = value.style.zIndex ? value.style.zIndex : "0";
-                    }
-                });
-            };
-
-            var Modal = null, GlobalEvt = null;
-            JsonParser.addInterceptor(function(wrapComponent, element, mode){
-                function generatePopMenu() {
-                    var $popMenu = $(
-                            '<ul id="popMenu" class="dropdown-menu" style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1">' +
-                                '<li class="edit" role="presentation">' +
-                                    '<a role="menuitem" tabindex="-1">' +
-                                        '<div class="glyphicon glyphicon-edit" style="color: #08a1ef;"></div>&nbsp;&nbsp;编辑' +
-                                    '</a>' +
-                                '</li>' +
-                                '<li class="style" role="presentation">' +
-                                    '<a role="menuitem" tabindex="-1">' +
-                                        '<div class="fa fa-paint-brush" style="color: #08a1ef;"></div>&nbsp;&nbsp;样式' +
-                                    '</a>' +
-                                '</li>' +
-                                '<li class="animation" role="presentation">' +
-                                    '<a role="menuitem" tabindex="-1">' +
-                                        '<div class="fa fa-video-camera" style="color: #08a1ef;"></div>&nbsp;&nbsp;动画' +
-                                    '</a>' +
-                                '</li>' +
-                                '<li class="link" role="presentation">' +
-                                    '<a role="menuitem" tabindex="-1">' +
-                                        '<div class="fa fa-link" style="color: #08a1ef;"></div>&nbsp;&nbsp;链接' +
-                                    '</a>' +
-                                '</li>' +
-                                '<li class="copy" role="presentation" style="margin-bottom:5px;">' +
-                                    '<a role="menuitem" tabindex="-1">' +
-                                        '<div class="fa fa-copy" style="color: #08a1ef;"></div>&nbsp;&nbsp;复制' +
-                                    '</a>' +
-                                '</li>' +
-                                '<li class="cut" role="presentation" style="margin-bottom:5px;">' +
-                                    '<a role="menuitem" tabindex="-1">' +
-                                        '<div class="fa fa-cut" style="color: #08a1ef;"></div>&nbsp;&nbsp;裁剪' +
-                                    '</a>' +
-                                '</li>' +
-                                '<li role="presentation" class="bottom_bar">' +
-                                    '<a title="上移一层">' +
-                                        '<div class="up" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -26px no-repeat;"></div>' +
-                                     '</a>' +
-                                    '<a title="下移一层">' +
-                                        '<div class="down" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -80px no-repeat;"></div>' +
-                                    '</a>' +
-                                    '<a title="删除">' +
-                                        '<div class="remove" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -1px no-repeat;"></div>' +
-                                    '</a>' +
-                                '</li>' +
-                            '</ul>')
-                        .css({position: "absolute","user-select": "none"});
-                    if( q ){
-                        $popMenu.find(".copy").after($('<li class="paste" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-paste" style="color: #08a1ef;"></div>&nbsp;&nbsp;粘贴</a></li>'));
-                    }
-
-                    $popMenu.find(".edit").click(function(event) {
-                        event.stopPropagation();
-                        switch (element.type.toString().charAt(0)) {
-                            case "1":break;
-                            case "2":editableHandle(wrapComponent.find(".element").get(0), element);break;
-                            case "3":break;
-                            case "4":imageHandle(element);break;
-                            case "5":inputHandle(element);break;
-                            case "6":buttonHandle(element);break;
-                            case "7":break;
-                            case "8":telHandle(element);break;
-                            case "9":break;
-                            case "g":break;
-                            case "p":carouselHandle(element);break;
-                            case "v":videoHandle(element);break;
-                        }
-                        $popMenu.hide();
-                    });
-                    $popMenu.find(".style").click(function(event) {
-                        if(security.isAllowToAccess(security.accessDef.CREATE_STYLE_SETTING)){
-                            event.stopPropagation();
-                            activeStyleTab(element, function(b) {
-                                if (1 == element.type){
-                                    for (var label in element.properties.labels) {
-                                        if(b.backgroundColor){
-                                            element.properties.labels[label].color.backgroundColor = b.backgroundColor;
-                                            $(".label_content").css("background-color", b.backgroundColor);
-                                        }
-                                        if(b.color){
-                                            element.properties.labels[label].color.color = b.color;
-                                            $(".label_content").css("color", b.color);
-                                        }
-                                    }
-                                }else{
-                                    $(".element-box", wrapComponent).css(b), $.extend(!0, element.css, b)
-                                }
-                            });
-                        }else{
-                            event.stopPropagation();
-                            $modal.open({
-                                windowClass: "console",
-                                templateUrl: "scene/console/fake.tpl.html",
-                                controller: "FakeConsoleCtrl",
-                                resolve: {
-                                    type: function() {return "style";}
-                                }
-                            });
-                        }
-                        $popMenu.hide();
-                    });
-                    $popMenu.find(".animation").click(function(event) {
-                        event.stopPropagation();
-                        activeAnimTab(element, function(a) {
-                            element.properties.anim = a;
-                        });
-                        $popMenu.hide();
-                    });
-                    $popMenu.find(".link").click(function(event) {
-                        event.stopPropagation();
-                        linkHandle(element);
-                        $popMenu.hide();
-                    });
-
-                    $popMenu.find(".remove").click(function(event) {
-                        event.stopPropagation();
-                        historyService.addPageHistory(G.obj.id, H);
-                        wrapComponent.remove();
-                        H.splice(H.indexOf(I[element.id]), 1);
-                        historyService.addPageHistory(G.obj.id, H);
-                        NTERVAL_OBJ[element.id] && (clearInterval(INTERVAL_OBJ[element.id]), delete INTERVAL_OBJ[element.id]);
-                        $popMenu.hide();
-                        $rootScope.$apply();
-                        $rootScope.$broadcast("hideStylePanel");
-                    });
-                    $popMenu.find(".down").click(function() {
-                        var prev = wrapComponent.prev();
-                        if (!(prev.length <= 0)) {
-                            var zIndex = wrapComponent.css("zIndex");
-                            wrapComponent.css("zIndex", prev.css("zIndex"));
-                            prev.css("zIndex", zIndex);
-                            prev.before(wrapComponent);
-
-                            for (var i = 0; i < H.length; i++) {
-                                if (H[i].id == element.id && i > 0) {
-                                    var zIndex = H[i].css.zIndex;
-                                    H[i].css.zIndex = H[i - 1].css.zIndex;
-                                    H[i - 1].css.zIndex = zIndex;
-                                    break;
-                                }
-                            }
-                        }
-                    });
-                    $popMenu.find(".up").click(function() {
-                        var next = wrapComponent.next();
-                        if (!(next.length <= 0)) {
-                            var zIndex = wrapComponent.css("zIndex");
-                            wrapComponent.css("zIndex", next.css("zIndex"));
-                            next.css("zIndex", zIndex);
-                            next.after(wrapComponent);
-
-                            for (var i = 0; i < H.length; i++)
-                                if (H[i].id == element.id && i < H.length - 1) {
-                                    var zIndex = H[i].css.zIndex;
-                                    H[i].css.zIndex = H[i + 1].css.zIndex;
-                                    H[i + 1].css.zIndex = zIndex;
-                                    break
-                                }
-                        }
-                    });
-                    $popMenu.find(".copy").click(function(event) {
-                        event.stopPropagation();
-                        SceneService.sameCopyCount = 0;
-                        SceneService.pageId = G.obj.id;
-                        if(!$(".modal-dialog")[0])SceneService.copyElement(element);
-                        $popMenu.hide();
-                    });
-                    $popMenu.find(".paste").click(function(event) {
-                        event.stopPropagation();
-                        if(!$(".modal-dialog")[0])SceneService.pasteElement(SceneService.originalElemDef, SceneService.copyElemDef);
-                        $popMenu.hide();
-                    });
-                    $popMenu.find(".cut").click(function(event) {
-                        event.stopPropagation();
-                        activeCrop(element);
-                        $popMenu.hide();
-                    });
-
-                    if( 4 != element.type ){
-                        $popMenu.find(".link").hide();
-                        $popMenu.find(".cut").hide();
-                    }
-                    if( "p" == element.type ){
-                        $popMenu.find(".animation").hide();
-                        $popMenu.find(".style").hide();
-                    }
-                    return $popMenu;
-                }
-                if("view" != mode){
-                    var $eq_main = $("#eq_main");
-                    wrapComponent.on("click contextmenu", ".element-box", function(event) {
-                        event.stopPropagation();
-                        if($("#btn-toolbar")[0])SceneService.elemDefTpl = ng.copy(element);
-                        if($("#comp_setting:visible").length > 0 && "p" != element.type){
-                            SceneService.currentElemDef = element;
-                            $rootScope.$broadcast("showStylePanel");
-                        }
-                        var PopMenu = generatePopMenu(), $popMenu = $("#popMenu");
-                        if($popMenu.length > 0)$popMenu.remove();
-                        $eq_main.append(PopMenu);
-                        PopMenu.css({
-                            left: event.pageX + $eq_main.scrollLeft() + 15,
-                            top: event.pageY + $eq_main.scrollTop()
-                        }).show();
-                        $eq_main.mousemove(function(event) {
-                            if(event.pageX < PopMenu.offset().left - 20
-                                || event.pageX > PopMenu.offset().left + PopMenu.width() + 20
-                                || event.pageY < PopMenu.offset().top - 20
-                                || event.pageY > PopMenu.offset().top + PopMenu.height() + 20){
-                                PopMenu.hide();
-                                $(this).unbind("mousemove");
-                            }
-                        });
-                        return !1;
-                    });
-                    wrapComponent.attr("title", "按住鼠标进行拖动，点击鼠标进行编辑")
-                }
-            });
-
-            JsonParser.bindEditEvent("1", function(element, component) {
-                $(element).unbind("dblclick");
-                $(element).show().bind("dblclick", function() {
-                    microwebHandle(component);
-                });
-            });
-            JsonParser.bindEditEvent("2", function(element, component) {
-                var target = $(".element", element)[0];
-                $(target).mousedown(function(event) {
-                    $(this).parents("li").hasClass("inside-active") && event.stopPropagation();
-                });
-                $(target).bind("contextmenu", function(event) {
-                    $(this).parents("li").hasClass("inside-active")
-                        ? event.stopPropagation()
-                        : $(this).blur();
-                });
-                target.addEventListener("dblclick", function(event) {
-                    editableHandle(target, component);
-                    $("#popMenu").hide();
-                    event.stopPropagation();
-                });
-            });
-            JsonParser.bindEditEvent("3", function(element, component) {
-                $("#editBG").unbind("click");
-                $("#editBG").show().bind("click", function() {
-                    bgHandle(component);
-                });
-            });
-            JsonParser.bindEditEvent("v", function(element, component) {
-                var target = $(".element", element)[0];
-                $(target).unbind("dblclick");
-                $(target).bind("dblclick", function() {
-                    videoHandle(component);
-                    $("#popMenu").hide();
-                })
-            });
-            JsonParser.bindEditEvent("4", function(element, component) {
-                var target = $(".element", element)[0];
-                $(target).unbind("dblclick");
-                $(target).bind("dblclick", function() {
-                    imageHandle(component);
-                    $("#popMenu").hide()
-                })
-            });
-            JsonParser.bindEditEvent("5", function(element, component) {
-                var target = $(".element", element)[0];
-                $(target).unbind("dblclick");
-                $(target).bind("dblclick", function() {
-                    inputHandle(element);
-                    $("#popMenu").hide();
-                });
-            });
-            JsonParser.bindEditEvent("p", function(element, component) {
-                var target = $(".element", element)[0];
-                $(target).unbind("dblclick");
-                $(target).bind("dblclick", function() {
-                    carouselHandle(component);
-                    $("#popMenu").hide();
-                })
-            });
-            JsonParser.bindEditEvent("6", function(element, component) {
-                var target = $(".element", element)[0];
-                $(target).unbind("dblclick");
-                $(target).bind("dblclick", function() {
-                    buttonHandle(component);
-                    $("#popMenu").hide()
-                });
-            });
-            JsonParser.bindEditEvent("7", function(element, component) {
-                var target = $(".element", element)[0];
-                target.addEventListener("click", function() {
-                    if(!Modal){
-                        $modal.open({
-                            windowClass: "",
-                            templateUrl: "scene/console/map.tpl.html",
-                            controller: "MapConsoleCtrl"
-                        }).result.then(function(data) {
-                            var element = new BMap.Map("map_" + component.id);
-                            element.clearOverlays();
-
-                            var point = new BMap.Point(data.lng, data.lat),
-                                marker = new BMap.Marker(point);
-
-                            element.addOverlay(marker);
-                            var label = new BMap.Label(data.address, {offset: new BMap.Size(20, -10)});
-                                marker.setLabel(label);
-                            element.centerAndZoom(point, 12);
-                            component.properties.pointX = data.lng;
-                            component.properties.pointY = data.lat;
-                            component.properties.x = data.lng;
-                            component.properties.y = data.lat;
-                            component.properties.markTitle = data.address;
-                        });
-                    }
-                })
-            });
-            JsonParser.bindEditEvent("8", function(element, component) {
-                var target = $(".element", element)[0];
-                $(target).unbind("dblclick");
-                $(target).bind("dblclick", function() {
-                    telHandle(component);
-                    $("#popMenu").hide()
-                });
-            });
-
-            SceneService.templateEditor = JsonParser;
-
-            SceneService.getPageNames = function(sceneId) {
-                var url = "m/scene/pageList/" + sceneId + "?date=" + (new Date).getTime();
-                return $http({
-                    withCredentials: !0,
-                    method: "GET",
-                    url: PREFIX_URL + url
-                });
-            };
-            SceneService.getSceneByPage = function(pageId, c, d) {
-                var url = "";
-                c || d ? (url = "/m/scene/createPage/" + pageId, d && (url += "?copy=true")) : url = "m/scene/design/" + pageId;
-                var defer = $q.defer(),tt = new Date;
-                url += (/\?/.test(url) ? "&" : "?") + "time=" + tt.getTime();
-                $http({
-                    //withCredentials: !0,
-                    method: "GET",
-                    url: PREFIX_URL + url
-                }).then(function(a) {
-                    defer.resolve(a);
-                    G = a.data;
-                    G.obj.elements || (G.obj.elements = []);
-                    H = G.obj.elements;
-                    for (var b = 0; H && b < H.length; b++) I[H[b].id] = H[b];
-                }, function(a) {
-                    defer.reject(a)
-                });
-                return defer.promise;
-            };
-            SceneService.getSceneTpl = function(b) {
-                var tplCache = $cacheFactory.get("tplCache")
-                        ? $cacheFactory.get("tplCache")
-                        : $cacheFactory("tplCache"),
-                    defer = $q.defer();
-
-                if (tplCache.get(b)) {
-                    var f = $.extend(!0, {}, tplCache.get(b));
-                    if(f.data.obj.scene
-                        && f.data.obj.scene.image
-                        && f.data.obj.scene.image.bgAudio){
-                        if(!G.obj.scene.image)G.obj.scene.image = {};
-                        G.obj.scene.image.bgAudio = f.data.obj.scene.image.bgAudio
-                    }
-                    for (var h = 0; h < f.data.obj.elements.length; h++) {
-                        var i = f.data.obj.elements[h];
-                        i.id = Math.ceil(100 * Math.random());
-                        i.sceneId = G.obj.sceneId;
-                        i.pageId = G.obj.id;
-                    }
-                    H = f.data.obj.elements;
-                    for (var j = 0; j < H.length; j++) I[H[j].id] = H[j];
-                    defer.resolve(f)
-                } else {
-                    var k = "m/scene/pageTpl/" + b,
-                        l = new Date;
-                    k += (/\?/.test(k) ? "&" : "?") + "time=" + l.getTime(),
-                    $http({
-                        withCredentials: !0,
-                        method: "GET",
-                        url: PREFIX_URL + k
-                    }).then(function(a) {
-                        tplCache.put(a.data.obj.id, $.extend(!0, {}, a));
-                        if(a.data.obj.scene
-                            && a.data.obj.scene.image
-                            && a.data.obj.scene.image.bgAudio){
-                            if(!G.obj.scene.image)G.obj.scene.image = {};
-                            G.obj.scene.image.bgAudio = a.data.obj.scene.image.bgAudio
-                        }
-                        for (var b = 0; b < a.data.obj.elements.length; b++) {
-                            var e = a.data.obj.elements[b];
-                            e.id = Math.ceil(100 * Math.random());
-                            e.sceneId = G.obj.sceneId;
-                            e.pageId = G.obj.id;
-                        }
-                        H = a.data.obj.elements;
-                        for (var f = 0; f < H.length; f++) I[H[f].id] = H[f];
-                        defer.resolve(a)
-                    }, function(a) {
-                        defer.reject(a)
-                    });
-                }
-                return defer.promise;
-            };
-            SceneService.getElements = function() {
-                return H;
-            };
-            SceneService.getSceneObj = function() {
-                return G;
-            };
-
-            SceneService.saveScene = function(json) {
-                console.log(JSON.stringify(json));
-                var url = "m/scene/save";
-                return $http({
-                    withCredentials: !0,
-                    method: "POST",
-                    url: PREFIX_URL + url,
-                    headers: {
-                        "Content-Type": "text/plain; charset=UTF-8"
-                    },
-                    data: JSON.stringify(json)
-                });
-            };
-
-            SceneService.updateCompSize = function(elementId, props) {
-                for (var d = 0; d < H.length; d++) {
-                    if("inside_" + H[d].id == elementId){
-                        if(!H[d].css)H[d].css = {};
-                        H[d].css.width = props.width;
-                        H[d].css.height = props.height;
-
-                        H[d].properties.width = props.width;
-                        H[d].properties.height = props.height;
-                        if(props.imgStyle)H[d].properties.imgStyle = props.imgStyle;
-                        //h.addPageHistory(G.obj.id, H)
-                    }
-                }
-                $rootScope.$apply();
-            };
-            SceneService.updateCompPosition = function(elementId, props) {
-                for (var d = 0; d < H.length; d++) {
-                    if ("inside_" + H[d].id == elementId) {
-                        if(H[d].css){
-                            H[d].css.left = props.left;
-                            H[d].css.top = props.top;
-                            //h.addPageHistory(G.obj.id, H);
-                        }else{
-                            H[d].css = props;
-                            //h.addPageHistory(G.obj.id, H);
-                        }
-                    }
-                }
-                $rootScope.$apply();
-            };
-            SceneService.updateCompAngle = function(elementId, angle) {
-                for (var d = 0; d < H.length; d++){
-                    if("inside_" + H[d].id == elementId){
-                        if(H[d].css){
-                            H[d].css.transform = "rotateZ(" + angle + "deg)"
-                        }else{
-                            H[d].css = {};
-                        }
-                        //h.addPageHistory(G.obj.id, H);
-                    }
-                }
-                $rootScope.$apply();
-            };
-
-            return SceneService;
-        }]);
-
     ng.module("templates-app", [
         "dialog/confirm.tpl.html"
         ,"scene/create.tpl.html"
@@ -3074,12 +3424,10 @@
     }]);
     ng.module("scene/create.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/create.tpl.html", '<div class="creat_head">\n  <div class="creat_head_con clearfix">\n    <div class="creat_logo"><a href="#/main" ng-click="stopCopy()"><img ng-src="{{CLIENT_CDN}}assets/images/logo.png" /></a></div>\n    <div class="creat_con clearfix">\n        <ul class="comp_panel clearfix">\n          <li comp-draggable="panel" ctype="2" class="comp-draggable text" title="请拖动到编辑区域" ng-click="createComp(\'2\');">\n            <span>文本</span>\n          </li>\n          <li comp-draggable="panel" ctype="3" class="comp-draggable bg" title="请拖动到编辑区域" ng-click="createComp(\'3\');">\n            <span>背景</span>\n          </li>\n          <li comp-draggable="panel" ctype="9" class="comp-draggable music" title="请拖动到编辑区域" ng-click="createComp(\'9\');">\n            <span>音乐</span>\n          </li>  \n          <li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="v" class="comp-draggable vedio" title="请拖动到编辑区域" ng-click="createComp(\'v\');">\n            <span>视频</span>\n          </li>        \n          <li comp-draggable="panel" ctype="4" class="comp-draggable image" title="请拖动到编辑区域" ng-click="createComp(\'4\');">\n            <span>图片</span>\n          </li>\n          <li comp-draggable="panel" ctype="5" class="comp-draggable textarea" title="请拖动到编辑区域" ng-click="createComp(\'5\');">\n            <span>输入框</span>\n          </li>\n          <li comp-draggable="panel" ctype="6" class="comp-draggable button" title="请拖动到编辑区域" ng-click="createComp(\'6\');">\n            <span>按钮</span>\n          </li>\n          <li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="p" class="comp-draggable images" title="请拖动到编辑区域" ng-click="createComp(\'p\');">\n            <span>图集</span>\n          </li>\n          <li comp-draggable="panel" ctype="8" class="comp-draggable phone" title="请拖动到编辑区域" ng-click="createComp(\'8\');">\n            <span>电话</span>\n          </li>          \n          <li comp-draggable="panel" ctype="g101" class="comp-draggable contact" title="请拖动到编辑区域" ng-click="createCompGroup(\'g101\');">\n            <span>联系人</span>\n          </li>          \n          <li ng-click="openPageSetPanel()" class="texiao">\n            <span><a id = "toggle_button" class="page_effect" >特效</a></span></li>\n        </ul>\n  </div>\n    <div class="create-action">\n        <ul>\n            <li class="act-border save"><span class="create-save" ng-click="saveScene(true)">保存</span></li>\n            <li class="publish"><span class="create-publish" ng-click="publishScene()">发布</span></li>\n            <li class="act-border quit"><span class="create-quit" ng-click="exitScene()">退出</span></li> \n        </ul>\n    </div>\n    <div ng-hide="showToolBar();">\n        <div ng-show="isEditor" style="position: absolute;right: -200px;top: 20px;">\n            <select ng-model="tpl.obj.scene.isTpl">\n                <option value="0">非模板</option>\n                <option value="1">保存为pc模板</option>\n                <option value="2">保存为移动端模板</option>\n            </select>\n        </div>\n    </div>\n</div>\n</div>\n<div class="create_scene">\n  <div class="main clearfix">\n      <div class="content">\n          <div class="create_left">\n            <tabset justified="true">\n              <tab heading="页面模版" class="hint--bottom hint--rounded" style = "width: 290px;">\n                  <tabset justified="true" class="tpl_tab">\n                    <tab ng-repeat="pageTplType in pageTplTypes" heading="{{pageTplType.name}}" ng-click="getPageTplsByType(pageTplType.value)">\n                      <div class="nav2 clearfix" dropdown >\n                        <div class="others dropdown-toggle" ng-show="otherCategory.length > 0"><span></span></div>\n                        <ul class="clearfix nav2_list">\n                          <li ng-class="{active:childCat.id == categoryId}" ng-click="getPageTplTypestemp(childCat.id ,bizType)" ng-repeat="childCat in childCatrgoryList">{{childCat.name}}</li>\n                        </ul>\n                        <ul class="clearfix nav2_other dropdown-menu">\n                          <li ng-class="{active:othercat.id == categoryId}" ng-click="getPageTplTypestemp(othercat.id ,bizType)" ng-repeat="othercat in otherCategory">{{othercat.name}}</li>\n                        </ul>                        \n                      </div>\n                      <ul id="tpl_panel" class="page_tpl_container clearfix">\n                        <li class="page_tpl_item" ng-repeat="pageTpl in pageTpls" class="comp-draggable" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);">\n                          <img ng-src="{{PREFIX_FILE_HOST + pageTpl.properties.thumbSrc}}" />\n                        </li>\n                      </ul>\n                    </tab>\n                    <tab ng-repeat="myname in myName" heading="{{myName[0].name}}" active="myname.active" ng-if = "pageTplTypes" ng-click = "getPageTplsByMyType()">\n                      <div style="padding:10px;" ng-hide="myPageTpls">在页面管理中选中页面，点击生成模板，即可生成我的页面模板！</div>\n                      <ul id="tpl_panel" class="page_tpl_container clearfix">\n                        <li thumb-tpl my-attr="pageTpl" style="position: relative;" id="my-tpl" class="nr page_tpl_item comp-draggable" ng-repeat="pageTpl in myPageTpls" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);">\n                        </li>\n                      </ul>\n                    </tab>\n                  </tabset>\n              </tab>\n            </tabset>\n          </div> \n          <div class="phoneBox">\n            <div >\n                <div class="top"></div>\n                <div class = "phone_menubar"></div>\n                <div class="scene_title_baner">\n                  <div ng-bind="tpl.obj.scene.name" class="scene_title"></div>\n                </div>\n                <div class="nr sortable" id="nr"></div>\n                <div class="bottom"></div>\n                <div class = "tips">为了获得更好的使用，建议使用谷歌浏览器（chrome）、360浏览器、IE11浏览器。</div>\n            </div>\n            <div class="phone_texiao">\n                <div id="editBG" style="display: none;"><span class="hint--right hint--rounded" data-hint="选择新背景">背景</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的背景"><span ng-click="removeBG($event)" class="glyphicon glyphicon-remove"></span></a></div>\n                <div id="editBGAudio" ng-click="openAudioModal()" ng-show="tpl.obj.scene.image.bgAudio"><span class="hint--right hint--rounded" data-hint="选择新音乐">音乐</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的音乐"><span ng-click="removeBGAudio($event)" class="glyphicon glyphicon-remove"></span></a></div>\n                <div id="editScratch" ng-click="openOneEffectPanel(tpl.obj.properties)" ng-show="tpl.obj.properties"><span class="hint--right hint--rounded" data-hint="选择新特效">{{effectName}}</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面特效"><span ng-click="removeScratch($event)" class="glyphicon glyphicon-remove"></span></a></div>\n            </div>\n              <div class="history">\n                  <a title="撤销(ctrl+z)" ng-click="back()"><i class="fa fa-reply" ng-class="{active: canBack}"></i></a>\n                  <a title="恢复(ctrl+y)" ng-click="forward()"><i class="fa fa-share" ng-class="{active: canForward}"></i></a>\n              </div>\n          </div>\n\n          <div id = "containment" class="create_right"> \n            <div class="guanli">页面管理</div>\n            <div class = "nav_top">\n              <div class="nav_top_list">\n                <a ng-click="duplicatePage()" class="">复制</a>\n                <a class="" ng-click = "deletePage($event)" ng-show = "pages.length != 1">删除</a>\n                <a ng-click = "creatMyTemplate()">生成模版</a>\n              </div>\n             \n              <div class = "btn-group">\n                <div class="dropdown">\n                  <div id = "page_panel" ng-show="showPageEffect" class="dropdown-menu1 panel panel-default">\n                    <ul class = "effect_list">\n                      <li class = "effect" ng-repeat = "effect in effectList" ng-click = "openOneEffectPanel(effect)">\n                        <div class = "effect_img"><img ng-src="{{effect.src}}"></div>\n                        <div class = "effect_info">{{effect.name}}</div>\n                      </li>\n                    </ul>\n                  </div>\n\n                  <div id = "page_panel" ng-if="effectType == \'scratch\'" class="dropdown-menu1 panel panel-default">\n\n                    <div class="panel-heading">涂抹设置</div>\n                    <div class="panel-body">\n                      <form class="form-horizontal" role="form">\n                        <div class="form-group form-group-sm clearfix" style="margin-bottom:0;">\n                          <label class="col-sm-5 control-label">覆盖特效</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "scratch.image" ng-options = "scracthImage.name for scracthImage in scratches"  style="width:115px;">\n                            </select>\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;margin-top:5px;">\n                          <label class="col-sm-5 control-label" style="padding-top:6px;">覆盖图片</label>\n                          <div class="col-sm-7">\n                            <a ng-click = "openUploadModal()" class = "auto_img btn-main btn-success ">自定义图片</a>\n                          </div>\n                        </div>\n                        <div class = "divider" style="margin-top:6px;"></div>\n                        <div class = "well" style="margin-bottom:0px;">\n                          <img class = "scratch" ng-src="{{scratch.image.path}}"/>\n                        </div>\n                        <div class = "divider"></div>\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label for="inputEmail3" class="col-sm-5 control-label">涂抹比例</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "scratch.percentage" ng-options = "percentage.name for percentage in percentages">\n                            </select>\n                          </div>\n                        </div>\n                         <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label for="inputEmail3" class="col-sm-5 control-label">提示文字</label>\n                          <div class="col-sm-7">\n                            <input type="text" ng-model = "scratch.tip" id="inputEmail3" placeholder="提示文字" maxlength = "15">\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                            <a dropdown-toggle type="button" ng-click = "saveEffect(scratch)" class="btn-main" style="width:88px;border:none;">保存</a>\n                            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                          </div>\n                        </div>\n                      </form>\n                    </div>\n                  </div>\n\n                  <div id = "page_panel" ng-if="effectType==\'finger\'" class="dropdown-menu1 panel panel-default">\n\n                    <div class="panel-heading">指纹设置</div>\n                    <div class="panel-body">\n                      <form class="form-horizontal" role="form">\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label class="col-sm-5 control-label">背景图片</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "finger.bgImage" ng-options = "bgImage.name for bgImage in fingerBackgrounds">\n                            </select>\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label class="col-sm-5 control-label">指纹图片</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "finger.zwImage" ng-options = "zwImage.name for zwImage in fingerZws">\n                            </select>\n                          </div>\n                        </div>\n                        <div class = "divider"></div>\n                        <div class = "well" style="margin-bottom:15px;">\n                          <img class = "finger_bg" ng-src="{{finger.bgImage.path}}"/>\n                        \n                            <img class = "finger_zw" ng-src="{{finger.zwImage.path}}"/>\n                          \n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                            <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(finger)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n                            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                          </div>\n                        </div>\n                      </form>\n                    </div>\n                  </div>\n                  <div id = "page_panel" ng-show="effectType == \'money\'" class="dropdown-menu1 panel panel-default">\n                    <div class="panel-heading">数钱设置</div>\n                    <div class="panel-body">\n                      <div class = "well" style="margin-bottom:15px;">\n                          <img ng-src="{{CLIENT_CDN + \'assets/images/create/money_thumb2.jpg\'}}"/>      \n                      </div>\n                      <div>\n                        <span>文字提示：</span>\n                        <span class="fr" style="width: 140px;"><input type="text" ng-model="money.tip" placeholder="让你数到手抽筋"></span>\n                      </div>\n                      <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                        <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                          <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(money)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n                          <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                        </div>\n                      </div>\n                    </div>\n                  </div>\n                  <div ng-include="\'scene/effect/falling.tpl.html\'"></div>\n                </div>\n              </div>\n            </div>\n\n            <div class="nav_content">\n              <ul id = "pageList" ui-sortable = "sortableOptions" ng-model="pages">\n                <li class = "blurClass" ng-repeat="page in pages track by $index" ng-click="navTo(page, $index, $event)" ng-init = "editableStatus[$index] = false" ng-class="{current: pageNum-1 == $index}" blur-children>\n                    <span style = "float: left; margin-top: 17px; background: #fff; color: #666; font-weight: 200;border-radius:9px;width:18px;height:18px;padding:0px;text-align:center;line-height:18px;" class = "badge">{{$index+1}}</span>\n                    <span style = "margin-left: 17px;font-size:14px;" ng-click = "editableStatus[$index] = true" ng-show = "!editableStatus[$index]">{{page.name}}</span>\n                    <input style = "width: 80px; height: 25px; margin-top: 8px; margin-left: 10px; color: #999;" type = "text" ng-model = "page.name" ng-show = "editableStatus[$index]" ng-blur = "editableStatus[$index] = false;savePageNames(page, $index)" ng-focus = "getOriginPageName(page)" maxlength = "7" custom-focus/>                   \n                </li>\n              </ul>\n              <div class = "page-list-label" ng-show="isEditor && pageList == true">  \n                  <label ng-repeat = "allchild in pageLabelAll">\n                      <input type="checkbox" name="" value="" ng-model = "allchild.ischecked">{{allchild.name}}\n                  </label>                                                 \n                  <div class="select-labels">\n                      <a ng-click="pageChildLabel()">确定</a>\n                  </div>\n              </div>               \n            </div>\n            <div class="nav_bottom">\n              <a ng-click="insertPage()" class="" title="增加一页">+</a>\n             <!--  <a ng-click="duplicatePage()" class="duplicate_page">复制一页</a> -->\n            </div>\n\n            <div ng-show="isEditor">\n              <div class="btn-main" ng-click="chooseThumb()">选择本页缩略图</div>\n              <img width="100" ng-src="{{PREFIX_FILE_HOST + tpl.obj.properties.thumbSrc}}"></img>\n            </div>\n          </div>\n      </div>\n  </div>\n</div>\n</div>\n');
-
     }]);
     ng.module("scene/effect/falling.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/effect/falling.tpl.html", '<div id = "page_panel" ng-if="effectType == \'fallingObject\'" class="dropdown-menu1 panel panel-default">\n    <div class="panel-heading">落物设置</div>\n    <div class="panel-body">\n      <form class="form-horizontal" role="form">\n        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n          <label class="col-sm-5 control-label">环境图片</label>\n          <div class="col-sm-7">\n            <select ng-model = "falling.src" ng-options = "fallingObj.name for fallingObj in fallings">\n            </select>\n          </div>\n        </div>\n        <div class = "divider"></div>\n        <div class = "well" style="margin-bottom:15px;text-align: center;background-color: #ddd">\n          <img ng-src="{{falling.src.path}}"/>\n        </div>\n        <div class = "divider"></div>\n        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n          <label class="col-sm-5 control-label">环境氛围</label>\n          <div class="col-sm-7">\n           <div style="line-height: 24px;font-size: 12px;"><span style="margin-right:39px;">弱</span><span style="margin-right:37px;">中</span><span>强</span></div>\n            <div style="width: 100px;" ui-slider min="1" max="3" ng-model="falling.density"></div>\n\n          </div>\n        </div>\n        \n        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n            <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(falling)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n          </div>\n        </div>\n      </form>\n    </div>\n  </div>')
     }]);
-    /* 修改元素*/
     ng.module("scene/console/bg.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/console/bg.tpl.html", '<!-- <div class="bg_console">\n  <div class="img_list">\n        <div class="category_list">\n           <div ng-show="fileType == \'0\'" class="category_item" ng-click="changeCategory(\'c\')" ng-class="{active: \'c\' == categoryId}">\n             <span>纯色背景</span>\n         </div>\n            <ul class="category_list_container">\n              <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value)">\n                   {{category.name}}\n             </li>\n         </ul>\n         <div class="btn-group fl" dropdown ng-show="otherCategory.length > 0">\n              <span class="dropdown-toggle" ng-disabled="disabled">\n               其它 <span class="caret"></span>\n              </span>\n           <ul class="dropdown-menu">\n              <li ng-repeat="category in otherCategory">\n                  <a href ng-click="changeCategory(category.value)">{{category.name}}</a>\n             </li>\n           </ul>\n           </div>\n            <div class="category_item" ng-click="changeCategory(\'0\')" ng-class="{active: \'0\' == categoryId}">\n             <span ng-show="fileType == \'0\'">我的背景</span>\n             <span ng-show="fileType == \'1\'">我的图片</span>\n         </div>\n        </div>\n        <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n           <ul class="img_box">\n              <li ng-show="isEditor || categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                  <span class="glyphicon glyphicon-upload"></span>\n              </li>\n             <li ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" photo-draggable="{{img.path}}" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId"  ng-repeat="img in imgList track by $index" ng-click="replaceBgColor(img.color, $event)">\n               </li>\n         </ul>\n         \n      </div>\n        <div class="pagination_container" ng-show="numPages>1">\n           <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="10" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="changeCategory(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n           <div class="current_page">\n                <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? changeCategory(categoryId, toPage) : null">\n             <a ng-click="changeCategory(categoryId,toPage)" class="go">GO</a>\n             <span>当前: {{currentPage}} / {{numPages}} 页</span>\n         </div>\n        </div>\n        <div ng-show="fileType == \'1\'" class="bottom_area" style="position: relative; min-height: 80px;">\n           <div class="crop_drop" crop-droppable style = "min-height: 80px;">\n                <p ng-hide="cropMode" class="">拖动图片到此区域剪裁</p>\n             <div class="image_crop">\n                  <img id="target"></img>\n               </div>\n            </div>\n            <div class="fr" style="width: 180px;">\n                <p>*单击图片替换</p>\n                <p>*或拖动图片到左侧区域剪裁</p>\n              <a ng-show="cropMode" class="btn-main" style="width: 105px;position: absolute;bottom: 0;" ng-click="crop()">剪裁并替换</a>\n         </div>\n        </div>\n    </div>\n</div> -->\n<div class="bg_console clearfix" style="background-color:#E7E7E7;">\n   <div class="fl" style="width:188px;">\n      <ul class="nav nav-tabs tabs-left" style="padding-top:0px;"><!-- \'tabs-right\' for right tabs -->\n           <li class="active" ng-click="changeCategory(\'0\')">\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = false;" data-toggle="tab">我的背景</a>\n                <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = false;" data-toggle="tab">我的图片</a>\n            </li>\n         <li>\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">背景库</a>\n              <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">图片库</a>\n          </li>\n       </ul>\n   </div>\n    <div class="fl" style="width:710px;padding:0 10px;background-color:#FFF;">\n        <div class="tab-content" id="bg_contain">\n         <div class="tab-pane active" ng-show="!systemImages">\n             <div class="img_list" style="padding-bottom: 0px;">\n                   <div class="category_list clearfix">\n                      <ul class="category_list_container clearfix" style="width:610px;float:left;">\n                         <li ng-class="{active: tagIndex == -1}" class="category_item" ng-click="changeCategory(\'0\');">\n                              全部\n                            </li>\n                         <li ng-class="{active: tagIndex == $index}" class="category_item" ng-repeat="myTag in myTags" ng-mouseenter="hoverTag(myTag)" ng-mouseleave="hoverTag(myTag)" ng-click="getImagesByTag(myTag.id, $index)">\n                                {{myTag.name}}<span ng-if="myTag.hovered" ng-click="deleteTag(myTag.id, $index, $event)">x</span>\n                         </li>                       \n                      </ul>\n                     <div class="category_item active" ng-click="createCategory();" style="float:right;">\n                          创建分类\n                      </div>                      \n                  </div>\n                    <div class="edit">\n                        <input type="checkbox" ng-model="allImages.checked" ng-change="selectAll()"/>&nbsp;&nbsp;<span ng-click="deleteImage()"><a href="">删除</a></span>\n                      <div class="btn-group">\n                           <div class="dropdown-toggle"  data-toggle="dropdown" ng-click="setIndex($event);">分类到</div>\n                           <div class="dropdown-menu" role="menu">\n                               <ul forbidden-close>\n                                  <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;" ng-click="setCategory(dropTagIndex)"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                        <div ng-if="tagIndex > -1" style="display: inline-block; margin-left: 20px;"><a href="" ng-click="unsetTag()">取消分类</a></div>\n                  </div>\n                </div>\n            </div>\n            <div class="tab-pane" ng-class="{active: systemImages}" ng-show="systemImages">\n               <div class="img_list">\n                    <div class="category_list">             \n                      <ul class="category_list_container clearfix">\n                         <li class="category_item"  ng-click="changeCategory(\'all\')" ng-class="{active: \'all\' == categoryId}">\n                         最新\n                            </li>\n                         <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value); getChildCategory(category.value);sysTagIndex = -1;">\n                               {{category.name}}\n                         </li>\n                         <li ng-show="fileType == \'0\'" class="category_item"  ng-click="changeCategory(\'c\');numPages=2;" ng-class="{active: \'c\' == categoryId}">\n                         纯色背景\n                          </li>\n                     </ul>   \n                  </div>\n                    <div class="cat_two_list clearfix" ng-if="\'c\' != categoryId && \'all\' != categoryId">\n                      <ul>\n                          <li ng-class="{active: sysTagIndex == $index}" ng-repeat = "childCatrgory in childCatrgoryList" ng-click="getImagesBySysTag(childCatrgory.id, $index, 1, categoryId)" style="cursor:pointer;">\n                                {{childCatrgory.name}}\n                            </li>\n                     </ul>\n                 </div>\n                </div>\n            </div>\n        </div>\n        <div class="img_list" style="padding-top:0px;">\n           <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n               <ul class="img_box clearfix">\n                 <li ng-show="categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                      <span class=""><img ng-src="{{CLIENT_CDN}}assets/images/bg_15.jpg" alt="" /></span>\n                   </li>\n                 <li class="imageList" ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                       <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}" />\n                       <div class="edit_content" ng-if="(img.showOp || img.selected) && categoryId == \'0\'">\n                            <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                          <div ng-if="categoryId == \'0\'" class="set btn-group" class="dropdown-toggle"  data-toggle="dropdown" ng-click="prevent(img, $event)">\n                               <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>  \n                          <div class="dropdown-menu set_category" id="{{img.id}}" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;"><a href="" style="color:#FFF;" ng-click="setCategory(dropTagIndex, img.id)">确定</a></div>\n                         </div>\n                                \n                      </div>\n                    </li>\n                 <li class="imageList" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                     <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"/>\n                        <div class="edit_content" ng-show="(img.showOp || img.selected) && categoryId == \'0\'">\n                          <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)" ng-click="deleteImg()"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                           <div class="set btn-group" ng-if="categoryId == \'0\'" class="dropdown-toggle" ng-click="prevent(img, $event)" data-toggle="dropdown">\n                                <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>\n                            <div class="dropdown-menu set_category" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory()" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                                </ul>\n                             <div class="fl btn-main" ng-click="setCategory(dropTagIndex, img.id)" style="width:100%;"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                    </li>\n                 <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected, mr0: $index%9 == 8}" ng-click="switchSelect(img, $event)"  ng-repeat="img in imgList track by $index">\n                 </li>\n             </ul>\n         </div>\n            <div class="fanye_foot clearfix" style="margin-top: 20px;">\n               <div class="fr btn-main" ng-click="replaceImage();"><a href="" style="color:#FFF;">确定</a></div>\n               <div class="pagination_container fl">\n                 <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="5" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="getImagesByPage(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n                   <div class="current_page">\n                        <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? getImagesByPage(categoryId, toPage) : null">\n                        <a ng-click="getImagesByPage(categoryId,toPage)" class="go">GO</a>\n                        <span>当前: {{currentPage}} / {{numPages}} 页</span>\n                 </div>\n                </div>\n            </div>\n        </div>\n    </div>\n</div>')
     }]);
