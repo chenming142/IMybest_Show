@@ -3448,7 +3448,12 @@
         var B = null;
         f.$on("showStylePanel", function(a, b) {
             var c = $(".content").eq(0);
-            B ? B.show() : "style" == b.activeTab ? B = d('<div style-modal active-tab="style"></div>')(f) : "anim" == b.activeTab && (B = d('<div style-modal active-tab="anim"></div>')(f)), c.append(B)
+            B
+                ? B.show()
+                : "style" == b.activeTab
+                    ? B = d('<div style-modal active-tab="style"></div>')(f)
+                    : "anim" == b.activeTab && (B = d('<div style-modal active-tab="anim"></div>')(f)),
+            c.append(B)
         }),
         f.$on("hideStylePanel", function() {
             B && B.hide()
@@ -4411,7 +4416,8 @@
                 }
             }]
         }
-    }).factory("Color", ["Helper", function(a) {
+    })
+    .factory("Color", ["Helper", function(a) {
         return {
             value: {
                 h: 1,
@@ -4477,65 +4483,67 @@
                 return "#" + (1 << 24 | parseInt(e.r, 10) << 16 | parseInt(e.g, 10) << 8 | parseInt(e.b, 10)).toString(16).substr(1)
             }
         }
-    }]).factory("Slider", ["Helper", function(b) {
-        var c = {
-                maxLeft: 0,
-                maxTop: 0,
-                callLeft: null,
-                callTop: null,
-                knob: {
-                    top: 0,
-                    left: 0
-                }
-            },
-            d = {};
-        return {
-            getSlider: function() {
-                return c
-            },
-            getLeftPosition: function(a) {
-                return Math.max(0, Math.min(c.maxLeft, c.left + ((a.pageX || d.left) - d.left)))
-            },
-            getTopPosition: function(a) {
-                return Math.max(0, Math.min(c.maxTop, c.top + ((a.pageY || d.top) - d.top)))
-            },
-            setSlider: function(e, f) {
-                var g = b.closestSlider(e.target),
-                    h = b.getOffset(g, f);
-                c.knob = g.children[0].style, c.left = e.pageX - h.left - a.pageXOffset + h.scrollX, c.top = e.pageY - h.top - a.pageYOffset + h.scrollY, d = {
-                    left: e.pageX,
-                    top: e.pageY
-                }
-            },
-            setSaturation: function(a, b) {
-                c = {
-                    maxLeft: 100,
-                    maxTop: 100,
-                    callLeft: "setSaturation",
-                    callTop: "setLightness"
-                }, this.setSlider(a, b)
-            },
-            setHue: function(a, b) {
-                c = {
-                    maxLeft: 0,
-                    maxTop: 100,
-                    callLeft: !1,
-                    callTop: "setHue"
-                }, this.setSlider(a, b)
-            },
-            setAlpha: function(a, b) {
-                c = {
-                    maxLeft: 0,
-                    maxTop: 100,
-                    callLeft: !1,
-                    callTop: "setAlpha"
-                }, this.setSlider(a, b)
-            },
-            setKnob: function(a, b) {
-                c.knob.top = a + "px", c.knob.left = b + "px"
+    }])
+    .factory("Slider", ["Helper", function(b) {
+    var c = {
+            maxLeft: 0,
+            maxTop: 0,
+            callLeft: null,
+            callTop: null,
+            knob: {
+                top: 0,
+                left: 0
             }
+        },
+        d = {};
+    return {
+        getSlider: function() {
+            return c
+        },
+        getLeftPosition: function(a) {
+            return Math.max(0, Math.min(c.maxLeft, c.left + ((a.pageX || d.left) - d.left)))
+        },
+        getTopPosition: function(a) {
+            return Math.max(0, Math.min(c.maxTop, c.top + ((a.pageY || d.top) - d.top)))
+        },
+        setSlider: function(e, f) {
+            var g = b.closestSlider(e.target),
+                h = b.getOffset(g, f);
+            c.knob = g.children[0].style, c.left = e.pageX - h.left - a.pageXOffset + h.scrollX, c.top = e.pageY - h.top - a.pageYOffset + h.scrollY, d = {
+                left: e.pageX,
+                top: e.pageY
+            }
+        },
+        setSaturation: function(a, b) {
+            c = {
+                maxLeft: 100,
+                maxTop: 100,
+                callLeft: "setSaturation",
+                callTop: "setLightness"
+            }, this.setSlider(a, b)
+        },
+        setHue: function(a, b) {
+            c = {
+                maxLeft: 0,
+                maxTop: 100,
+                callLeft: !1,
+                callTop: "setHue"
+            }, this.setSlider(a, b)
+        },
+        setAlpha: function(a, b) {
+            c = {
+                maxLeft: 0,
+                maxTop: 100,
+                callLeft: !1,
+                callTop: "setAlpha"
+            }, this.setSlider(a, b)
+        },
+        setKnob: function(a, b) {
+            c.knob.top = a + "px", c.knob.left = b + "px"
         }
-    }]).directive("colorpicker", ["$document", "$compile", "Color", "Slider", "Helper", function(a, c, d, e, f) {
+    }
+}])
+    .directive("colorpicker", ["$document", "$compile", "Color", "Slider", "Helper", function(a, c, d, e, f) {
         return {
             require: "?ngModel",
             restrict: "A",
@@ -4737,9 +4745,11 @@
             link: function(a, b, c, d) {
                 "transform" == c.cssItem && a.$on("updateTransform", function(a, b) {
                     d.$setViewValue(parseInt(b, 10)), d.$render()
-                }), "borderRadius" == c.cssItem && a.$on("updateMaxRadius", function(b, c) {
+                }),
+                "borderRadius" == c.cssItem && a.$on("updateMaxRadius", function(b, c) {
                     a.maxRadius = parseInt(Math.min($(c).outerWidth(), $(c).outerHeight()) / 2 + 10, 10), a.maxRadius < a.model.borderRadius && (d.$setViewValue(a.maxRadius), d.$render()), a.$apply()
-                }), a.$watch(function() {
+                }),
+                a.$watch(function() {
                     return $(b).val()
                 }, function(a) {
                     +a > c.max && (d.$setViewValue(c.max), d.$render()), +a < c.min && (d.$setViewValue(c.min), d.$render())
@@ -5161,7 +5171,8 @@
                         m = new Hammer(j.get(0));
                     m.get("pan").set({
                         threshold: 0
-                    }), m.on("panstart", function(a) {
+                    }),
+                    m.on("panstart", function(a) {
                         if (a.preventDefault(), a.srcEvent.preventDefault(), !j.hasClass("no-drag")) {
                             j.css("opacity", .35), $("body").css({
                                 "user-select": "none",
@@ -5179,13 +5190,21 @@
                                 width: n
                             }, h = j.offset();
                             var o = j.position();
-                            g = a.center, g.top = g.y - o.top, g.bottom = g.y + l.height - (o.top + i.height), g.left = g.x - o.left, g.right = g.x + l.width - (o.left + i.width), f.x = a.center.x - (parseFloat(j.css("left")) + c.left), f.y = a.center.y - (parseFloat(j.css("top")) + c.top)
+                            g = a.center,
+                            g.top = g.y - o.top,
+                            g.bottom = g.y + l.height - (o.top + i.height),
+                            g.left = g.x - o.left,
+                            g.right = g.x + l.width - (o.left + i.width),
+                            f.x = a.center.x - (parseFloat(j.css("left")) + c.left),
+                            f.y = a.center.y - (parseFloat(j.css("top")) + c.top)
                         }
-                    }), m.on("panmove", function(a) {
+                    }),
+                    m.on("panmove", function(a) {
                         a.preventDefault(), "img" == a.target.tagName.toLowerCase() && (a.target.ondragstart = function() {
                             return !1
                         }), j.hasClass("no-drag") || (a.center.y >= g.top && a.center.y <= g.bottom && j.css("top", a.center.y - c.top - f.y), a.center.x >= g.left && a.center.x <= g.right && j.css("left", a.center.x - c.left - f.x))
-                    }), m.on("panend", function(b) {
+                    }),
+                    m.on("panend", function(b) {
                         if (j.hasClass("no-drag")) return void j.removeClass("no-drag");
                         j.css("opacity", 1), $("body").css({
                             "user-select": "initial",
@@ -5467,27 +5486,39 @@
                             m = ["min", "max", "step"],
                             n = b.isUndefined(g.useDecimals) ? !1 : !0,
                             o = function() {
-                                b.isArray(h.$viewValue) && k.range !== !0 && (console.warn("Change your range option of ui-slider. When assigning ngModel an array of values then the range option should be set to true."), k.range = !0), b.forEach(m, function(a) {
+                                b.isArray(h.$viewValue)
+                                    && k.range !== !0
+                                    && (console.warn("Change your range option of ui-slider. When assigning ngModel an array of values then the range option should be set to true."), k.range = !0),
+                                b.forEach(m, function(a) {
                                     b.isDefined(g[a]) && (k[a] = i(g[a], n))
-                                }), f.slider(k), o = b.noop
+                                }),
+                                f.slider(k),
+                                o = b.noop
                             };
                         b.forEach(m, function(a) {
                             g.$observe(a, function(b) {
                                 b && (o(), k[a] = i(b, n), f.slider("option", a, i(b, n)), h.$render())
                             })
-                        }), g.$observe("disabled", function(a) {
+                        }),
+                        g.$observe("disabled", function(a) {
                             o(), f.slider("option", "disabled", !!a)
-                        }), e.$watch(g.uiSlider, function(a) {
+                        }),
+                        e.$watch(g.uiSlider, function(a) {
                             o(), a !== c && f.slider("option", a)
-                        }, !0), d(o, 0, !0), f.bind("slide", function(a, b) {
+                        }, !0),
+                        d(o, 0, !0),
+                        f.bind("slide", function(a, b) {
                             h.$setViewValue(b.values || b.value), e.$apply()
-                        }), h.$render = function() {
+                        }),
+                        h.$render = function() {
                             o();
                             var a = k.range === !0 ? "values" : "value";
                             k.range || !isNaN(h.$viewValue) || h.$viewValue instanceof Array ? k.range && !b.isDefined(h.$viewValue) && (h.$viewValue = [0, 0]) : h.$viewValue = 0, k.range === !0 && (b.isDefined(k.min) && k.min > h.$viewValue[0] && (h.$viewValue[0] = k.min), b.isDefined(k.max) && k.max < h.$viewValue[1] && (h.$viewValue[1] = k.max), h.$viewValue[0] > h.$viewValue[1] && (l.min >= h.$viewValue[1] && (h.$viewValue[0] = l.min), l.max <= h.$viewValue[0] && (h.$viewValue[1] = l.max)), l.min = h.$viewValue[0], l.max = h.$viewValue[1]), f.slider(a, h.$viewValue)
-                        }, e.$watch(g.ngModel, function() {
+                        },
+                        e.$watch(g.ngModel, function() {
                             k.range === !0 && h.$render()
-                        }, !0), f.bind("$destroy", j)
+                        }, !0),
+                        f.bind("$destroy", j)
                     }
                 }
             }
@@ -7332,11 +7363,18 @@
                         b.hide()
                     }),
                     b.find(".style").click(function(c) {
-                        f.isAllowToAccess(f.accessDef.CREATE_STYLE_SETTING) ? (c.stopPropagation(), A(e, function(b) {
+                        f.isAllowToAccess(f.accessDef.CREATE_STYLE_SETTING)
+                            ? (
+                                c.stopPropagation(),
+                                A(e, function(b) {
                             if (1 == e.type)
                                 for (var c in e.properties.labels) b.backgroundColor && (e.properties.labels[c].color.backgroundColor = b.backgroundColor, $(".label_content").css("background-color", b.backgroundColor)), b.color && (e.properties.labels[c].color.color = b.color, $(".label_content").css("color", b.color));
                             else $(".element-box", a).css(b), $.extend(!0, e.css, b)
-                        })) : (c.stopPropagation(), d.open({
+                        })
+                            )
+                            : (
+                                c.stopPropagation(),
+                                d.open({
                             windowClass: "console",
                             templateUrl: "scene/console/fake.tpl.html",
                             controller: "FakeConsoleCtrl",
@@ -7345,7 +7383,9 @@
                                     return "style"
                                 }
                             }
-                        })), b.hide()
+                        })
+                            ),
+                            b.hide()
                     }),
                     b.find(".animation").click(function(a) {
                     a.stopPropagation(), B(e, function(a) {
@@ -7399,14 +7439,20 @@
             if ("view" != g) {
                 var j = $("#eq_main");
                 a.on("click contextmenu", ".element-box", function(a) {
-                    a.stopPropagation(), $("#btn-toolbar")[0] || (E.elemDefTpl = b.copy(e)), $("#comp_setting:visible").length > 0 && "p" != e.type && (E.currentElemDef = e, c.$broadcast("showStylePanel"));
+                    a.stopPropagation(),
+                    $("#btn-toolbar")[0] || (E.elemDefTpl = b.copy(e)),
+                    $("#comp_setting:visible").length > 0
+                        && "p" != e.type && (E.currentElemDef = e, c.$broadcast("showStylePanel"));
                     var d = i(),
                         f = $("#popMenu");
                     return f.length > 0 && f.remove(), j.append(d), d.css({
                         left: a.pageX + j.scrollLeft() + 15,
                         top: a.pageY + j.scrollTop()
                     }).show(), j.mousemove(function(a) {
-                        (a.pageX < d.offset().left - 20 || a.pageX > d.offset().left + d.width() + 20 || a.pageY < d.offset().top - 20 || a.pageY > d.offset().top + d.height() + 20) && (d.hide(), $(this).unbind("mousemove"))
+                        (a.pageX < d.offset().left - 20
+                            || a.pageX > d.offset().left + d.width() + 20
+                            || a.pageY < d.offset().top - 20
+                            || a.pageY > d.offset().top + d.height() + 20) && (d.hide(), $(this).unbind("mousemove"))
                     }), !1
                 }), a.attr("title", "按住鼠标进行拖动，点击鼠标进行编辑")
             }

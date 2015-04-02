@@ -68,4 +68,9 @@ router.route('/scene/pageTpl/:pageTplId')
         res.json(JSON);
     });
 
+router.route('/scene/save')
+    .post(function (req, res, next) {
+        var JSON = {"success":true,"code":200,"msg":"操作成功","obj":null,"map":null,"list":null};
+        res.json(JSON);
+    });
 module.exports = router;

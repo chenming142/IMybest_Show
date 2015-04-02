@@ -713,7 +713,8 @@
         "app.directives.component",
         "services.pagetpl",
         "app.directives.addelement",
-        "services.history"
+        "services.history",
+        "scene.create.console"
     ]);
     ng.module("scene.create")
         .controller("CreateSceneCtrl", ["$timeout", "$compile", "$rootScope", "$scope", "$routeParams", "$route", "$location", "sceneService", "pageTplService", "$modal", "ModalService", "$window","historyService",
@@ -1034,9 +1035,8 @@
                             $stylePanel = $compile('<div style-modal active-tab="style"></div>')($scope);
                         }else if("anim" == data.activeTab){
                             $stylePanel = $compile('<div style-modal active-tab="anim"></div>')($scope);
-                        }else{
-                            $element.append($stylePanel);
                         }
+                        $element.append($stylePanel);
                     }
                 });
                 $scope.$on("hideStylePanel", function() {
@@ -1568,7 +1568,7 @@
         };
         return HistoryService;
     }]);
-    ng.module("services.scene", [/*"scene.create.console", */"services.history"]);
+    ng.module("services.scene", ["services.history"]);
     ng.module("services.scene").factory("sceneService", ["$http", "$rootScope", "$modal", "$q","$cacheFactory", "historyService", function($http, $rootScope, $modal, $q, $cacheFactory, historyService){
         function addComponentHandle(type, component, gFlag) {
             var li = JsonParser.wrapComp(component, "edit");
@@ -2081,7 +2081,7 @@
                     $popMenu.hide();
                 });
                 $popMenu.find(".style").click(function(event) {
-                    if(security.isAllowToAccess(security.accessDef.CREATE_STYLE_SETTING)){
+                    if(true){
                         event.stopPropagation();
                         activeStyleTab(element, function(b) {
                             if (1 == element.type){
@@ -2096,7 +2096,8 @@
                                     }
                                 }
                             }else{
-                                $(".element-box", wrapComponent).css(b), $.extend(!0, element.css, b)
+                                $(".element-box", wrapComponent).css(b);
+                                $.extend(!0, element.css, b);
                             }
                         });
                     }else{
@@ -2204,8 +2205,9 @@
                 wrapComponent.on("click contextmenu", ".element-box", function(event) {
                     event.stopPropagation();
                     //TODO: SceneService.elemDefTpl
-                    if($("#btn-toolbar")[0])SceneService.elemDefTpl = ng.copy(element);
+                    if(!$("#btn-toolbar")[0])SceneService.elemDefTpl = ng.copy(element);
                     if($("#comp_setting:visible").length > 0 && "p" != element.type){
+                        console.log("-----$rootScope.showStylePanel-------");
                         SceneService.currentElemDef = element;
                         $rootScope.$broadcast("showStylePanel");
                     }
@@ -2624,6 +2626,757 @@
         };
         return  PageTplService;
     }]);
+
+    ng.module("colorpicker.module", [])
+        .factory("Helper", function() {
+            return {
+                closestSlider: function(matches) {
+                    var selector = matches.matches
+                                    || matches.webkitMatchesSelector || matches.mozMatchesSelector || matches.msMatchesSelector;
+                    return selector.bind(matches)("I") ? matches.parentNode : matches;
+                },
+                getOffset: function(element, position) {
+                    var left = 0, top = 0, scrollX = 0, scrollY = 0;
+                    for (;element && !isNaN(element.offsetLeft) && !isNaN(element.offsetTop);) {
+                        left += element.offsetLeft;
+                        top += element.offsetTop;
+                        if(position || "BODY" !== element.tagName){
+                            scrollX += element.scrollLeft;
+                            scrollY += element.scrollTop;
+                        }else{
+                            scrollX += document.documentElement.scrollLeft || element.scrollLeft;
+                            scrollY += document.documentElement.scrollTop || element.scrollTop;
+                        }
+                        element = element.offsetParent;
+                    }
+                    return {top: top, left: left, scrollX: scrollX, scrollY: scrollY};
+                },
+                stringParsers: [{
+                    //RGB(R,G,B)|RGBA(R,G,B,A) => rgba(45, 78, 32, .5)
+                    re: /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d*(?:\.\d+)?)\s*)?\)/,
+                    //[red, green, blue, alpha]
+                    parse: function(matchs) {return [matchs[1], matchs[2], matchs[3], matchs[4]];}
+                }, {
+                    //RGB(R,G,B)|RGBA(R,G,B,A) => rgba(45%, 78%, 32%, .5)
+                    re: /rgba?\(\s*(\d+(?:\.\d+)?)\%\s*,\s*(\d+(?:\.\d+)?)\%\s*,\s*(\d+(?:\.\d+)?)\%\s*(?:,\s*(\d+(?:\.\d+)?)\s*)?\)/,
+                    //[red, green, blue, alpha]
+                    parse: function(matchs) {return [2.55 * matchs[1], 2.55 * matchs[2], 2.55 * matchs[3], matchs[4]];}
+                }, {
+                    //#rrggbb => #ffeecc
+                    re: /#([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})/,
+                    parse: function(matchs) {return [parseInt(matchs[1], 16), parseInt(matchs[2], 16), parseInt(matchs[3], 16)];}
+                }, {
+                    //#rgb => #cef
+                    re: /#([a-fA-F0-9])([a-fA-F0-9])([a-fA-F0-9])/,
+                    parse: function(matchs) {return [parseInt(matchs[1] + matchs[1], 16), parseInt(matchs[2] + matchs[2], 16), parseInt(matchs[3] + matchs[3], 16)];}
+                }]
+            };
+        })
+        .factory("Color", ["Helper", function(Helper) {
+            return {
+                value: {hue: 1, saturation: 1, lightness: 1, alpha: 1},
+                rgb: function() {
+                    var rgb = this.toRGB();
+                    return "rgb(" + rgb.r + "," + rgb.g + "," + rgb.b + ")";
+                },
+                rgba: function() {
+                    var rgba = this.toRGB();
+                    return "rgba(" + rgba.r + "," + rgba.g + "," + rgba.b + "," + rgba.a + ")"
+                },
+                hex: function() {return this.toHex();},
+                //http://blog.csdn.net/xhhjin/article/details/7020449
+                RGBtoHSB: function(r, g, b, a) {
+                    r /= 255;
+                    g /= 255;
+                    b /= 255;
+                    var hue, saturation, max, diff;
+                    max = Math.max(r, g, b);
+                    diff = max - Math.min(r, g, b);
+                    if(0 === diff){
+                        hue = null;
+                    }else{
+                        if(max === r){
+                            hue = (g - b) / diff;
+                        }else if(max === g){
+                            hue = (b - r) / diff + 2;
+                        }else{
+                            hue = (r - g) / diff + 4;
+                        }
+                    }
+                    hue = (hue + 360) % 6 * 60 / 360;
+                    saturation = 0 === diff ? 0 : diff / max;
+                    return{hue: hue || 1, saturation: saturation, lightness: max, alpha: a || 1};
+                },
+                setColor: function(color) {
+                    color = color.toLowerCase();
+                    for (var idx in Helper.stringParsers) {
+                        if (Helper.stringParsers.hasOwnProperty(idx)) {
+                            var Parser = Helper.stringParsers[idx],
+                                matchs = Parser.re.exec(color),
+                                result = matchs && Parser.parse(matchs);
+                            if (result) {
+                                this.value = this.RGBtoHSB.apply(null, result);
+                                return false;
+                            }
+                        }
+                    }
+                },
+
+                setHue: function(hue) {this.value.hue = 1 - hue;},//色调
+                setSaturation: function(saturation) {this.value.saturation = saturation;},//饱和度
+                setLightness: function(lightness) {this.value.lightness = 1 - lightness;},//明亮度
+                setAlpha: function(alpha) {this.value.alpha = parseInt(100 * (1 - alpha), 10) / 100;},//阿尔法
+
+                toRGB: function(hue, saturation, lightness, alpha) {
+                    if(!hue){
+                        hue = this.value.hue;
+                        saturation = this.value.saturation;
+                        lightness = this.value.lightness;
+                    }
+                    hue *= 360;
+                    var r, g, b, h, i;
+                    hue = hue % 360 / 60;
+                    i = lightness * saturation;
+                    h = i * (1 - Math.abs(hue % 2 - 1));
+
+                    r = g = b = lightness - i;
+                    hue = ~~hue;
+                    r += [i, h, 0, 0, h, i][hue];
+                    g += [h, i, i, h, 0, 0][hue];
+                    b += [0, 0, h, i, i, h][hue];
+                    return  {r: Math.round(255 * r),g: Math.round(255 * g),b: Math.round(255 * b),a: alpha || this.value.alpha};
+                },
+                toHex: function(hue, saturation, lightness, alpha) {
+                    var rgb = this.toRGB(hue, saturation, lightness, alpha);
+                    return "#" + (1 << 24 | parseInt(rgb.r, 10) << 16 | parseInt(rgb.g, 10) << 8 | parseInt(rgb.b, 10)).toString(16).substr(1);
+                }
+            }
+        }])
+        .factory("Slider", ["Helper", function(Helper) {
+        var slider = {
+                maxLeft: 0,
+                maxTop: 0,
+                callLeft: null,
+                callTop: null,
+                knob: {top: 0, left: 0}
+            },offset = {};
+        return {
+            getSlider: function() {return slider;},
+            getLeftPosition: function(event) {
+                return Math.max(0, Math.min(slider.maxLeft, slider.left + ((event.pageX || offset.left) - offset.left)))
+            },
+            getTopPosition: function(event) {
+                return Math.max(0, Math.min(slider.maxTop, slider.top + ((event.pageY || offset.top) - offset.top)))
+            },
+            setSlider: function(event, position) {
+                var element = Helper.closestSlider(event.target),pageOffset = Helper.getOffset(element, position);
+                slider.knob = element.children[0].style;
+                slider.left = event.pageX - pageOffset.left - win.pageXOffset + pageOffset.scrollX;
+                slider.top = event.pageY - pageOffset.top - win.pageYOffset + pageOffset.scrollY;
+                offset = {left: event.pageX,top: event.pageY};
+            },
+            setSaturation: function(event, position) {
+                slider = {maxLeft: 100,maxTop: 100,callLeft: "setSaturation",callTop: "setLightness"};
+                this.setSlider(event, position);
+            },
+            setHue: function(event, position) {
+                slider = {maxLeft: 0,maxTop: 100,callLeft: !1,callTop: "setHue"};
+                this.setSlider(event, position);
+            },
+            setAlpha: function(event, position) {
+                slider = {maxLeft: 0,maxTop: 100,callLeft: !1,callTop: "setAlpha"};
+                this.setSlider(event, position);
+            },
+            setKnob: function(top, left) {
+                slider.knob.top = top + "px";
+                slider.knob.left = left + "px"
+            }
+        };
+    }])
+        .directive("colorpicker", ["$document", "$compile", "Color", "Slider", "Helper", function($document, $compile, Color, Slider, Helper) {
+        return {
+            require: "?ngModel",
+            restrict: "A",
+            link: function(scope, element, attr, ctrl) {
+                var $alpha,
+                    unit = attr.colorpicker ? attr.colorpicker : "hex",
+                    position = ng.isDefined(attr.colorpickerPosition) ? attr.colorpickerPosition : "bottom",
+                    hasInline = ng.isDefined(attr.colorpickerInline) ? attr.colorpickerInline : false,
+                    fixedPosition = ng.isDefined(attr.colorpickerFixedPosition) ? attr.colorpickerFixedPosition : false,
+                    $target = ng.isDefined(attr.colorpickerParent) ? element.parent() : ng.element(document.body),
+                    hasInput = ng.isDefined(attr.colorpickerWithInput) ? attr.colorpickerWithInput : false,
+
+                    input = hasInput ? '<input type="text" name="colorpicker-input">' : "",
+                    button = hasInline ? "" : '<button type="button" class="close close-colorpicker">&times;</button>',
+                    dropdown = '<div class="colorpicker dropdown"><div class="dropdown-menu"><colorpicker-saturation><i></i></colorpicker-saturation><colorpicker-hue><i></i></colorpicker-hue><colorpicker-alpha><i></i></colorpicker-alpha><colorpicker-preview></colorpicker-preview>' + input + button + "</div></div>",
+                    $dropdown = ng.element(dropdown),
+
+                    $hue = $dropdown.find("colorpicker-hue"),
+                    $saturation = $dropdown.find("colorpicker-saturation"),
+                    $preview = $dropdown.find("colorpicker-preview"),
+                    $i = $dropdown.find("i");
+                $compile($dropdown)(scope);
+
+                if (hasInput) {
+                    var $input = $dropdown.find("input");
+                    $input.on("mousedown", function(event) {
+                        event.stopPropagation();
+                    }).on("keyup", function(event) {
+                        var val = this.value;
+                        element.val(val);
+                        if(ctrl)scope.$apply(ctrl.$setViewValue(val));
+                        event.stopPropagation();
+                        event.preventDefault();
+                    });
+                    element.on("keyup", function() {
+                        $input.val(element.val());
+                    });
+                }
+                var bindMouseHandle = function() {
+                    $document.on("mousemove", setVal);
+                    $document.on("mouseup", offMouseHandle);
+                };
+                if("rgba" === unit){
+                    $dropdown.addClass("alpha");
+                    $alpha = $dropdown.find("colorpicker-alpha");
+                    $alpha.on("click", function(event) {
+                        Slider.setAlpha(event, fixedPosition);
+                        setVal(event);
+                    }).on("mousedown", function(event) {
+                        Slider.setAlpha(event, fixedPosition);
+                        bindMouseHandle();
+                    });
+                }
+                $hue.on("click", function(event) {
+                    Slider.setHue(event, fixedPosition);
+                    setVal(event);
+                })
+                .on("mousedown", function(event) {
+                    Slider.setHue(event, fixedPosition);
+                    bindMouseHandle();
+                });
+                $saturation.on("click", function(event) {
+                    Slider.setSaturation(event, fixedPosition);
+                    setVal(event);
+                })
+                .on("mousedown", function(event) {
+                    Slider.setSaturation(event, fixedPosition);
+                    bindMouseHandle();
+                });
+
+                if(fixedPosition)$dropdown.addClass("colorpicker-fixed-position");
+                $dropdown.addClass("colorpicker-position-" + position);
+                if("true" === hasInline)$dropdown.addClass("colorpicker-inline");
+                $target.append($dropdown);
+                if(ctrl){
+                    ctrl.$render = function() {element.val(ctrl.$viewValue)};
+                    scope.$watch(attr.ngModel, function() {caleColor();});
+                }
+                element.on("$destroy", function() {$dropdown.remove();});
+
+                var setBgColor = function() {
+                        try {
+                            $preview.css("backgroundColor", Color[unit]());
+                        } catch (a) {
+                            $preview.css("backgroundColor", Color.toHex())
+                        }
+                        $saturation.css("backgroundColor", Color.toHex(Color.value.h, 1, 1, 1));
+                        if("rgba" === unit){$alpha.css.backgroundColor = Color.toHex();}
+                    },
+                    setVal = function(event) {
+                        var left = Slider.getLeftPosition(event),
+                            top = Slider.getTopPosition(event),
+                            slider = Slider.getSlider();
+                        Slider.setKnob(top, left);
+                        slider.callLeft && Color[slider.callLeft].call(Color, left / 100);
+                        slider.callTop && Color[slider.callTop].call(Color, top / 100);
+                        setBgColor();
+                        var val = Color[unit]();
+                        element.val(val);
+                        if(ctrl)scope.$apply(ctrl.$setViewValue(val));
+                        if(hasInput)$input.val(val);
+                        return false;
+                    },
+                    offMouseHandle = function() {
+                        $document.off("mousemove", setVal);
+                        $document.off("mouseup", offMouseHandle);
+                    },
+                    caleColor = function() {
+                        Color.setColor(element.val());
+                        $i.eq(0).css({
+                            left: 100 * Color.value.saturation + "px",
+                            top: 100 - 100 * Color.value.lightness + "px"
+                        });
+                        $i.eq(1).css("top", 100 * (1 - Color.value.hue) + "px");
+                        $i.eq(2).css("top", 100 * (1 - Color.value.alpha) + "px");
+                        setBgColor();
+                    },
+                    caleOffset = function() {
+                        var retOffset, offset = Helper.getOffset(element[0]);
+                        if(ng.isDefined(attr.colorpickerParent)){
+                            offset.left = 0;
+                            offset.top = 0
+                        }
+                        switch (position){
+                            case "top":
+                                retOffset = {top: offset.top - 147, left: offset.left};
+                                break;
+                            case "right":
+                                retOffset = {top: offset.top, left: offset.left + 126};
+                                break;
+                            case "bottom":
+                                retOffset = {top: offset.top + element[0].offsetHeight + 2,left: offset.left};
+                                break;
+                            case "left":
+                                retOffset = {top: offset.top,left: offset.left - 150};
+                                break;
+                        }
+                        return {top: retOffset.top + "px", left: retOffset.left + "px"};
+                    },
+                    close = function() {closeColorPicker();};
+                if(hasInline === false){
+                    element.on("click", function() {
+                        caleColor();
+                        $dropdown.addClass("colorpicker-visible").css(caleOffset());
+                        $document.on("mousedown", close);
+                    })
+                }else{
+                    caleColor();
+                    $dropdown.addClass("colorpicker-visible").css(caleOffset());
+                }
+                $dropdown.on("mousedown", function(event) {
+                    event.stopPropagation();
+                    event.preventDefault()
+                });
+                var emitEvent = function(eventName) {
+                        if(ctrl)scope.$emit(eventName, {name: attr.ngModel,value: ctrl.$modelValue});
+                    },
+                    closeColorPicker = function() {
+                        if($dropdown.hasClass("colorpicker-visible")){
+                            $dropdown.removeClass("colorpicker-visible");
+                            emitEvent("colorpicker-closed");
+                            $document.off("mousedown", close);
+                        }
+                    };
+                $dropdown.find("button").on("click", function() {
+                    closeColorPicker();
+                });
+            }
+        }
+    }]);
+    ng.module("app.directives.style", []).directive("panelDraggable", function() {
+        return {
+            restrict: "A",
+            link: function(scope, element) {
+                scope.$on("$destroy", function() {
+                    $(element).draggable();
+                    $(element).draggable("destroy");
+                    element = null;
+                });
+                element.on("$destroy", function() {
+                    $(element).draggable();
+                    $(element).draggable("destroy");
+                    element = null;
+                });
+                $(element).draggable();
+            }
+        }
+    });
+    ng.module("app.directives.uislider", []).value("uiSliderConfig", {}).directive("uiSlider", ["uiSliderConfig", "$timeout", function(uiSliderConfig, $timeout) {
+        uiSliderConfig = uiSliderConfig || {};
+        return {
+            require: "ngModel",
+            compile: function() {
+                return function(scope, element, attr, ctrl) {
+                    function parseVal(val, useDecimals) {return useDecimals ? parseFloat(val) : parseInt(val, 10)}
+                    var uiSlider = ng.extend(scope.$eval(attr.uiSlider) || {}, uiSliderConfig),
+                        range = {min: null,max: null},
+                        props = ["min", "max", "step"],
+                        useDecimals = ng.isUndefined(attr.useDecimals) ? false : true,
+                        _config = function() {
+                            if(ng.isArray(ctrl.$viewValue) && uiSlider.range !== true){
+                                console.warn("Change your range option of ui-slider. When assigning ngModel an array of values then the range option should be set to true.");
+                                uiSlider.range = true;
+                            }
+                            ng.forEach(props, function(p) {
+                                if(ng.isDefined(attr[p])){
+                                    uiSlider[p] = parseVal(attr[p], useDecimals);
+                                }
+                            });
+                            element.slider(uiSlider);
+                            _config = ng.noop;
+                        };
+                    ng.forEach(props, function(p) {
+                        attr.$observe(p, function(val) {
+                            if(val){
+                                _config();
+                                uiSlider[p] = parseVal(val, useDecimals);
+                                element.slider("option", p, parseVal(val, useDecimals));
+                                ctrl.$render();
+                            }
+                        });
+                    });
+                    attr.$observe("disabled", function(val) {
+                        _config();
+                        element.slider("option", "disabled", !!val);
+                    });
+                    scope.$watch(attr.uiSlider, function(val) {
+                        _config();
+                        if(val !== undefined){element.slider("option", val);}
+                    }, true);
+                    $timeout(_config, 0, !0);
+                    element.bind("slide", function(event, data) {
+                        ctrl.$setViewValue(data.values || data.value);
+                        scope.$apply();
+                    });
+                    ctrl.$render = function() {
+                        _config();
+                        var flag = uiSlider.range === true ? "values" : "value";
+                        if(!uiSlider.range && isNaN(ctrl.$viewValue)){
+                            if(ctrl.$viewValue instanceof Array){
+                                if(uiSlider.range && !ng.isDefined(ctrl.$viewValue))ctrl.$viewValue = [0, 0];
+                            }else{
+                                ctrl.$viewValue = 0;
+                            }
+                        }
+                        if(uiSlider.range === true){
+                            if(ng.isDefined(uiSlider.min) && uiSlider.min > ctrl.$viewValue[0])ctrl.$viewValue[0] = uiSlider.min;
+                            if(ng.isDefined(uiSlider.max) && uiSlider.max < ctrl.$viewValue[1])ctrl.$viewValue[1] = uiSlider.max;
+                            if(ctrl.$viewValue[0] > ctrl.$viewValue[1]){
+                                //比最小值大，比最大值小
+                                if(range.min >= ctrl.$viewValue[1])ctrl.$viewValue[0] = range.min;
+                                if(range.max <= ctrl.$viewValue[0])ctrl.$viewValue[1] = range.max;
+                            }
+                            range.min = ctrl.$viewValue[0];
+                            range.max = ctrl.$viewValue[1];
+                        }
+                        element.slider(flag, ctrl.$viewValue);
+                    };
+                    scope.$watch(attr.ngModel, function() {
+                        if(uiSlider.range === true)ctrl.$render();
+                    }, true);
+                    element.bind("$destroy", function() {element.slider("destroy");});
+                }
+            }
+        }
+    }]);
+    ng.module("app.directives.limitInput", []).directive("limitInput", function() {
+        return {
+            require: "ngModel",
+            link: function(scope, element, attr, ctrl) {
+                if("transform" == attr.cssItem){
+                    scope.$on("updateTransform", function(event, data) {
+                        ctrl.$setViewValue(parseInt(data, 10));
+                        ctrl.$render();
+                    });
+                }
+                if("borderRadius" == attr.cssItem){
+                    scope.$on("updateMaxRadius", function(event, val) {
+                        scope.maxRadius = parseInt(Math.min($(val).outerWidth(), $(val).outerHeight()) / 2 + 10, 10);
+                        if(scope.maxRadius < scope.model.borderRadius){
+                            ctrl.$setViewValue(scope.maxRadius);
+                            ctrl.$render();
+                        }
+                        scope.$apply();
+                    })
+                }
+                scope.$watch(function() {
+                    return $(element).val()
+                }, function(val) {
+                    if(+val > attr.max){ctrl.$setViewValue(attr.max);attr.$render();}
+                    if(+val < attr.min){ctrl.$setViewValue(attr.min);ctrl.$render();}
+                });
+            }
+        }
+    });
+    ng.module("scene.create.console.setting.style", ["colorpicker.module", "app.directives.style", "app.directives.uislider", "app.directives.limitInput"]);
+    ng.module("scene.create.console.setting.style")
+        .controller("StyleConsoleCtrl", ["$scope", "sceneService", function(a, b) {
+        var c = a.elemDef = b.currentElemDef;
+        delete c.css.borderTopLeftRadius, delete c.css.borderTopRightRadius, delete c.css.borderBottomLeftRadius, delete c.css.borderBottomRightRadius, delete c.css.border;
+        var d = c.css,
+            e = $("#inside_" + a.elemDef.id + " > .element-box");
+        if (a.model = {
+            backgroundColor: d.backgroundColor || "",
+            opacity: 100 - 100 * d.opacity || 0,
+            color: d.color || "#676767",
+            borderWidth: parseInt(d.borderWidth, 10) || 0,
+            borderStyle: d.borderStyle || "solid",
+            borderColor: d.borderColor || "rgba(0,0,0,1)",
+            paddingBottom: parseInt(d.paddingBottom, 10) || 0,
+            paddingTop: parseInt(d.paddingTop, 10) || 0,
+            lineHeight: +d.lineHeight || 1,
+            borderRadius: parseInt(d.borderRadius, 10) || 0,
+            transform: d.transform && parseInt(d.transform.replace("rotateZ(", "").replace("deg)", ""), 10) || 0
+        }, a.maxRadius = Math.min(e.outerWidth(), e.outerHeight()) / 2 + 10, d.borderRadiusPerc ? a.model.borderRadiusPerc = parseInt(d.borderRadiusPerc, 10) : d.borderRadius ? "999px" == d.borderRadius ? a.model.borderRadiusPerc = 100 : (a.model.borderRadiusPerc = parseInt(100 * parseInt(d.borderRadius, 10) * 2 / Math.min(e.outerWidth(), e.outerHeight()), 10), a.model.borderRadiusPerc > 100 && (a.model.borderRadiusPerc = 100)) : a.model.borderRadiusPerc = 0, a.tmpModel = {
+            boxShadowDirection: 0,
+            boxShadowX: 0,
+            boxShadowY: 0,
+            boxShadowBlur: 0,
+            boxShadowSize: 0,
+            boxShadowColor: "rgba(0,0,0,0.5)"
+        }, d.boxShadow) {
+            var f = d.boxShadow.split(" ");
+            a.tmpModel.boxShadowX = parseInt(f[0], 10), a.tmpModel.boxShadowY = parseInt(f[1], 10), a.tmpModel.boxShadowDirection = parseInt(d.boxShadowDirection, 10) || 0, a.tmpModel.boxShadowBlur = parseInt(f[2], 10), a.tmpModel.boxShadowColor = f[3], a.tmpModel.boxShadowSize = parseInt(d.boxShadowSize, 10) || 0
+        }
+        a.clear = function() {
+            a.model = {
+                backgroundColor: "",
+                opacity: 0,
+                color: "#676767",
+                borderWidth: 0,
+                borderStyle: "solid",
+                borderColor: "rgba(0,0,0,1)",
+                paddingBottom: 0,
+                paddingTop: 0,
+                lineHeight: 1,
+                borderRadius: 0,
+                transform: 0
+            }, a.tmpModel = {
+                boxShadowDirection: 0,
+                boxShadowX: 0,
+                boxShadowY: 0,
+                boxShadowBlur: 0,
+                boxShadowSize: 0,
+                boxShadowColor: "rgba(0,0,0,0.5)"
+            }
+        }, a.$watch("tmpModel", function() {
+            var b = {};
+            $.extend(!0, b, a.model), b.borderRadius += "px", b.borderTopLeftRadius = b.borderTopRightRadius = b.borderBottomLeftRadius = b.borderBottomRightRadius = b.borderRadius, b.opacity = (100 - a.model.opacity) / 100, b.boxShadow = Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor, b.boxShadowDirection = a.tmpModel.boxShadowDirection, b.boxShadowSize = a.tmpModel.boxShadowSize, b.transform = "rotateZ(" + a.model.transform + "deg)", $.extend(!0, c.css, b)
+        }, !0), a.$watch("model", function() {
+            var b = {};
+            $.extend(!0, b, a.model), b.borderRadius += "px", b.borderTopLeftRadius = b.borderTopRightRadius = b.borderBottomLeftRadius = b.borderBottomRightRadius = b.borderRadius, b.opacity = (100 - a.model.opacity) / 100, b.boxShadow = Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor, b.boxShadowDirection = a.tmpModel.boxShadowDirection, b.boxShadowSize = a.tmpModel.boxShadowSize, b.transform = "rotateZ(" + a.model.transform + "deg)", $.extend(!0, c.css, b)
+        }, !0)
+    }])
+        .directive("styleInput", function() {
+        return {
+            restrict: "AE",
+            link: function(a, b, c) {
+                var d = $("#inside_" + a.elemDef.id + " > .element-box");
+                a.$watch(function() {
+                    return $(b).val()
+                }, function() {
+                    if ("borderWidth" == c.cssItem) {
+                        d.css({
+                            borderStyle: a.model.borderStyle,
+                            borderWidth: $(b).val()
+                        });
+                        var e = {
+                            width: d.width(),
+                            height: d.height()
+                        };
+                        if (4 == a.elemDef.type) {
+                            var f = d.find("img"),
+                                g = f.width() / f.height(),
+                                h = e.width / e.height;
+                            g >= h ? (f.outerHeight(e.height), f.outerWidth(e.height * g), f.css("marginLeft", -(f.outerWidth() - e.width) / 2), f.css("marginTop", 0)) : (f.outerWidth(e.width), f.outerHeight(e.width / g), f.css("marginTop", -(f.outerHeight() - e.height) / 2), f.css("marginLeft", 0)), a.elemDef.properties.imgStyle.marginTop = f.css("marginTop"), a.elemDef.properties.imgStyle.marginLeft = f.css("marginLeft"), a.elemDef.properties.imgStyle.width = f.outerWidth(), a.elemDef.properties.imgStyle.height = f.outerHeight()
+                        }
+                    }
+                    "borderRadius" == c.cssItem && d.css({
+                        borderRadius: a.model.borderRadius
+                    }), "opacity" == c.cssItem && d.css({
+                        opacity: (100 - $(b).val()) / 100
+                    }), "backgroundColor" == c.cssItem && d.css({
+                        backgroundColor: $(b).val()
+                    }), "color" == c.cssItem && d.css({
+                        color: $(b).val()
+                    }), "borderStyle" == c.cssItem && d.css({
+                        borderStyle: a.model.borderStyle
+                    }), "borderColor" == c.cssItem && d.css({
+                        borderColor: a.model.borderColor
+                    }), "padding" == c.cssItem && d.css({
+                        paddingTop: a.model.paddingTop,
+                        marginTop: -a.model.paddingBottom
+                    }), "lineHeight" == c.cssItem && d.css({
+                        lineHeight: a.model.lineHeight
+                    }), "transform" == c.cssItem && d.parents("li").css({
+                        transform: "rotateZ(" + a.model.transform + "deg)"
+                    }), "boxShadow" == c.cssItem && (a.tmpModel.boxShadowX = -Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, a.tmpModel.boxShadowY = Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, d.css({
+                        boxShadow: Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor
+                    }))
+                })
+            }
+        }
+    })
+        .directive("angleKnob", function() {
+            return {
+                restrict: "AE",
+                templateUrl: "scene/console/angle-knob.tpl.html",
+                link: function(a, b) {
+                    function c(a, b) {
+                        var c = Math.sqrt((a - 28) * (a - 28) + (b - 28) * (b - 28)) / 28,
+                            d = 28 + (a - 28) / c,
+                            e = 28 + (b - 28) / c;
+                        f.css({
+                            top: Math.round(e),
+                            left: Math.round(d)
+                        })
+                    }
+
+                    function d(a, b) {
+                        var c = a - 28,
+                            d = 28 - b,
+                            e = 180 * Math.atan(c / d) / Math.PI;
+                        return b > 28 && (e += 180), 28 >= b && 28 > a && (e += 360), Math.round(e)
+                    }
+                    var e = $(b).find(".sliderContainer"),
+                        f = $(b).find(".sliderKnob");
+                    a.$watch(function() {
+                        return a.tmpModel.boxShadowDirection
+                    }, function(a) {
+                        f.css({
+                            top: 28 - 28 * Math.cos(a * Math.PI / 180),
+                            left: 28 + 28 * Math.sin(a * Math.PI / 180)
+                        })
+                    }), 0 !== a.tmpModel.boxShadowDirection && f.css({
+                        top: 28 - 28 * Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180),
+                        left: 28 + 28 * Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180)
+                    }), e.bind("mousedown", function(b) {
+                        b.stopPropagation();
+                        var f = e.offset().left,
+                            g = e.offset().top;
+                        c(b.pageX - f, b.pageY - g);
+                        var h = d(b.pageX - f, b.pageY - g);
+                        a.tmpModel.boxShadowDirection = h, a.$apply(), $(this).bind("mousemove", function(b) {
+                            b.stopPropagation(), c(b.pageX - f, b.pageY - g);
+                            var e = d(b.pageX - f, b.pageY - g);
+                            a.tmpModel.boxShadowDirection = e, a.$apply()
+                        }), $(this).bind("mouseup", function() {
+                            $(this).unbind("mousemove"), $(this).unbind("mouseup")
+                        })
+                    })
+                }
+            }
+        });
+
+    ng.module("scene.create.console.setting.anim", ["app.directives.uislider", "app.directives.limitInput"]);
+    ng.module("scene.create.console.setting.anim").controller("AnimConsoleCtrl", ["$scope", "sceneService", function(a, b) {
+        var c = a.elemDef = b.currentElemDef,
+            d = $("#inside_" + a.elemDef.id + " .element-box");
+        if (a.animTypeEnum = [{
+            id: -1,
+            name: "无"
+        }, {
+            id: 0,
+            name: "淡入"
+        }, {
+            id: 1,
+            name: "移入"
+        }, {
+            id: 2,
+            name: "弹入"
+        }, {
+            id: 3,
+            name: "中心弹入"
+        }, {
+            id: 4,
+            name: "中心放大"
+        }, {
+            id: 12,
+            name: "翻滚进入"
+        }, {
+            id: 13,
+            name: "光速进入"
+        }, {
+            id: 6,
+            name: "摇摆"
+        }, {
+            id: 5,
+            name: "抖动"
+        }, {
+            id: 7,
+            name: "旋转"
+        }, {
+            id: 8,
+            name: "翻转"
+        }, {
+            id: 9,
+            name: "悬摆"
+        }, {
+            id: 10,
+            name: "淡出"
+        }, {
+            id: 11,
+            name: "翻转消失"
+        }], a.animDirectionEnum = [{
+            id: 0,
+            name: "从左向右"
+        }, {
+            id: 1,
+            name: "从上到下"
+        }, {
+            id: 2,
+            name: "从右向左"
+        }, {
+            id: 3,
+            name: "从下到上"
+        }], c.properties || (c.properties = {}), c.properties.anim && null != c.properties.anim.type) {
+            var e;
+            for (e = 0; e < a.animTypeEnum.length; e++) a.animTypeEnum[e].id == c.properties.anim.type && (a.activeAnim = a.animTypeEnum[e]);
+            a.model = {
+                type: c.properties.anim.type,
+                direction: c.properties.anim.direction,
+                duration: parseFloat(c.properties.anim.duration),
+                delay: parseFloat(c.properties.anim.delay),
+                countNum: parseInt(c.properties.anim.countNum, 10) || 1,
+                count: c.properties.anim.count,
+                linear: c.properties.anim.linear
+            }, a.direction = null != c.properties.anim.direction ? a.animDirectionEnum[c.properties.anim.direction] : a.animDirectionEnum[0]
+        } else a.activeAnim = a.animTypeEnum[0], a.direction = a.animDirectionEnum[0], a.model = {
+            type: null,
+            direction: null,
+            duration: 2,
+            delay: 0,
+            countNum: 1,
+            count: null
+        };
+        a.$watch("model", function() {
+            a.direction && (a.model.direction = a.direction.id), c.properties.anim = a.model, f()
+        }, !0), a.$watch("direction", function() {
+            a.direction && (a.model.direction = a.direction.id), c.properties.anim = a.model, f()
+        }, !0), a.confirm = function() {
+            a.cancel()
+        };
+        var f = function() {
+            d.css("animation", ""), d.css("animation", a.animationClass + " " + a.model.duration + "s ease 0s"), d.css("animation-fill-mode", "backwards")
+        };
+        a.changeAnimation = function() {
+            a.animationClass = "";
+            var b = a.model;
+            0 === b.type && (a.animationClass = "fadeIn"), 1 === b.type && (0 === a.direction.id && (a.animationClass = "fadeInLeft"), 1 === a.direction.id && (a.animationClass = "fadeInDown"), 2 === a.direction.id && (a.animationClass = "fadeInRight"), 3 === a.direction.id && (a.animationClass = "fadeInUp")), 6 === b.type && (a.animationClass = "wobble"), 5 === b.type && (a.animationClass = "rubberBand"), 7 === b.type && (a.animationClass = "rotateIn"), 8 === b.type && (a.animationClass = "flip"), 9 === b.type && (a.animationClass = "swing"), 2 === b.type && (0 === a.direction.id && (a.animationClass = "bounceInLeft"), 1 === a.direction.id && (a.animationClass = "bounceInDown"), 2 === a.direction.id && (a.animationClass = "bounceInRight"), 3 === a.direction.id && (a.animationClass = "bounceInUp")), 3 === b.type && (a.animationClass = "bounceIn"), 4 === b.type && (a.animationClass = "zoomIn"), 10 === b.type && (a.animationClass = "fadeOut"), 11 === b.type && (a.animationClass = "flipOutY"), 12 === b.type && (a.animationClass = "rollIn"), 13 === b.type && (a.animationClass = "lightSpeedIn")
+        }
+    }]);
+
+    ng.module("scene.create.console.setting", ["scene.create.console.setting.style", "scene.create.console.setting.anim"]);
+    ng.module("scene.create.console.setting").directive("styleModal", ["sceneService", "$compile", function() {
+        return {
+            restrict: "AE",
+            replace: !0,
+            scope: {},
+            templateUrl: "scene/console/setting.tpl.html",
+            link: function(a, b, c) {
+                console.log("---styleModal.$complie---");
+                var d = "style";
+                a.$on("showStylePanel", function(b, c) {
+                    d = a.activeTab;
+                    a.activeTab = "";
+                    a.activeTab = c && c.activeTab ? c.activeTab : d;
+                    a.$apply();
+                });
+                a.activeTab = c.activeTab;
+                a.cancel = function() {
+                    $(b).hide()
+                };
+                a.$on("$locationChangeStart", function() {
+                    a.cancel();
+                });
+            },
+            controller: ["$scope", function() {}]
+        }
+    }]);
+
+    ng.module("scene.create.console", ["scene.create.console.setting"]);
+    ng.module("scene.create.console").controller("ConsoleCtrl", ["$scope", function() {}]);
 
     ng.module("app.directives.editor", []).directive("toolbar", ["$compile", function($compile) {
         return {
@@ -3061,13 +3814,13 @@
                 link: function(scope, element) {
                     var pOffset, transform = 0, angle = 0,
 
-                        caleOffset = {},
-                        center = {},
-                        offset = {},
-                        caleDimension = {},
+                        caleOffset = {},//f
+                        center = {},//g
+                        offset = {},//h
+                        caleDimension = {},//i
 
-                        $element = $(element),
-                        $parent = $element.parent(),
+                        $element = $(element),//j
+                        $parent = $element.parent(),//k
 
                         pDimension = {width: $parent.width(),height: $parent.height()},
                         hammer = new Hammer($element.get(0));
@@ -3104,7 +3857,7 @@
                             offset = $element.offset();
                             var position = $element.position();
                             center = event.center;
-                            center.top = center.y - center.top;
+                            center.top = center.y - position.top;
                             center.bottom = center.y + pDimension.height - (position.top + caleDimension.height);
                             center.left = center.x - position.left;
                             center.right = center.x + pDimension.width - (position.left + caleDimension.width);
@@ -3418,6 +4171,10 @@
         ,"scene/create.tpl.html"
         ,"scene/effect/falling.tpl.html"
         ,"scene/console/bg.tpl.html"
+        ,"scene/console/style.tpl.html"
+        ,"scene/console/angle-knob.tpl.html"
+        ,"scene/console/anim.tpl.html"
+        ,"scene/console/setting.tpl.html"
     ]);
     ng.module("dialog/confirm.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("dialog/confirm.tpl.html", '<div class="modal-header">\n    <span class="glyphicon glyphicon-exclamation-sign"></span>\n    <span>提示</span>\n</div>\n<div class="modal-body" ng-if="confirmObj.msg">\n <!-- confirm message -->\n  <div class="confirm-msg">{{confirmObj.msg}}</div>\n</div>\n<div class="modal-footer">\n    <a ng-click="ok();" class="btn-main"\n    style="width: 88px;">\n        {{confirmObj.confirmName || \'是\'}}\n    </a>\n    <a ng-click="cancel();" class="btn-grey0"\n    style="width: 88px;margin-left: 15px;">\n        {{confirmObj.cancelName || \'取消\'}}\n    </a>\n</div>')
@@ -3430,6 +4187,21 @@
     }]);
     ng.module("scene/console/bg.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/console/bg.tpl.html", '<!-- <div class="bg_console">\n  <div class="img_list">\n        <div class="category_list">\n           <div ng-show="fileType == \'0\'" class="category_item" ng-click="changeCategory(\'c\')" ng-class="{active: \'c\' == categoryId}">\n             <span>纯色背景</span>\n         </div>\n            <ul class="category_list_container">\n              <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value)">\n                   {{category.name}}\n             </li>\n         </ul>\n         <div class="btn-group fl" dropdown ng-show="otherCategory.length > 0">\n              <span class="dropdown-toggle" ng-disabled="disabled">\n               其它 <span class="caret"></span>\n              </span>\n           <ul class="dropdown-menu">\n              <li ng-repeat="category in otherCategory">\n                  <a href ng-click="changeCategory(category.value)">{{category.name}}</a>\n             </li>\n           </ul>\n           </div>\n            <div class="category_item" ng-click="changeCategory(\'0\')" ng-class="{active: \'0\' == categoryId}">\n             <span ng-show="fileType == \'0\'">我的背景</span>\n             <span ng-show="fileType == \'1\'">我的图片</span>\n         </div>\n        </div>\n        <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n           <ul class="img_box">\n              <li ng-show="isEditor || categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                  <span class="glyphicon glyphicon-upload"></span>\n              </li>\n             <li ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" photo-draggable="{{img.path}}" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId"  ng-repeat="img in imgList track by $index" ng-click="replaceBgColor(img.color, $event)">\n               </li>\n         </ul>\n         \n      </div>\n        <div class="pagination_container" ng-show="numPages>1">\n           <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="10" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="changeCategory(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n           <div class="current_page">\n                <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? changeCategory(categoryId, toPage) : null">\n             <a ng-click="changeCategory(categoryId,toPage)" class="go">GO</a>\n             <span>当前: {{currentPage}} / {{numPages}} 页</span>\n         </div>\n        </div>\n        <div ng-show="fileType == \'1\'" class="bottom_area" style="position: relative; min-height: 80px;">\n           <div class="crop_drop" crop-droppable style = "min-height: 80px;">\n                <p ng-hide="cropMode" class="">拖动图片到此区域剪裁</p>\n             <div class="image_crop">\n                  <img id="target"></img>\n               </div>\n            </div>\n            <div class="fr" style="width: 180px;">\n                <p>*单击图片替换</p>\n                <p>*或拖动图片到左侧区域剪裁</p>\n              <a ng-show="cropMode" class="btn-main" style="width: 105px;position: absolute;bottom: 0;" ng-click="crop()">剪裁并替换</a>\n         </div>\n        </div>\n    </div>\n</div> -->\n<div class="bg_console clearfix" style="background-color:#E7E7E7;">\n   <div class="fl" style="width:188px;">\n      <ul class="nav nav-tabs tabs-left" style="padding-top:0px;"><!-- \'tabs-right\' for right tabs -->\n           <li class="active" ng-click="changeCategory(\'0\')">\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = false;" data-toggle="tab">我的背景</a>\n                <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = false;" data-toggle="tab">我的图片</a>\n            </li>\n         <li>\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">背景库</a>\n              <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">图片库</a>\n          </li>\n       </ul>\n   </div>\n    <div class="fl" style="width:710px;padding:0 10px;background-color:#FFF;">\n        <div class="tab-content" id="bg_contain">\n         <div class="tab-pane active" ng-show="!systemImages">\n             <div class="img_list" style="padding-bottom: 0px;">\n                   <div class="category_list clearfix">\n                      <ul class="category_list_container clearfix" style="width:610px;float:left;">\n                         <li ng-class="{active: tagIndex == -1}" class="category_item" ng-click="changeCategory(\'0\');">\n                              全部\n                            </li>\n                         <li ng-class="{active: tagIndex == $index}" class="category_item" ng-repeat="myTag in myTags" ng-mouseenter="hoverTag(myTag)" ng-mouseleave="hoverTag(myTag)" ng-click="getImagesByTag(myTag.id, $index)">\n                                {{myTag.name}}<span ng-if="myTag.hovered" ng-click="deleteTag(myTag.id, $index, $event)">x</span>\n                         </li>                       \n                      </ul>\n                     <div class="category_item active" ng-click="createCategory();" style="float:right;">\n                          创建分类\n                      </div>                      \n                  </div>\n                    <div class="edit">\n                        <input type="checkbox" ng-model="allImages.checked" ng-change="selectAll()"/>&nbsp;&nbsp;<span ng-click="deleteImage()"><a href="">删除</a></span>\n                      <div class="btn-group">\n                           <div class="dropdown-toggle"  data-toggle="dropdown" ng-click="setIndex($event);">分类到</div>\n                           <div class="dropdown-menu" role="menu">\n                               <ul forbidden-close>\n                                  <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;" ng-click="setCategory(dropTagIndex)"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                        <div ng-if="tagIndex > -1" style="display: inline-block; margin-left: 20px;"><a href="" ng-click="unsetTag()">取消分类</a></div>\n                  </div>\n                </div>\n            </div>\n            <div class="tab-pane" ng-class="{active: systemImages}" ng-show="systemImages">\n               <div class="img_list">\n                    <div class="category_list">             \n                      <ul class="category_list_container clearfix">\n                         <li class="category_item"  ng-click="changeCategory(\'all\')" ng-class="{active: \'all\' == categoryId}">\n                         最新\n                            </li>\n                         <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value); getChildCategory(category.value);sysTagIndex = -1;">\n                               {{category.name}}\n                         </li>\n                         <li ng-show="fileType == \'0\'" class="category_item"  ng-click="changeCategory(\'c\');numPages=2;" ng-class="{active: \'c\' == categoryId}">\n                         纯色背景\n                          </li>\n                     </ul>   \n                  </div>\n                    <div class="cat_two_list clearfix" ng-if="\'c\' != categoryId && \'all\' != categoryId">\n                      <ul>\n                          <li ng-class="{active: sysTagIndex == $index}" ng-repeat = "childCatrgory in childCatrgoryList" ng-click="getImagesBySysTag(childCatrgory.id, $index, 1, categoryId)" style="cursor:pointer;">\n                                {{childCatrgory.name}}\n                            </li>\n                     </ul>\n                 </div>\n                </div>\n            </div>\n        </div>\n        <div class="img_list" style="padding-top:0px;">\n           <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n               <ul class="img_box clearfix">\n                 <li ng-show="categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                      <span class=""><img ng-src="{{CLIENT_CDN}}assets/images/bg_15.jpg" alt="" /></span>\n                   </li>\n                 <li class="imageList" ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                       <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}" />\n                       <div class="edit_content" ng-if="(img.showOp || img.selected) && categoryId == \'0\'">\n                            <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                          <div ng-if="categoryId == \'0\'" class="set btn-group" class="dropdown-toggle"  data-toggle="dropdown" ng-click="prevent(img, $event)">\n                               <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>  \n                          <div class="dropdown-menu set_category" id="{{img.id}}" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;"><a href="" style="color:#FFF;" ng-click="setCategory(dropTagIndex, img.id)">确定</a></div>\n                         </div>\n                                \n                      </div>\n                    </li>\n                 <li class="imageList" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                     <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"/>\n                        <div class="edit_content" ng-show="(img.showOp || img.selected) && categoryId == \'0\'">\n                          <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)" ng-click="deleteImg()"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                           <div class="set btn-group" ng-if="categoryId == \'0\'" class="dropdown-toggle" ng-click="prevent(img, $event)" data-toggle="dropdown">\n                                <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>\n                            <div class="dropdown-menu set_category" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory()" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                                </ul>\n                             <div class="fl btn-main" ng-click="setCategory(dropTagIndex, img.id)" style="width:100%;"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                    </li>\n                 <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected, mr0: $index%9 == 8}" ng-click="switchSelect(img, $event)"  ng-repeat="img in imgList track by $index">\n                 </li>\n             </ul>\n         </div>\n            <div class="fanye_foot clearfix" style="margin-top: 20px;">\n               <div class="fr btn-main" ng-click="replaceImage();"><a href="" style="color:#FFF;">确定</a></div>\n               <div class="pagination_container fl">\n                 <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="5" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="getImagesByPage(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n                   <div class="current_page">\n                        <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? getImagesByPage(categoryId, toPage) : null">\n                        <a ng-click="getImagesByPage(categoryId,toPage)" class="go">GO</a>\n                        <span>当前: {{currentPage}} / {{numPages}} 页</span>\n                 </div>\n                </div>\n            </div>\n        </div>\n    </div>\n</div>')
+    }]);
+    ng.module("scene/console/fake.tpl.html", []).run(["$templateCache", function($templateCache) {
+        a.put("scene/console/fake.tpl.html", '<div class="modal-footer">\n  <div class="alert alert-info" role="alert">此功能为高级账号功能，点击按钮免费申请成为高级账号！</div>\n    <a class="btn-main login" target="_blank" style="width: 188px;" ng-href="http://eqxiu.hjtmt.com/forum.php?mod=viewthread&tid=77">免费成为高级账号</a>\n</div>\n<div class="anim_area" style="padding: 0 20px 20px;">\n <img title="点击上方按钮成为高级账号" ng-show="type==\'style\'" src="{{CLIENT_CDN}}assets/images/create/fakestyle.png"/>\n  <img title="点击上方按钮成为高级账号" ng-show="type==\'anim\'" src="{{CLIENT_CDN}}assets/images/create/fakeanim.png"/>\n</div>')
+    }]);
+    ng.module("scene/console/style.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/style.tpl.html", '<div ng-if="activeTab == \'style\'" ng-controller="StyleConsoleCtrl">\n   <div class="yangshi">\n     <section>\n         <div class="style_list" ng-init="showBasic=true" ng-click="showBasic = !showBasic; showBorder = false; showShadow = false;">\n              <b class="caret" ng-show="showBasic"></b><b class="caret off" ng-show="!showBasic"></b>基础样式\n           </div>\n            <div ng-show="showBasic"  class="style_con_hei">\n              <div class="style_list_angel clearfix">\n                   <div class="">背景颜色</div>\n                  <div class="color_select clearfix" style="margin-top:10px;">\n                      <input class=" flo_right" style="font-size:12px;width:135px;" style-input elem-id="{{elemDef.id}}" ng-model="model.backgroundColor" css-item="backgroundColor" type="text" />\n                     <a class="input_kuang flo_lef" ng-style="{backgroundColor: model.backgroundColor}" ng-model="model.backgroundColor" colorpicker="rgba" ></a>\n                  </div>\n                </div>\n                <div class="style_list_angel clearfix" ng-show="elemDef.type == \'2\' ||elemDef.type == \'8\' || (\'\'+elemDef.type).charAt(0) == \'6\'">\n                 <div class="">文字颜色</div>\n                  <div class="color_select clearfix" style="margin-top:10px;">\n                      <input class=" flo_right" style="font-size:12px;width:135px;" style-input elem-id="{{elemDef.id}}" ng-model="model.color" css-item="color" type="text" />\n                     <a class="input_kuang flo_lef" ng-style="{backgroundColor: model.color}" ng-model="model.color" colorpicker="rgba" ></a>\n\n                    </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div>透明度</div>\n                    <div class="touming clearfix">\n                        <p class="num"><input type="number" min="0" max="100" limit-input style="width:56px;height:24px;border-radius:0px;" style-input elem-id="{{elemDef.id}}" css-item="opacity" ng-model="model.opacity"/>%</p>\n                       <div style="width: 100px;" ui-slider min="0" max="100" ng-model="model.opacity"></div>\n                    </div>\n                </div>                  \n              <div class="style_list_angel clearfix" ng-show="elemDef.type == \'8\' || (\'\'+elemDef.type).charAt(0) == \'6\' || elemDef.type == \'2\' || (\'\'+elemDef.type).charAt(0) == \'5\'">\n                  <div>\n                     边距\n                        <div class="touming clearfix">\n                            <p class="num"><input min="0" max="20" limit-input class="input_kuang short" type="number" style-input css-item="padding" ng-model="model.paddingTop"/>px</p>               \n                          <div style="width: 100px;" ui-slider min="0" max="20" ng-model="model.paddingTop"></div>\n                      </div>\n                    </div>\n                </div>\n                <div class="style_list_angel clearfix" ng-show="elemDef.type == \'8\' || (\'\'+elemDef.type).charAt(0) == \'6\' || elemDef.type == \'2\' || (\'\'+elemDef.type).charAt(0) == \'5\'">\n                  <div>\n                     行高\n                        <div class="touming clearfix">\n                            <p class="num"><input min="0" max="3" limit-input step="0.1" class="input_kuang short" type="number" style-input css-item="lineHeight" ng-model="model.lineHeight"/>倍</p>           \n                          <div style="width: 100px;" use-decimals step="0.1" ui-slider min="0" max="3" ng-model="model.lineHeight"></div>\n                       </div>\n                    </div>\n                </div>                              \n          </div>\n        </section>\n        <section>\n         <div class="style_list" ng-click="showBorder = !showBorder; showBasic=false;showShadow=false;">\n               <b class="caret" ng-show="showBorder"></b><b class="caret off" ng-show="!showBorder"></b>边框样式\n         </div>\n            <div ng-show="showBorder" class="style_con_hei">\n              <div class="style_list_angel clearfix">\n                   边框尺寸\n                  <div class="touming clearfix">\n                        <p class="num"><input class="input_kuang short" limit-input type="number" min="0" max="20" style-input css-item="borderWidth" ng-model="model.borderWidth"/>px</p>              \n                      <div style="width: 100px;" ui-slider min="0" max="20" ng-model="model.borderWidth"></div>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div>边框弧度</div>\n                   <!-- <div class="touming clearfix">\n                       <p class="num"><input type="number" min="0" max="100" limit-input style="width:56px;height:24px;border-radius:2px;" style-input css-item="borderRadius" ng-model="model.borderRadiusPerc" />%</p>       \n                      <div class="num" style="width:100px;" ui-slider min="0" max="100" ng-model="model.borderRadiusPerc"></div>\n                    </div> -->\n                    <div class="touming clearfix">\n                        <p class="num"><input class="input_kuang short" type="number" min="0" max="{{maxRadius}}" limit-input style-input css-item="borderRadius" ng-model="model.borderRadius" />px</p>        \n                      <div class="num" style="width:100px;" ui-slider min="0" max="{{maxRadius}}" ng-model="model.borderRadius"></div>\n                  </div>\n                </div>  \n              <div class="style_list_angel clearfix">\n                   <div class="flo_lef">边框样式</div>\n                   <div class="flo_right">\n                       <select style="border:1px solid #ccc" style-input css-item="borderStyle" ng-model="model.borderStyle">\n                            <option value="solid">直线</option>\n                         <option value="dashed">破折线</option>\n                           <option value="dotted">点状线</option>\n                           <option value="double">双划线</option>\n                           <option value="groove">3D凹槽</option>\n                          <option value="ridge">3D垄状</option>\n                           <option value="inset">3D内嵌</option>\n                           <option value="outset">3D外嵌</option>\n                      </select>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div class="">边框颜色</div>\n                  <div class="clearfix" style="margin-top:10px;">\n                       <input class="flo_right" style="font-size:12px;width:135px;" style-input ng-model="model.borderColor" css-item="borderColor" type="text" />\n                       <a class="input_kuang flo_lef" ng-style="{backgroundColor: model.borderColor}" ng-model="model.borderColor" colorpicker="rgba"></a>\n                   </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div>\n                     旋转\n                        <div class="touming clearfix">\n                            <p class="num"><input min="0" max="360" limit-input style-input css-item="transform" class="input_kuang short" type="number"  ng-model="model.transform"/>度</p>         \n                          <div style="width: 100px;" ui-slider min="0" max="360" ng-model="model.transform"></div>\n                      </div>\n                    </div>\n                </div>              \n          </div>\n        </section>\n        <section>\n         <div class="style_list" ng-click="showShadow = !showShadow; showBasic=false;showBorder=false;">\n               <b class="caret" ng-show="showShadow"></b><b class="caret off" ng-show="!showShadow"></b>阴影样式\n         </div>\n            <div ng-show="showShadow" class="style_con_hei">\n              <div class="style_list_angel clearfix">\n                   大小\n                    <div class="touming clearfix">\n                        <div style="width: 100px;" ui-slider min="0" max="20" ng-model="tmpModel.boxShadowSize"></div>\n                        <p class="num"><input limit-input class="input_kuang short" min="0" max="20" type="number" style-input css-item="boxShadow" ng-model="tmpModel.boxShadowSize"/>px</p>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   模糊\n                    <div class="touming clearfix">\n                        <div style="width: 100px;" ui-slider min="0" max="20" ng-model="tmpModel.boxShadowBlur"></div>\n                        <p class="num"><input limit-input class="input_kuang short" min="0" max="20" type="number" style-input css-item="boxShadow" ng-model="tmpModel.boxShadowBlur"/>px</p>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div class="">颜色</div>\n                    <div class="clearfix" style="margin-top:10px;">\n                       <input class=" flo_right" style="font-size:12px;width:135px;" style-input  ng-model="tmpModel.boxShadowColor" css-item="boxShadow" type="text" />                       \n                      <a class="input_kuang flo_lef" ng-style="{backgroundColor: tmpModel.boxShadowColor}" ng-model="tmpModel.boxShadowColor" colorpicker="rgba" colorpicker-fixed-position="true"></a>\n\n                   </div>\n                </div>  \n              <div class="style_list_angel clearfix">\n                   方向\n                    <div class="clearfix" style="margin-top:15px;">\n                       <div class="fr">\n                          <p class="num" style="margin-top:18px;"><input style="width:58px;margin-right:5px;" min="0" max="359" limit-input class="input_kuang" type="number" style-input css-item="boxShadow" ng-model="tmpModel.boxShadowDirection"/>度</p></div>                    \n                      <angle-knob class="flo_lef" style="display: block;position: relative;height: 60px;margin-left:60px;"></angle-knob>\n                    </div>\n                </div>\n            </div>\n        </section>\n        <div class="modal-footer">\n            <a class="btn-main login" style="width: 120px;" ng-click="clear()">清除全部样式</a>\n     </div>\n    </div>\n</div>\n')
+    }]);
+    ng.module("scene/console/angle-knob.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/angle-knob.tpl.html", '<div class="sliderContainer">\n  <div class="sliderKnob"></div>\n</div>')
+    }]);
+    ng.module("scene/console/anim.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/anim.tpl.html", '<div ng-if="activeTab == \'anim\'" ng-controller="AnimConsoleCtrl">\n <div class="anim_area">\n       <div class="style_list_angel clearfix">\n           <div class="flo_lef">动画类型</div>\n           <div class="flo_right"><select style="width:100px;border:1px solid #C9C9C9" ng-model="activeAnim" ng-change="model.type=activeAnim.id; changeAnimation()" ng-options="animType.name for animType in animTypeEnum">\n                <option value="-1">无</option>\n         </select></div>\n           <div ng-show="model.type == 7" class="flo_right" style="clear:both;vertical-align: bottom;"><input type="checkbox" value="" ng-model="model.linear" ng-true-value="1" style="margin-right:3px;" />匀速</div>\n        </div>\n        <div class="row" ng-show="model.type != -1 && model.type != null">          \n          <form role="form">\n                <div class="style_list_angel clearfix" ng-show="model.type == 1 || model.type == 2">\n                  <div class="flo_lef"><label>方向</label></div>\n                  <div class="flo_right"><select style="color:#999" class="form-control" ng-model="direction" ng-change="changeAnimation()" ng-options="animDirection.name for animDirection in animDirectionEnum">\n                 </select></div>\n               </div>\n                <div class="style_list_angel">\n                    <label>动画时间</label>\n                   <div class="touming clearfix">\n                        <p class="num"><input limit-input class="input_kuang short" type="number" step="0.1" min="0" max="20" ng-model="model.duration" />秒</p>\n                       <div class="num" style="width:100px;" ui-slider min="0" max="20" use-decimals step="0.1" ng-model="model.duration"></div>\n                 </div>\n                </div>              \n              <div class="style_list_angel">\n                    <label>延迟时间</label>\n                   <div class="touming clearfix">\n                        <p class="num"><input limit-input class="input_kuang short" type="number" step="0.1" min="0" max="20" class="form-control" ng-model="model.delay" />秒</p>\n                     <div class="num" style="width:100px;" ui-slider min="0" max="20" use-decimals step="0.1" ng-model="model.delay"></div>\n                    </div>\n                </div>\n                <div class="style_list_angel">\n                    <label>动画次数</label>\n                   <div class="touming clearfix">\n                        <p class="num"><input ng-disabled  = "model.count" limit-input class="input_kuang short" type="number" min="1" max="10" class="form-control" ng-model="model.countNum"   />次</p>\n                      <div class="num" style="width:100px;" ui-slider min="0" max="10" ng-model="model.countNum" ng-disabled  = "model.count"></div>\n                    </div>\n                    <div class="" style="text-align:right;margin-top:5px;"><input type="checkbox" value="" id="xunhuan" ng-model="model.count" style="margin-right:3px;" />循环播放</div>               \n              </div>\n            </form>                 \n      </div>\n    </div>\n</div>')
+    }]);
+    ng.module("scene/console/setting.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/setting.tpl.html", '<div panel-draggable id="comp_setting">\n  <div class="cancel"><a href="" title="关闭" ng-click="cancel()">x</a></div>\n <div class="style_head clearfix">\n     <ul class="clearfix">\n         <li><a ng-click="activeTab = \'style\'" ng-class="{hover:activeTab == \'style\'}">样式</a></li>\n         <li><a ng-click="activeTab = \'anim\'" ng-class="{hover:activeTab == \'anim\'}">动画</a></li>\n       </ul>\n </div>\n    <div class="style_content">\n       <div ng-include="\'scene/console/anim.tpl.html\'"></div>\n      <div ng-include="\'scene/console/style.tpl.html\'"></div>\n     \n  </div>      \n  \n</div>')
     }]);
 
     ng.module("templates-common", [
