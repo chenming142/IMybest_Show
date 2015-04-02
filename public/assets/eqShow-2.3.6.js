@@ -4642,7 +4642,7 @@
                     },
                     H = function() {
                         J()
-                    };
+                    };git 
                 n === !1 ? h.on("click", function() {
                     F(), u.addClass("colorpicker-visible").css(G()), a.on("mousedown", H)
                 }) : (F(), u.addClass("colorpicker-visible").css(G())), u.on("mousedown", function(a) {
