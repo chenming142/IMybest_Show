@@ -218,7 +218,7 @@
 						}
 						break;
 					case 2:
-						switch(e.direction){
+						switch(anim.direction){
 							case 0:
 								animation = "bounceInLeft";
 								break;
@@ -1874,6 +1874,29 @@
                     }
                 });
         }//w
+        function audioHandle() {
+            if(!Modal){
+                Modal = $modal.open({
+                    windowClass: "console",
+                    templateUrl: "scene/console/audio.tpl.html",
+                    controller: "AudioConsoleCtrl",
+                    resolve: {
+                        obj: function() {
+                            return CurPageTplInfo.obj.scene.image && CurPageTplInfo.obj.scene.image.bgAudio ? CurPageTplInfo.obj.scene.image.bgAudio : {};
+                        }
+                    }
+                }).result.then(function(data) {
+                        Modal = null;
+                        if("bgAudio" == data.compType){
+                            if(!CurPageTplInfo.obj.scene.image)CurPageTplInfo.obj.scene.image = {};
+                            CurPageTplInfo.obj.scene.image.bgAudio = data.bgAudio;
+                        }
+                    }, function() {
+                        Modal = null;
+                    });
+            }
+        }//y
+
         function openModal(component, successFn, failFn) {
             if (!Modal) {
                 var fileType = "0";
@@ -1940,7 +1963,256 @@
                 copyElemDef.css.left = originalElemDef.css.left;
                 SceneService.sameCopyCount++;
             }
-        }
+        }//k
+        function setCssProps(type, b) {
+            var cssProps = {},
+                $target = $("#nr .edit_area"),
+                $last = $target.children().last(),
+                $maxIndex = $target.children(".maxIndex"),
+                curIndex = 0;
+            if($maxIndex.length > 0){
+                curIndex = parseInt($maxIndex.css("z-index"), 10) + 1;
+            }else{
+                if($last.length > 0){
+                    curIndex = parseInt($last.css("z-index"), 10) + 1;
+                }else{
+                    curIndex = 101;
+                }
+            }
+            if (b){b.zIndex = curIndex;return b;}
+            if($last.length <= 0){
+                cssProps = {top: "30px",left: "0px"};
+            }else{
+                if($last.position().top + $last.outerHeight() > $("#nr .edit_area").outerHeight() - 10){
+                    cssProps = {top: $last.position().top,  left: $last.position().left + 10 + "px"};
+                }else{
+                    cssProps = {
+                        top: $last.position().top + $last.outerHeight() + 10 + "px",
+                        left: $last.position().left + "px"
+                    };
+                }
+            }
+            cssProps.zIndex = curIndex;
+            return cssProps;
+        }//j
+        function setElementData(type, b, c) {
+            var cssProps,
+                getRandomUId = function() {
+                    for (var uid = Math.ceil(1e3 * Math.random()), b = 0; b < CurPageElementInfo.length; b++){
+                        if (CurPageElementInfo[b].id == uid) return getRandomUId();
+                    }
+                    return uid;
+                },
+                rndUid = getRandomUId(),
+                elemData = {};
+            switch (("" + type).charAt(0)){
+                case "1"://submit
+                    elemData = {
+                        id: Math.ceil(100 * Math.random()),
+                        properties: {title: "提交"},
+                        type: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        sceneId: CurPageTplInfo.obj.sceneId
+                    };
+                    break;
+                case "2"://文本
+                    cssProps = setCssProps(type, b);
+                    elemData = {
+                        content: "点击此处进行编辑",
+                        css: cssProps,
+                        id: rndUid,
+                        num: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: {},
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: null,
+                        type: 2
+                    };
+                    break;
+                case "3"://背景
+                    if ($("#editBG:visible").length > 0) {
+                        for (var h = 0; h < CurPageElementInfo.length; h++){
+                            if (3 == CurPageElementInfo[h].type) {
+                                elemData = CurPageElementInfo[h];
+                                break
+                            }
+                        }
+                        return elemData;
+                    }
+                    elemData = {
+                        content: null,
+                        css: {},
+                        id: rndUid,
+                        num: 0,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: { bgColor: null, imgSrc: null},
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: null,
+                        type: 3
+                    }
+                    break;
+                case "4"://图片
+                    cssProps = setCssProps(type, b);
+                    cssProps.width = "100px";
+                    cssProps.height = "100px";
+                    elemData = {
+                        content: "",
+                        css: cssProps,
+                        id: rndUid,
+                        num: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: {width: "100px",height: "100px",src: ""},
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: null,
+                        type: 4
+                    };
+                    break;
+                case "5"://输入框
+                    cssProps = setCssProps(type, b);
+                    $.extend(true, cssProps, {
+                        color: "#676767",
+                        borderWidth: "1",
+                        borderStyle: "solid",
+                        borderColor: "#ccc",
+                        borderRadius: "5",
+                        backgroundColor: "#f9f9f9"
+                    });
+                    elemData = {
+                        content: "",
+                        css: cssProps,
+                        id: rndUid,
+                        num: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: {placeholder: "请命名"},
+                        isInput: 1,
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: "请命名",
+                        type: 5
+                    };
+                    break;
+                case "6"://button
+                    cssProps = setCssProps(type, b);
+                    $.extend(true, cssProps, {
+                        color: "#676767",
+                        borderWidth: "1",
+                        borderStyle: "solid",
+                        borderColor: "#ccc",
+                        borderRadius: "5",
+                        backgroundColor: "#f9f9f9"
+                    });
+                    elemData = {
+                        content: "",
+                        css: cssProps,
+                        id: rndUid,
+                        num: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: {title: "提交"},
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: null,
+                        type: 6
+                    };
+                    break;
+                case "8"://电话
+                    cssProps = setCssProps(type, b);
+                    $.extend(true, cssProps, {
+                        color: "#676767",
+                        borderWidth: "1",
+                        borderStyle: "solid",
+                        borderColor: "#ccc",
+                        borderRadius: "5",
+                        backgroundColor: "#f9f9f9"
+                    });
+                    elemData = {
+                        content: "",
+                        css: cssProps,
+                        id: rndUid,
+                        num: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: {title: "一键拨号",number: ""},
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: null,
+                        type: 8
+                    };
+                    break;
+                case "p"://图集
+                    cssProps = setCssProps(type, b);
+                    elemData = {
+                        content: "",
+                        css: cssProps,
+                        id: rndUid,
+                        num: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: {title: "图集"},
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: null,
+                        type: "p"
+                    };
+                    break;
+                case "v"://视频
+                    cssProps = setCssProps(type, b);
+                    cssProps.width = "48px";
+                    cssProps.height = "48px";
+                    elemData = {
+                        content: "",
+                        css: cssProps,
+                        id: rndUid,
+                        num: 1,
+                        pageId: CurPageTplInfo.obj.id,
+                        properties: {src: ""},
+                        sceneId: CurPageTplInfo.obj.sceneId,
+                        title: null,
+                        type: "v"
+                    };
+                    break;
+            }
+            c && $.extend(!0, elemData, c);
+            CurPageElementInfo.push(elemData);
+            I[elemData.id] = elemData;
+            return elemData;
+        }//l
+        function setInputData(type) {
+            var elementData;
+            switch (type){
+                case "501":
+                    elementData = {
+                        properties: {placeholder: "姓名"},
+                        title: "姓名",
+                        type: 501
+                    };
+                    break;
+                case "502":
+                    elementData = {
+                        properties: {placeholder: "手机"},
+                        title: "手机",
+                        type: 502
+                    };
+                    break;
+                case "503":
+                    elementData = {
+                        properties: {placeholder: "邮箱"},
+                        title: "邮箱",
+                        type: 503
+                    };
+                    break;
+                case "601":
+                    elementData = {
+                        properties: {title: "提交"},
+                        type: 601
+                    };
+                    break;
+            }
+            return elementData;
+        };//K
+        function setG101Data(type) {
+            var inputData = [];
+            if("g101" == type){
+                inputData.push(setInputData("501"));
+                inputData.push(setInputData("502"));
+                inputData.push(setInputData("503"));
+                inputData.push(setInputData("601"));
+            }
+            return inputData;
+        }//n
 
         {var SceneService = {}, JsonParser = eqShow.templateParser("jsonParser"), CurPageTplInfo = null, CurPageElementInfo = null, I = {};}
 
@@ -2008,55 +2280,110 @@
                 }
             });
         };
+        var createCompGroup = SceneService.createCompGroup = function(type, b){
+            for (var inputData = setG101Data(type), e = 0; e < inputData.length; e++) {
+                var elementData = setElementData(inputData[e].type, b, inputData[e]);
+                b = null;
+                addComponentHandle(inputData[e].type, elementData, "g101");
+            }
+            historyService.addPageHistory(CurPageTplInfo.obj.id, CurPageTplInfo.obj.elements);
+            $rootScope.$broadcast("dom.changed");
+        }
+        SceneService.createComp = function(type, b) {
+            var elementData;
+            switch (("" + type).charAt(0)){
+                case "1":
+                    if($(".comp_title").length > 0){
+                        alert("已存在一个标签");
+                    }else{
+                        elementData = setElementData(type, b);
+                        microwebHandle(elementData);
+                    }
+                    break;
+                case "3":
+                    elementData = setElementData(type, b);
+                    bgHandle(elementData);
+                    break;
+                case "4":
+                    elementData = setElementData(type, b);
+                    imageHandle(elementData);
+                    break;
+                case "5":
+                    elementData = setElementData(type, b);
+                    inputHandle(elementData);
+                    break;
+                case "8":
+                    elementData = setElementData(type, b);
+                    telHandle(elementData);
+                    break;
+                case "9":
+                    audioHandle();
+                    break;
+                case "g":
+                    createCompGroup(type, b);
+                    break;
+                case "v":
+                    elementData = setElementData(type, b);
+                    videoHandle(elementData);
+                    break;
+                case "p":
+                    elementData = setElementData(type, b);
+                    carouselHandle(elementData);
+                    break;
+                default :
+                    elementData = setElementData(type, b);
+                    addComponentHandle(type, elementData);
+            }
+        };
+        SceneService.updateCompSize = function(elementId, props) {
+            for (var d = 0; d < CurPageElementInfo.length; d++) {
+                if("inside_" + CurPageElementInfo[d].id == elementId){
+                    if(!CurPageElementInfo[d].css)CurPageElementInfo[d].css = {};
+                    CurPageElementInfo[d].css.width = props.width;
+                    CurPageElementInfo[d].css.height = props.height;
+
+                    CurPageElementInfo[d].properties.width = props.width;
+                    CurPageElementInfo[d].properties.height = props.height;
+                    if(props.imgStyle)CurPageElementInfo[d].properties.imgStyle = props.imgStyle;
+                    //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo)
+                }
+            }
+            $rootScope.$apply();
+        };
+        SceneService.updateCompPosition = function(elementId, props) {
+            for (var d = 0; d < CurPageElementInfo.length; d++) {
+                if ("inside_" + CurPageElementInfo[d].id == elementId) {
+                    if(CurPageElementInfo[d].css){
+                        CurPageElementInfo[d].css.left = props.left;
+                        CurPageElementInfo[d].css.top = props.top;
+                        //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                    }else{
+                        CurPageElementInfo[d].css = props;
+                        //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                    }
+                }
+            }
+            $rootScope.$apply();
+        };
+        SceneService.updateCompAngle = function(elementId, angle) {
+            for (var d = 0; d < CurPageElementInfo.length; d++){
+                if("inside_" + CurPageElementInfo[d].id == elementId){
+                    if(CurPageElementInfo[d].css){
+                        CurPageElementInfo[d].css.transform = "rotateZ(" + angle + "deg)"
+                    }else{
+                        CurPageElementInfo[d].css = {};
+                    }
+                    //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
+                }
+            }
+            $rootScope.$apply();
+        };
 
 
         var Modal = null, GlobalEvt = null;
         JsonParser.addInterceptor(function(wrapComponent, element, mode){
             function generatePopMenu() {
-                var $popMenu = $(
-                        '<ul id="popMenu" class="dropdown-menu" style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1">' +
-                        '<li class="edit" role="presentation">' +
-                        '<a role="menuitem" tabindex="-1">' +
-                        '<div class="glyphicon glyphicon-edit" style="color: #08a1ef;"></div>&nbsp;&nbsp;编辑' +
-                        '</a>' +
-                        '</li>' +
-                        '<li class="style" role="presentation">' +
-                        '<a role="menuitem" tabindex="-1">' +
-                        '<div class="fa fa-paint-brush" style="color: #08a1ef;"></div>&nbsp;&nbsp;样式' +
-                        '</a>' +
-                        '</li>' +
-                        '<li class="animation" role="presentation">' +
-                        '<a role="menuitem" tabindex="-1">' +
-                        '<div class="fa fa-video-camera" style="color: #08a1ef;"></div>&nbsp;&nbsp;动画' +
-                        '</a>' +
-                        '</li>' +
-                        '<li class="link" role="presentation">' +
-                        '<a role="menuitem" tabindex="-1">' +
-                        '<div class="fa fa-link" style="color: #08a1ef;"></div>&nbsp;&nbsp;链接' +
-                        '</a>' +
-                        '</li>' +
-                        '<li class="copy" role="presentation" style="margin-bottom:5px;">' +
-                        '<a role="menuitem" tabindex="-1">' +
-                        '<div class="fa fa-copy" style="color: #08a1ef;"></div>&nbsp;&nbsp;复制' +
-                        '</a>' +
-                        '</li>' +
-                        '<li class="cut" role="presentation" style="margin-bottom:5px;">' +
-                        '<a role="menuitem" tabindex="-1">' +
-                        '<div class="fa fa-cut" style="color: #08a1ef;"></div>&nbsp;&nbsp;裁剪' +
-                        '</a>' +
-                        '</li>' +
-                        '<li role="presentation" class="bottom_bar">' +
-                        '<a title="上移一层">' +
-                        '<div class="up" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -26px no-repeat;"></div>' +
-                        '</a>' +
-                        '<a title="下移一层">' +
-                        '<div class="down" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -80px no-repeat;"></div>' +
-                        '</a>' +
-                        '<a title="删除">' +
-                        '<div class="remove" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -1px no-repeat;"></div>' +
-                        '</a>' +
-                        '</li>' +
-                        '</ul>')
+                var $popMenu = $('<ul id="popMenu" class="dropdown-menu" style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1"><li class="edit" role="presentation"><a role="menuitem" tabindex="-1"><div class="glyphicon glyphicon-edit" style="color: #08a1ef;"></div>&nbsp;&nbsp;编辑</a></li><li class="style" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-paint-brush" style="color: #08a1ef;"></div>&nbsp;&nbsp;样式</a></li><li class="animation" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-video-camera" style="color: #08a1ef;"></div>&nbsp;&nbsp;动画</a></li><li class="link" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-link" style="color: #08a1ef;"></div>&nbsp;&nbsp;链接</a></li><li class="copy" role="presentation" style="margin-bottom:5px;"><a role="menuitem" tabindex="-1"><div class="fa fa-copy" style="color: #08a1ef;"></div>&nbsp;&nbsp;复制</a></li><li class="cut" role="presentation" style="margin-bottom:5px;"><a role="menuitem" tabindex="-1"><div class="fa fa-cut" style="color: #08a1ef;"></div>&nbsp;&nbsp;裁剪</a></li><li role="presentation" class="bottom_bar"><a title="上移一层"><div class="up" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -26px no-repeat;"></div></a><a title="下移一层"><div class="down" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -80px no-repeat;"></div></a><a title="删除"><div class="remove" style="display: inline-block; width: 26px;height: 22px; background: url(http://static.parastorage.com/services/skins/2.1127.3/images/wysiwyg/core/themes/editor_web/button/fpp-buttons-icons4.png) 0px -1px no-repeat;"></div></a></li></ul>')
                     .css({position: "absolute","user-select": "none"});
                 if( q ){
                     $popMenu.find(".copy").after($('<li class="paste" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-paste" style="color: #08a1ef;"></div>&nbsp;&nbsp;粘贴</a></li>'));
@@ -2463,52 +2790,9 @@
             });
         };
 
-        SceneService.updateCompSize = function(elementId, props) {
-            for (var d = 0; d < CurPageElementInfo.length; d++) {
-                if("inside_" + CurPageElementInfo[d].id == elementId){
-                    if(!CurPageElementInfo[d].css)CurPageElementInfo[d].css = {};
-                    CurPageElementInfo[d].css.width = props.width;
-                    CurPageElementInfo[d].css.height = props.height;
-
-                    CurPageElementInfo[d].properties.width = props.width;
-                    CurPageElementInfo[d].properties.height = props.height;
-                    if(props.imgStyle)CurPageElementInfo[d].properties.imgStyle = props.imgStyle;
-                    //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo)
-                }
-            }
-            $rootScope.$apply();
-        };
-        SceneService.updateCompPosition = function(elementId, props) {
-            for (var d = 0; d < CurPageElementInfo.length; d++) {
-                if ("inside_" + CurPageElementInfo[d].id == elementId) {
-                    if(CurPageElementInfo[d].css){
-                        CurPageElementInfo[d].css.left = props.left;
-                        CurPageElementInfo[d].css.top = props.top;
-                        //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
-                    }else{
-                        CurPageElementInfo[d].css = props;
-                        //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
-                    }
-                }
-            }
-            $rootScope.$apply();
-        };
-        SceneService.updateCompAngle = function(elementId, angle) {
-            for (var d = 0; d < CurPageElementInfo.length; d++){
-                if("inside_" + CurPageElementInfo[d].id == elementId){
-                    if(CurPageElementInfo[d].css){
-                        CurPageElementInfo[d].css.transform = "rotateZ(" + angle + "deg)"
-                    }else{
-                        CurPageElementInfo[d].css = {};
-                    }
-                    //h.addPageHistory(CurPageTplInfo.obj.id, CurPageElementInfo);
-                }
-            }
-            $rootScope.$apply();
-        };
-
         return SceneService;
     }]);
+
     ng.module("confirm-dialog", []).controller("ConfirmDialogCtrl", ["$scope", "confirmObj", function(a, b) {
             a.confirmObj = b, a.ok = function() {
                 a.$close()
@@ -3091,259 +3375,330 @@
     });
     ng.module("scene.create.console.setting.style", ["colorpicker.module", "app.directives.style", "app.directives.uislider", "app.directives.limitInput"]);
     ng.module("scene.create.console.setting.style")
-        .controller("StyleConsoleCtrl", ["$scope", "sceneService", function(a, b) {
-        var c = a.elemDef = b.currentElemDef;
-        delete c.css.borderTopLeftRadius, delete c.css.borderTopRightRadius, delete c.css.borderBottomLeftRadius, delete c.css.borderBottomRightRadius, delete c.css.border;
-        var d = c.css,
-            e = $("#inside_" + a.elemDef.id + " > .element-box");
-        if (a.model = {
-            backgroundColor: d.backgroundColor || "",
-            opacity: 100 - 100 * d.opacity || 0,
-            color: d.color || "#676767",
-            borderWidth: parseInt(d.borderWidth, 10) || 0,
-            borderStyle: d.borderStyle || "solid",
-            borderColor: d.borderColor || "rgba(0,0,0,1)",
-            paddingBottom: parseInt(d.paddingBottom, 10) || 0,
-            paddingTop: parseInt(d.paddingTop, 10) || 0,
-            lineHeight: +d.lineHeight || 1,
-            borderRadius: parseInt(d.borderRadius, 10) || 0,
-            transform: d.transform && parseInt(d.transform.replace("rotateZ(", "").replace("deg)", ""), 10) || 0
-        }, a.maxRadius = Math.min(e.outerWidth(), e.outerHeight()) / 2 + 10, d.borderRadiusPerc ? a.model.borderRadiusPerc = parseInt(d.borderRadiusPerc, 10) : d.borderRadius ? "999px" == d.borderRadius ? a.model.borderRadiusPerc = 100 : (a.model.borderRadiusPerc = parseInt(100 * parseInt(d.borderRadius, 10) * 2 / Math.min(e.outerWidth(), e.outerHeight()), 10), a.model.borderRadiusPerc > 100 && (a.model.borderRadiusPerc = 100)) : a.model.borderRadiusPerc = 0, a.tmpModel = {
-            boxShadowDirection: 0,
-            boxShadowX: 0,
-            boxShadowY: 0,
-            boxShadowBlur: 0,
-            boxShadowSize: 0,
-            boxShadowColor: "rgba(0,0,0,0.5)"
-        }, d.boxShadow) {
-            var f = d.boxShadow.split(" ");
-            a.tmpModel.boxShadowX = parseInt(f[0], 10), a.tmpModel.boxShadowY = parseInt(f[1], 10), a.tmpModel.boxShadowDirection = parseInt(d.boxShadowDirection, 10) || 0, a.tmpModel.boxShadowBlur = parseInt(f[2], 10), a.tmpModel.boxShadowColor = f[3], a.tmpModel.boxShadowSize = parseInt(d.boxShadowSize, 10) || 0
-        }
-        a.clear = function() {
-            a.model = {
-                backgroundColor: "",
-                opacity: 0,
-                color: "#676767",
-                borderWidth: 0,
-                borderStyle: "solid",
-                borderColor: "rgba(0,0,0,1)",
-                paddingBottom: 0,
-                paddingTop: 0,
-                lineHeight: 1,
-                borderRadius: 0,
-                transform: 0
-            }, a.tmpModel = {
+        .controller("StyleConsoleCtrl", ["$scope", "sceneService", function($scope, sceneService) {
+            //TODO: currentElemDef
+            var curElementDef = $scope.elemDef = sceneService.currentElemDef;
+
+            delete curElementDef.css.borderTopLeftRadius;
+            delete curElementDef.css.borderTopRightRadius;
+            delete curElementDef.css.borderBottomLeftRadius;
+            delete curElementDef.css.borderBottomRightRadius;
+            delete curElementDef.css.border;
+
+            var d = curElementDef.css, $target = $("#inside_" + $scope.elemDef.id + " > .element-box");
+            if (a.model = {
+                backgroundColor: d.backgroundColor || "",
+                opacity: 100 - 100 * d.opacity || 0,
+                color: d.color || "#676767",
+                borderWidth: parseInt(d.borderWidth, 10) || 0,
+                borderStyle: d.borderStyle || "solid",
+                borderColor: d.borderColor || "rgba(0,0,0,1)",
+                paddingBottom: parseInt(d.paddingBottom, 10) || 0,
+                paddingTop: parseInt(d.paddingTop, 10) || 0,
+                lineHeight: +d.lineHeight || 1,
+                borderRadius: parseInt(d.borderRadius, 10) || 0,
+                transform: d.transform && parseInt(d.transform.replace("rotateZ(", "").replace("deg)", ""), 10) || 0
+            }, a.maxRadius = Math.min(e.outerWidth(), e.outerHeight()) / 2 + 10, d.borderRadiusPerc ? a.model.borderRadiusPerc = parseInt(d.borderRadiusPerc, 10) : d.borderRadius ? "999px" == d.borderRadius ? a.model.borderRadiusPerc = 100 : (a.model.borderRadiusPerc = parseInt(100 * parseInt(d.borderRadius, 10) * 2 / Math.min(e.outerWidth(), e.outerHeight()), 10), a.model.borderRadiusPerc > 100 && (a.model.borderRadiusPerc = 100)) : a.model.borderRadiusPerc = 0, a.tmpModel = {
                 boxShadowDirection: 0,
                 boxShadowX: 0,
                 boxShadowY: 0,
                 boxShadowBlur: 0,
                 boxShadowSize: 0,
                 boxShadowColor: "rgba(0,0,0,0.5)"
+            }, d.boxShadow) {
+                var f = d.boxShadow.split(" ");
+                a.tmpModel.boxShadowX = parseInt(f[0], 10), a.tmpModel.boxShadowY = parseInt(f[1], 10), a.tmpModel.boxShadowDirection = parseInt(d.boxShadowDirection, 10) || 0, a.tmpModel.boxShadowBlur = parseInt(f[2], 10), a.tmpModel.boxShadowColor = f[3], a.tmpModel.boxShadowSize = parseInt(d.boxShadowSize, 10) || 0
             }
-        }, a.$watch("tmpModel", function() {
-            var b = {};
-            $.extend(!0, b, a.model), b.borderRadius += "px", b.borderTopLeftRadius = b.borderTopRightRadius = b.borderBottomLeftRadius = b.borderBottomRightRadius = b.borderRadius, b.opacity = (100 - a.model.opacity) / 100, b.boxShadow = Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor, b.boxShadowDirection = a.tmpModel.boxShadowDirection, b.boxShadowSize = a.tmpModel.boxShadowSize, b.transform = "rotateZ(" + a.model.transform + "deg)", $.extend(!0, c.css, b)
-        }, !0), a.$watch("model", function() {
-            var b = {};
-            $.extend(!0, b, a.model), b.borderRadius += "px", b.borderTopLeftRadius = b.borderTopRightRadius = b.borderBottomLeftRadius = b.borderBottomRightRadius = b.borderRadius, b.opacity = (100 - a.model.opacity) / 100, b.boxShadow = Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor, b.boxShadowDirection = a.tmpModel.boxShadowDirection, b.boxShadowSize = a.tmpModel.boxShadowSize, b.transform = "rotateZ(" + a.model.transform + "deg)", $.extend(!0, c.css, b)
-        }, !0)
-    }])
+            $scope.clear = function() {
+                $scope.model = {
+                    backgroundColor: "",
+                    opacity: 0,
+                    color: "#676767",
+                    borderWidth: 0,
+                    borderStyle: "solid",
+                    borderColor: "rgba(0,0,0,1)",
+                    paddingBottom: 0,
+                    paddingTop: 0,
+                    lineHeight: 1,
+                    borderRadius: 0,
+                    transform: 0
+                };
+                $scope.tmpModel = {
+                    boxShadowDirection: 0,
+                    boxShadowX: 0,
+                    boxShadowY: 0,
+                    boxShadowBlur: 0,
+                    boxShadowSize: 0,
+                    boxShadowColor: "rgba(0,0,0,0.5)"
+                };
+            };
+            $scope.$watch("tmpModel", function() {
+                var model = {};
+                $.extend(!0, model, $scope.model);
+                model.borderRadius += "px";
+                model.borderTopLeftRadius = model.borderTopRightRadius = model.borderBottomLeftRadius = model.borderBottomRightRadius = model.borderRadius;
+                    model.opacity = (100 - $scope.model.opacity) / 100;
+                    model.boxShadow = Math.round($scope.tmpModel.boxShadowX) + "px " + Math.round($scope.tmpModel.boxShadowY) + "px " + $scope.tmpModel.boxShadowBlur + "px " + $scope.tmpModel.boxShadowColor;
+                    model.boxShadowDirection = $scope.tmpModel.boxShadowDirection;
+                    model.boxShadowSize = $scope.tmpModel.boxShadowSize;
+                    model.transform = "rotateZ(" + $scope.model.transform + "deg)";
+
+                $.extend(!0, curElementDef.css, model);
+            }, true);
+            $scope.$watch("model", function() {
+                var model = {};
+                $.extend(!0, model, $scope.model);
+                model.borderRadius += "px";
+                model.borderTopLeftRadius = model.borderTopRightRadius = model.borderBottomLeftRadius = model.borderBottomRightRadius = model.borderRadius;
+                model.opacity = (100 - $scope.model.opacity) / 100;
+                model.boxShadow = Math.round($scope.tmpModel.boxShadowX) + "px " + Math.round($scope.tmpModel.boxShadowY) + "px " + $scope.tmpModel.boxShadowBlur + "px " + $scope.tmpModel.boxShadowColor;
+                model.boxShadowDirection = $scope.tmpModel.boxShadowDirection;
+                model.boxShadowSize = $scope.tmpModel.boxShadowSize;
+                model.transform = "rotateZ(" + $scope.model.transform + "deg)";
+
+                $.extend(true, curElementDef.css, model);
+            }, true);
+        }])
         .directive("styleInput", function() {
-        return {
-            restrict: "AE",
-            link: function(a, b, c) {
-                var d = $("#inside_" + a.elemDef.id + " > .element-box");
-                a.$watch(function() {
-                    return $(b).val()
-                }, function() {
-                    if ("borderWidth" == c.cssItem) {
-                        d.css({
-                            borderStyle: a.model.borderStyle,
-                            borderWidth: $(b).val()
-                        });
-                        var e = {
-                            width: d.width(),
-                            height: d.height()
-                        };
-                        if (4 == a.elemDef.type) {
-                            var f = d.find("img"),
-                                g = f.width() / f.height(),
-                                h = e.width / e.height;
-                            g >= h ? (f.outerHeight(e.height), f.outerWidth(e.height * g), f.css("marginLeft", -(f.outerWidth() - e.width) / 2), f.css("marginTop", 0)) : (f.outerWidth(e.width), f.outerHeight(e.width / g), f.css("marginTop", -(f.outerHeight() - e.height) / 2), f.css("marginLeft", 0)), a.elemDef.properties.imgStyle.marginTop = f.css("marginTop"), a.elemDef.properties.imgStyle.marginLeft = f.css("marginLeft"), a.elemDef.properties.imgStyle.width = f.outerWidth(), a.elemDef.properties.imgStyle.height = f.outerHeight()
+            return {
+                restrict: "AE",
+                link: function(scope, element, attr) {
+                    var $target = $("#inside_" + scope.elemDef.id + " > .element-box");
+                    scope.$watch(function() {
+                        return $(element).val()
+                    }, function() {
+                        switch (attr.cssItem){
+                            case "borderWidth":
+                                $target.css({borderStyle: scope.model.borderStyle, borderWidth: $(element).val()});
+                                var dimension = {width: $target.width(), height: $target.height()};
+                                if (4 == scope.elemDef.type) {
+                                    var $img = $target.find("img"),
+                                        rate = $img.width() / $img.height(),
+                                        R = dimension.width / dimension.height;
+                                    if(rate >= R){
+                                        $img.outerHeight(dimension.height);
+                                        $img.outerWidth(dimension.height * rate);
+                                        $img.css("marginLeft", -($img.outerWidth() - dimension.width) / 2);
+                                        $img.css("marginTop", 0);
+                                    }else {
+                                        $img.outerWidth(dimension.width);
+                                        $img.outerHeight(dimension.width / rate);
+                                        $img.css("marginTop", -($img.outerHeight() - dimension.height) / 2);
+                                        $img.css("marginLeft", 0);
+                                    }
+                                    scope.elemDef.properties.imgStyle.marginTop = $img.css("marginTop");
+                                    scope.elemDef.properties.imgStyle.marginLeft = $img.css("marginLeft");
+                                    scope.elemDef.properties.imgStyle.width = $img.outerWidth();
+                                    scope.elemDef.properties.imgStyle.height = $img.outerHeight();
+                                }
+                                break;
+                            case "borderRadius":
+                                $target.css({borderRadius: scope.model.borderRadius});
+                                break;
+                            case "opacity":
+                                $target.css({opacity: (100 - $(element).val()) / 100});
+                                break;
+                            case "backgroundColor":
+                                $target.css({backgroundColor: $(element).val()});
+                                break;
+                            case "color":
+                                $target.css({color: $(element).val()})
+                                break;
+                            case "borderStyle":
+                                $target.css({borderStyle: scope.model.borderStyle});
+                                break;
+                            case "borderColor":
+                                $target.css({borderColor: scope.model.borderColor});
+                                break;
+                            case "padding":
+                                $target.css({
+                                    paddingTop: scope.model.paddingTop,
+                                    marginTop: -scope.model.paddingBottom
+                                });
+                                break;
+                            case "lineHeight":
+                                $target.css({lineHeight: scope.model.lineHeight});
+                                break;
+                            case "transform":
+                                $target.parents("li").css({transform: "rotateZ(" + scope.model.transform + "deg)"});
+                                break;
+                            case "boxShadow":
+                                scope.tmpModel.boxShadowX = -Math.sin(scope.tmpModel.boxShadowDirection * Math.PI / 180) * scope.tmpModel.boxShadowSize;
+                                scope.tmpModel.boxShadowY = Math.cos(scope.tmpModel.boxShadowDirection * Math.PI / 180) * scope.tmpModel.boxShadowSize;
+                                $target.css({
+                                    boxShadow: Math.round(scope.tmpModel.boxShadowX) + "px " + Math.round(scope.tmpModel.boxShadowY) + "px " + scope.tmpModel.boxShadowBlur + "px " + scope.tmpModel.boxShadowColor
+                                });
+                                break;
                         }
-                    }
-                    "borderRadius" == c.cssItem && d.css({
-                        borderRadius: a.model.borderRadius
-                    }), "opacity" == c.cssItem && d.css({
-                        opacity: (100 - $(b).val()) / 100
-                    }), "backgroundColor" == c.cssItem && d.css({
-                        backgroundColor: $(b).val()
-                    }), "color" == c.cssItem && d.css({
-                        color: $(b).val()
-                    }), "borderStyle" == c.cssItem && d.css({
-                        borderStyle: a.model.borderStyle
-                    }), "borderColor" == c.cssItem && d.css({
-                        borderColor: a.model.borderColor
-                    }), "padding" == c.cssItem && d.css({
-                        paddingTop: a.model.paddingTop,
-                        marginTop: -a.model.paddingBottom
-                    }), "lineHeight" == c.cssItem && d.css({
-                        lineHeight: a.model.lineHeight
-                    }), "transform" == c.cssItem && d.parents("li").css({
-                        transform: "rotateZ(" + a.model.transform + "deg)"
-                    }), "boxShadow" == c.cssItem && (a.tmpModel.boxShadowX = -Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, a.tmpModel.boxShadowY = Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, d.css({
-                        boxShadow: Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor
-                    }))
-                })
+                    });
+                }
             }
-        }
-    })
+        })
         .directive("angleKnob", function() {
             return {
                 restrict: "AE",
                 templateUrl: "scene/console/angle-knob.tpl.html",
-                link: function(a, b) {
-                    function c(a, b) {
-                        var c = Math.sqrt((a - 28) * (a - 28) + (b - 28) * (b - 28)) / 28,
-                            d = 28 + (a - 28) / c,
-                            e = 28 + (b - 28) / c;
-                        f.css({
-                            top: Math.round(e),
-                            left: Math.round(d)
-                        })
+                link: function(scope, element) {
+                    function setTargetStyle(offsetLeft, offsetTop) {
+                        var hypotenuse = Math.sqrt((offsetLeft - 28) * (offsetLeft - 28) + (offsetTop - 28) * (offsetTop - 28)) / 28,
+                            left = 28 + (offsetLeft - 28) / hypotenuse,
+                            top = 28 + (offsetTop - 28) / hypotenuse;
+                        $sliderKnob.css({top: Math.round(top), left: Math.round(left)});
+                    }
+                    function caleBoxShadowDirection(offsetLeft, offsetTop) {
+                        var width = offsetLeft - 28,
+                            height = 28 - offsetTop,
+                            angle = 180 * Math.atan(width / height) / Math.PI;
+                        offsetTop > 28 && (angle += 180);
+                        28 >= offsetTop && 28 > offsetLeft && (angle += 360);
+                        return Math.round(angle);
+                    }
+                    var $sliderContainer = $(element).find(".sliderContainer"),
+                        $sliderKnob = $(element).find(".sliderKnob");
+
+                    scope.$watch(function() {
+                        return scope.tmpModel.boxShadowDirection
+                    }, function(val) {
+                        $sliderKnob.css({
+                            top: 28 - 28 * Math.cos(val * Math.PI / 180),
+                            left: 28 + 28 * Math.sin(val * Math.PI / 180)
+                        });
+                    });
+                    if(0 !== scope.tmpModel.boxShadowDirection){
+                        $sliderKnob.css({
+                            top: 28 - 28 * Math.cos(scope.tmpModel.boxShadowDirection * Math.PI / 180),
+                            left: 28 + 28 * Math.sin(scope.tmpModel.boxShadowDirection * Math.PI / 180)
+                        });
                     }
 
-                    function d(a, b) {
-                        var c = a - 28,
-                            d = 28 - b,
-                            e = 180 * Math.atan(c / d) / Math.PI;
-                        return b > 28 && (e += 180), 28 >= b && 28 > a && (e += 360), Math.round(e)
-                    }
-                    var e = $(b).find(".sliderContainer"),
-                        f = $(b).find(".sliderKnob");
-                    a.$watch(function() {
-                        return a.tmpModel.boxShadowDirection
-                    }, function(a) {
-                        f.css({
-                            top: 28 - 28 * Math.cos(a * Math.PI / 180),
-                            left: 28 + 28 * Math.sin(a * Math.PI / 180)
-                        })
-                    }), 0 !== a.tmpModel.boxShadowDirection && f.css({
-                        top: 28 - 28 * Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180),
-                        left: 28 + 28 * Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180)
-                    }), e.bind("mousedown", function(b) {
-                        b.stopPropagation();
-                        var f = e.offset().left,
-                            g = e.offset().top;
-                        c(b.pageX - f, b.pageY - g);
-                        var h = d(b.pageX - f, b.pageY - g);
-                        a.tmpModel.boxShadowDirection = h, a.$apply(), $(this).bind("mousemove", function(b) {
-                            b.stopPropagation(), c(b.pageX - f, b.pageY - g);
-                            var e = d(b.pageX - f, b.pageY - g);
-                            a.tmpModel.boxShadowDirection = e, a.$apply()
-                        }), $(this).bind("mouseup", function() {
-                            $(this).unbind("mousemove"), $(this).unbind("mouseup")
-                        })
-                    })
+                    $sliderContainer.bind("mousedown", function(event) {
+                        event.stopPropagation();
+                        var left = $sliderContainer.offset().left, top = $sliderContainer.offset().top;
+                        setTargetStyle(event.pageX - left, event.pageY - top);
+                        var boxShadowDirection = caleBoxShadowDirection(event.pageX - left, event.pageY - top);
+                        scope.tmpModel.boxShadowDirection = boxShadowDirection;
+                        scope.$apply();
+
+                        $(this).bind("mousemove", function(event) {
+                            event.stopPropagation();
+                            setTargetStyle(event.pageX - left, event.pageY - top);
+                            var boxShadowDirection = caleBoxShadowDirection(event.pageX - left, event.pageY - top);
+                            scope.tmpModel.boxShadowDirection = boxShadowDirection;
+                            scope.$apply();
+                        });
+
+                        $(this).bind("mouseup", function() {
+                            $(this).unbind("mousemove");
+                            $(this).unbind("mouseup");
+                        });
+                    });
                 }
             }
         });
-
     ng.module("scene.create.console.setting.anim", ["app.directives.uislider", "app.directives.limitInput"]);
-    ng.module("scene.create.console.setting.anim").controller("AnimConsoleCtrl", ["$scope", "sceneService", function(a, b) {
-        var c = a.elemDef = b.currentElemDef,
-            d = $("#inside_" + a.elemDef.id + " .element-box");
-        if (a.animTypeEnum = [{
-            id: -1,
-            name: "无"
-        }, {
-            id: 0,
-            name: "淡入"
-        }, {
-            id: 1,
-            name: "移入"
-        }, {
-            id: 2,
-            name: "弹入"
-        }, {
-            id: 3,
-            name: "中心弹入"
-        }, {
-            id: 4,
-            name: "中心放大"
-        }, {
-            id: 12,
-            name: "翻滚进入"
-        }, {
-            id: 13,
-            name: "光速进入"
-        }, {
-            id: 6,
-            name: "摇摆"
-        }, {
-            id: 5,
-            name: "抖动"
-        }, {
-            id: 7,
-            name: "旋转"
-        }, {
-            id: 8,
-            name: "翻转"
-        }, {
-            id: 9,
-            name: "悬摆"
-        }, {
-            id: 10,
-            name: "淡出"
-        }, {
-            id: 11,
-            name: "翻转消失"
-        }], a.animDirectionEnum = [{
-            id: 0,
-            name: "从左向右"
-        }, {
-            id: 1,
-            name: "从上到下"
-        }, {
-            id: 2,
-            name: "从右向左"
-        }, {
-            id: 3,
-            name: "从下到上"
-        }], c.properties || (c.properties = {}), c.properties.anim && null != c.properties.anim.type) {
-            var e;
-            for (e = 0; e < a.animTypeEnum.length; e++) a.animTypeEnum[e].id == c.properties.anim.type && (a.activeAnim = a.animTypeEnum[e]);
-            a.model = {
-                type: c.properties.anim.type,
-                direction: c.properties.anim.direction,
-                duration: parseFloat(c.properties.anim.duration),
-                delay: parseFloat(c.properties.anim.delay),
-                countNum: parseInt(c.properties.anim.countNum, 10) || 1,
-                count: c.properties.anim.count,
-                linear: c.properties.anim.linear
-            }, a.direction = null != c.properties.anim.direction ? a.animDirectionEnum[c.properties.anim.direction] : a.animDirectionEnum[0]
-        } else a.activeAnim = a.animTypeEnum[0], a.direction = a.animDirectionEnum[0], a.model = {
-            type: null,
-            direction: null,
-            duration: 2,
-            delay: 0,
-            countNum: 1,
-            count: null
+    ng.module("scene.create.console.setting.anim").controller("AnimConsoleCtrl", ["$scope", "sceneService", function($scope, sceneService) {
+        //TODO: currentElemDef ??
+        var curElementDef = $scope.elemDef = sceneService.currentElemDef,
+            $target = $("#inside_" + $scope.elemDef.id + " .element-box");
+        $scope.animTypeEnum = [
+            {id: -1,name: "无"},
+            {id: 0,name: "淡入"},
+            {id: 1,name: "移入"},
+            {id: 2,name: "弹入"},
+            {id: 3,name: "中心弹入"},
+            {id: 4,name: "中心放大"},
+            {id: 12,name: "翻滚进入"},
+            {id: 13,name: "光速进入"},
+            {id: 6,name: "摇摆"},
+            {id: 5,name: "抖动"},
+            {id: 7,name: "旋转"},
+            {id: 8,name: "翻转"},
+            {id: 9,name: "悬摆"},
+            {id: 10,name: "淡出"},
+            {id: 11,name: "翻转消失"}
+        ];
+        $scope.animDirectionEnum = [
+            {id: 0,name: "从左向右"},
+            {id: 1,name: "从上到下"},
+            {id: 2,name: "从右向左"},
+            {id: 3,name: "从下到上"}
+        ];
+        curElementDef.properties || (curElementDef.properties = {});
+        if (curElementDef.properties.anim && null != curElementDef.properties.anim.type) {
+            for (var t = 0; t < $scope.animTypeEnum.length; t++){
+                if($scope.animTypeEnum[t].id == curElementDef.properties.anim.type){
+                    $scope.activeAnim = $scope.animTypeEnum[t];
+                }
+            }
+            $scope.model = {
+                type: curElementDef.properties.anim.type,
+                direction: curElementDef.properties.anim.direction,
+                duration: parseFloat(curElementDef.properties.anim.duration),
+                delay: parseFloat(curElementDef.properties.anim.delay),
+                countNum: parseInt(curElementDef.properties.anim.countNum, 10) || 1,
+                count: curElementDef.properties.anim.count,
+                linear: curElementDef.properties.anim.linear
+            };
+            if(null != curElementDef.properties.anim.direction){
+                $scope.direction = $scope.animDirectionEnum[curElementDef.properties.anim.direction];
+            }else{
+                $scope.direction = $scope.animDirectionEnum[0];
+            }
+        } else{
+            $scope.activeAnim = $scope.animTypeEnum[0];
+            $scope.direction = $scope.animDirectionEnum[0];
+            $scope.model = {
+                type: null,
+                direction: null,
+                duration: 2,
+                delay: 0,
+                countNum: 1,
+                count: null
+            };
+        }
+        $scope.$watch("model", function() {
+            if($scope.direction)$scope.model.direction = $scope.direction.id;
+            curElementDef.properties.anim = $scope.model;
+            renderHandle();
+        }, true);
+        $scope.$watch("direction", function() {
+            if($scope.direction)$scope.model.direction = $scope.direction.id;
+            curElementDef.properties.anim = $scope.model;
+            renderHandle();
+        }, true);
+        var renderHandle = function() {
+            $target.css("animation", "");
+            $target.css("animation", $scope.animationClass + " " + $scope.model.duration + "s ease 0s");
+            $target.css("animation-fill-mode", "backwards");
         };
-        a.$watch("model", function() {
-            a.direction && (a.model.direction = a.direction.id), c.properties.anim = a.model, f()
-        }, !0), a.$watch("direction", function() {
-            a.direction && (a.model.direction = a.direction.id), c.properties.anim = a.model, f()
-        }, !0), a.confirm = function() {
-            a.cancel()
-        };
-        var f = function() {
-            d.css("animation", ""), d.css("animation", a.animationClass + " " + a.model.duration + "s ease 0s"), d.css("animation-fill-mode", "backwards")
-        };
-        a.changeAnimation = function() {
-            a.animationClass = "";
-            var b = a.model;
-            0 === b.type && (a.animationClass = "fadeIn"), 1 === b.type && (0 === a.direction.id && (a.animationClass = "fadeInLeft"), 1 === a.direction.id && (a.animationClass = "fadeInDown"), 2 === a.direction.id && (a.animationClass = "fadeInRight"), 3 === a.direction.id && (a.animationClass = "fadeInUp")), 6 === b.type && (a.animationClass = "wobble"), 5 === b.type && (a.animationClass = "rubberBand"), 7 === b.type && (a.animationClass = "rotateIn"), 8 === b.type && (a.animationClass = "flip"), 9 === b.type && (a.animationClass = "swing"), 2 === b.type && (0 === a.direction.id && (a.animationClass = "bounceInLeft"), 1 === a.direction.id && (a.animationClass = "bounceInDown"), 2 === a.direction.id && (a.animationClass = "bounceInRight"), 3 === a.direction.id && (a.animationClass = "bounceInUp")), 3 === b.type && (a.animationClass = "bounceIn"), 4 === b.type && (a.animationClass = "zoomIn"), 10 === b.type && (a.animationClass = "fadeOut"), 11 === b.type && (a.animationClass = "flipOutY"), 12 === b.type && (a.animationClass = "rollIn"), 13 === b.type && (a.animationClass = "lightSpeedIn")
+        $scope.confirm = function() {$scope.cancel();};
+        $scope.changeAnimation = function() {
+            $scope.animationClass = "";
+            var model = $scope.model;
+            if(0 === model.type)$scope.animationClass = "fadeIn";
+            if(1 === model.type) {
+                if (0 === $scope.direction.id)$scope.animationClass = "fadeInLeft";
+                if (1 === $scope.direction.id)$scope.animationClass = "fadeInDown";
+                if (2 === $scope.direction.id)$scope.animationClass = "fadeInRight";
+                if (3 === $scope.direction.id)$scope.animationClass = "fadeInUp";
+            }
+            if(2 === model.type){
+                if(0 === $scope.direction.id)$scope.animationClass = "bounceInLeft";
+                if(1 === $scope.direction.id)$scope.animationClass = "bounceInDown";
+                if(2 === $scope.direction.id)$scope.animationClass = "bounceInRight";
+                if(3 === $scope.direction.id)$scope.animationClass = "bounceInUp";
+            }
+            if(3 === model.type)$scope.animationClass = "bounceIn";
+            if(4 === model.type)$scope.animationClass = "zoomIn";
+            if(6 === model.type)$scope.animationClass = "wobble";
+            if(5 === model.type)$scope.animationClass = "rubberBand";
+            if(7 === model.type)$scope.animationClass = "rotateIn";
+            if(8 === model.type)$scope.animationClass = "flip";
+            if(9 === model.type)$scope.animationClass = "swing";
+            if(10 === model.type)$scope.animationClass = "fadeOut";
+            if(11 === model.type)$scope.animationClass = "flipOutY";
+            if(12 === model.type)$scope.animationClass = "rollIn";
+            if(13 === model.type)$scope.animationClass = "lightSpeedIn";
         }
     }]);
 
@@ -3354,28 +3709,935 @@
             replace: !0,
             scope: {},
             templateUrl: "scene/console/setting.tpl.html",
-            link: function(a, b, c) {
-                console.log("---styleModal.$complie---");
-                var d = "style";
-                a.$on("showStylePanel", function(b, c) {
-                    d = a.activeTab;
-                    a.activeTab = "";
-                    a.activeTab = c && c.activeTab ? c.activeTab : d;
-                    a.$apply();
+            link: function(scope, element, attr) {
+                var  defActiveTab = "style";
+                scope.$on("showStylePanel", function(event, data) {
+                    defActiveTab = scope.activeTab;
+                    scope.activeTab = data && data.activeTab ? data.activeTab : defActiveTab;
+                    scope.$apply();
                 });
-                a.activeTab = c.activeTab;
-                a.cancel = function() {
-                    $(b).hide()
-                };
-                a.$on("$locationChangeStart", function() {
-                    a.cancel();
-                });
+                scope.activeTab = attr.activeTab;
+                scope.cancel = function() {$(element).hide()};
+                scope.$on("$locationChangeStart", function() {scope.cancel();});
             },
             controller: ["$scope", function() {}]
         }
     }]);
 
-    ng.module("scene.create.console", ["scene.create.console.setting"]);
+    ng.module("scene.create.console.audio", []);
+    ng.module("scene.create.console.audio").controller("AudioConsoleCtrl", ["$scope", "$sce", "$timeout", "$modal", "fileService", "obj", function(a, b, c, d, e, f) {
+            function g() {
+                e.getFileByCategory(1, 30, "1", "2").then(function(b) {
+                    a.reservedAudios = b.data.list;
+                    for (var c = 0; c < a.reservedAudios.length; c++) "3" == a.model.bgAudio.type && PREFIX_FILE_HOST + a.reservedAudios[c].path == a.model.type3 && (a.model.selectedAudio = a.reservedAudios[c])
+                })
+            }
+
+            function h() {
+                e.getFileByCategory(1, 10, "0", "2").then(function(b) {
+                    a.myAudios = b.data.list;
+                    for (var c = 0; c < a.myAudios.length; c++) "2" == a.model.bgAudio.type && PREFIX_FILE_HOST + a.myAudios[c].path == a.model.type2 && (a.model.selectedMyAudio = a.myAudios[c])
+                })
+            }
+            a.PREFIX_FILE_HOST = PREFIX_FILE_HOST, a.model = {
+                bgAudio: {
+                    url: f.url ? f.url : "",
+                    type: f.type ? f.type : "3"
+                },
+                compType: "bgAudio"
+            }, c(function() {
+                "1" == f.type && f.url && (a.model.type1 = f.url), "2" == f.type && f.url && (a.model.type2 = b.trustAsResourceUrl(PREFIX_FILE_HOST + f.url)), "3" == f.type && f.url && (a.model.type3 = b.trustAsResourceUrl(PREFIX_FILE_HOST + f.url))
+            }), a.categoryList = [{
+                name: "音乐库",
+                value: "3"
+            }, {
+                name: "外部链接",
+                value: "1"
+            }, {
+                name: "我的音乐",
+                value: "2"
+            }], a.goUpload = function() {
+                d.open({
+                    windowClass: "upload-console",
+                    templateUrl: "my/upload.tpl.html",
+                    controller: "UploadCtrl",
+                    resolve: {
+                        category: function() {
+                            return {
+                                categoryId: 0,
+                                fileType: 2
+                            }
+                        }
+                    }
+                }).result.then(function() {
+                        h()
+                    })
+            }, a.selectAudio = function(c) {
+                "3" == c && (a.model.type3 = a.model.selectedAudio ? b.trustAsResourceUrl(PREFIX_FILE_HOST + a.model.selectedAudio.path) : null), "2" == c && (a.model.type2 = a.model.selectedMyAudio ? b.trustAsResourceUrl(PREFIX_FILE_HOST + a.model.selectedMyAudio.path) : null)
+            }, a.playAudio = function(a) {
+                $("#audition" + a)[0].play()
+            }, a.pauseAudio = function(a) {
+                $("#audition" + a)[0].pause()
+            }, a.confirm = function() {
+                "1" == a.model.bgAudio.type && (a.model.bgAudio.url = a.model.type1), "2" == a.model.bgAudio.type && (a.model.bgAudio.url = a.model.selectedMyAudio.path), "3" == a.model.bgAudio.type && (a.model.bgAudio.url = a.model.selectedAudio.path), a.$close(a.model)
+            }, a.cancel = function() {
+                a.$dismiss()
+            }, g(), h()
+        }]);
+    ng.module("scene.create.console.input", []);
+    ng.module("scene.create.console.input").controller("InputConsoleCtrl", ["$scope", "$timeout", "localizedMessages", "obj", function(a, b, c, d) {
+        a.model = {
+            title: d.title,
+            type: d.type,
+            required: d.properties.required
+        }, a.confirm = function() {
+            return a.model.title && 0 !== a.model.title.length ? void a.$close(a.model) : (alert("输入框名称不能为空"), void $('.bg_console input[type="text"]').focus())
+        }, a.cancel = function() {
+            a.$dismiss()
+        }
+    }]);
+    ng.module("scene.create.console.button", []);
+    ng.module("scene.create.console.button").controller("ButtonConsoleCtrl", ["$scope", "$timeout", "localizedMessages", "obj", function(a, b, c, d) {
+        a.model = {
+            title: d.properties.title
+        }, a.confirm = function() {
+            return a.model.title && 0 !== a.model.title.length ? void a.$close(a.model) : (alert("按钮名称不能为空"), void $('.bg_console input[type="text"]').focus())
+        }, a.cancel = function() {
+            a.$dismiss()
+        }
+    }]);
+    ng.module("scene.create.console.tel", ["app.directives.addelement"]);
+    ng.module("scene.create.console.tel").controller("TelConsoleCtrl", ["$scope", "$timeout", "localizedMessages", "obj", function(a, c, d, e) {
+            a.model = {
+                title: e.properties.title,
+                number: e.properties.number
+            }, a.confirm = function() {
+                if (!a.model.title || 0 === a.model.title.length) return alert("按钮名称不能为空"), void $('.bg_console input[type="text"]').focus();
+                if (!a.model.number || 0 === a.model.title.number) return alert("电话号码不能为空"), void $('.bg_console input[type="text"]').focus();
+                var b = new RegExp(/(\d{11})|^((\d{7,8})|(^400[0-9]\d{6})|(\d{4}|\d{3})-(\d{7,8})|(\d{4}|\d{3})-(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1})|(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1}))$/g);
+                return b.test(a.model.number) ? void a.$close(a.model) : void alert("手机号码格式错误")
+            }, a.cancel = function() {
+                a.$dismiss()
+            }, a.removePlaceHolder = function() {
+                $(".tel-button").attr("placeholder", "")
+            }, a.addPlaceHolder = function() {
+                $(".tel-button").attr("placeholder", "010-88888888")
+            }, a.chooseTelButton = function(b, c, d) {
+                a.model.title = b.text, "A" == d.target.nodeName && (a.model.btnStyle = b.btnStyle), a.btnIndex = c
+            }, a.buttons = [{
+                id: 1,
+                text: "一键拨号",
+                btnStyle: {
+                    width: "90px",
+                    backgroundColor: "rgb(244, 113, 31)",
+                    height: "30px",
+                    "text-algn": "center",
+                    "line-height": "30px",
+                    color: "rgb(255, 255, 255)",
+                    "-webkit-border-radius": "5px",
+                    "-moz-border-radius": "5px",
+                    "border-radius": "3px"
+                }
+            }, {
+                id: 2,
+                text: "热线电话",
+                btnStyle: {
+                    width: "90px",
+                    backgroundColor: "rgb(253, 175, 7)",
+                    height: "30px",
+                    "text-algn": "center",
+                    "line-height": "30px",
+                    color: "rgb(255, 255, 255)",
+                    "-webkit-border-radius": "40px",
+                    "-moz-border-radius": "40px",
+                    "border-radius": "3px"
+                }
+            }, {
+                id: 3,
+                text: "拨打电话",
+                btnStyle: {
+                    width: "90px",
+                    backgroundColor: "rgb(121, 196, 80)",
+                    height: "30px",
+                    "text-algn": "center",
+                    "line-height": "30px",
+                    color: "rgb(255, 255, 255)",
+                    "-webkit-border-radius": "5px",
+                    "-moz-border-radius": "5px",
+                    "border-radius": "3px"
+                }
+            }, {
+                id: 4,
+                text: "一键拨号",
+                btnStyle: {
+                    width: "90px",
+                    height: "30px",
+                    backgroundColor: "#fff",
+                    "text-algn": "center",
+                    border: "1px solid #3FB816",
+                    "line-height": "30px",
+                    color: "rgb(0, 0, 0)",
+                    "-webkit-border-radius": "5px",
+                    "-moz-border-radius": "5px",
+                    "border-radius": "3px"
+                }
+            }], b.forEach(a.buttons, function(b, c) {
+                e.css.background && e.css.background == b.btnStyle.background && (a.btnIndex = c)
+            })
+        }]);
+
+    ng.module("scene.my.upload", ["angularFileUpload"]);
+    ng.module("scene.my.upload").controller("UploadCtrl", ["$scope", "FileUploader", "fileService", "category", "$timeout", "$interval", function(a, b, c, d, e, f) {
+            a.category = d;
+            var g;
+            g = a.uploader = new b(a.category.scratch || a.category.headerImage ? {
+                url: PREFIX_URL + "m/base/file/upload?bizType=" + d.categoryId + "&fileType=" + d.fileType,
+                withCredentials: !0,
+                queueLimit: 1,
+                onSuccessItem: function(b, c) {
+                    function d() {
+                        f.cancel(e), alert("上传完毕"), a.$close(c.obj.path)
+                    }
+                    a.progressNum = 0;
+                    var e = f(function() {
+                        a.progressNum < 100 ? a.progressNum += 15 : d()
+                    }, 100)
+                }
+            } : {
+                url: PREFIX_URL + "m/base/file/upload?bizType=" + d.categoryId + "&fileType=" + d.fileType,
+                withCredentials: !0,
+                queueLimit: 5,
+                onCompleteAll: function() {
+                    function b() {
+                        f.cancel(c), alert("上传完毕"), a.$close()
+                    }
+                    a.progressNum = 0;
+                    var c = f(function() {
+                        a.progressNum < 100 ? a.progressNum += 15 : b()
+                    }, 100)
+                }
+            });
+            var h;
+            ("0" == d.fileType || "1" == d.fileType) && (h = "|jpg|png|jpeg|bmp|gif|", limitSize = 3145728), "2" == d.fileType && (h = "|mp3|mpeg|", limitSize = 3145728), g.filters.push({
+                name: "imageFilter",
+                fn: function(a) {
+                    var b = "|" + a.type.slice(a.type.lastIndexOf("/") + 1) + "|";
+                    return -1 !== h.indexOf(b)
+                }
+            }), g.filters.push({
+                name: "imageSizeFilter",
+                fn: function(a) {
+                    var b = a.size;
+                    return b >= limitSize && alert("上传文件大小限制在" + limitSize / 1024 / 1024 + "M以内"), b < limitSize
+                }
+            }), g.filters.push({
+                name: "fileNameFilter",
+                fn: function(a) {
+                    return a.name.length > 50 && alert("文件名应限制在50字符以内"), a.name.length <= 50
+                }
+            });
+            var i = function() {
+                c.listFileCategory().then(function(b) {
+                    a.categoryList = b.data.list, a.categoryList || (a.categoryList = []), a.categoryList.push({
+                        name: "我的背景",
+                        value: "0"
+                    })
+                })
+            };
+            i(), a.removeQueue = function() {}
+        }]);
+    ng.module("services.file", []);
+    ng.module("services.file").factory("fileService", ["$http", function(a) {
+            var b = {};
+            return b.listFileCategory = function(b) {
+                var c = "base/class/" + ("1" == b ? "tpType" : "bgType"),
+                    d = new Date;
+                return c += "?time=" + d.getTime(), a({
+                    withCredentials: !0,
+                    method: "GET",
+                    url: PREFIX_URL + c
+                })
+            }, b.deleteFile = function(b) {
+                var c = "m/base/file/delete",
+                    d = {
+                        id: b
+                    };
+                return a({
+                    withCredentials: !0,
+                    method: "POST",
+                    url: PREFIX_URL + c,
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    },
+                    data: $.param(d)
+                })
+            }, b.createCategory = function(b) {
+                var c = "m/base/file/tag/create",
+                    d = {
+                        tagName: b
+                    };
+                return a({
+                    withCredentials: !0,
+                    method: "POST",
+                    url: PREFIX_URL + c,
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    },
+                    data: $.param(d)
+                })
+            }, b.getCustomTags = function() {
+                var b = "m/base/file/tag/my?time" + (new Date).getTime();
+                return a({
+                    withCredentials: !0,
+                    method: "GET",
+                    url: PREFIX_URL + b
+                })
+            }, b.deleteTag = function(b) {
+                var c = "m/base/file/tag/delete",
+                    d = {
+                        id: b
+                    };
+                return a({
+                    withCredentials: !0,
+                    method: "POST",
+                    url: PREFIX_URL + c,
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    },
+                    data: $.param(d)
+                })
+            }, b.setCategory = function(b, c) {
+                var d = "m/base/file/tag/set",
+                    e = {
+                        tagId: b,
+                        fileIds: c
+                    };
+                return a({
+                    withCredentials: !0,
+                    method: "POST",
+                    url: PREFIX_URL + d,
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    },
+                    data: $.param(e)
+                })
+            }, b.getImagesByTag = function(b, c, d, e) {
+                var f = "m/base/file/userList?";
+                return f += "fileType=" + c, b && (f += "&tagId=" + b), f += "&pageNo=" + (d ? d : 1), f += "&pageSize=" + (e ? e : 12), f += "&time=" + (new Date).getTime(), a({
+                    withCredentials: !0,
+                    method: "GET",
+                    url: PREFIX_URL + f
+                })
+            }, b.getImagesBySysTag = function(b, c, d, e, f) {
+                var g = "m/base/file/sysList?";
+                return g += "tagId=" + b, g += "&fileType=" + c, g += "&bizType=" + f, g += "&pageNo=" + (d ? d : 1), g += "&pageSize=" + (e ? e : 12), g += "&time=" + (new Date).getTime(), a({
+                    withCredentials: !0,
+                    method: "GET",
+                    url: PREFIX_URL + g
+                })
+            }, b.unsetTag = function(b, c) {
+                var d = "m/base/file/tag/unset",
+                    e = {
+                        tagId: b,
+                        fileIds: c
+                    };
+                return a({
+                    withCredentials: !0,
+                    method: "POST",
+                    url: PREFIX_URL + d,
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    },
+                    data: $.param(e)
+                })
+            }, b.getChildCategory = function(b) {
+                var c = "m/base/file/tag/sys";
+                return b && (c += "?bizType=" + b), c += (/\?/.test(c) ? "&" : "?") + "time=" + (new Date).getTime(), a({
+                    withCredentials: !0,
+                    method: "GET",
+                    url: PREFIX_URL + c
+                })
+            }, b.getFileByCategory = function(b, c, d, e) {
+                var f = "m/base/file/sysList?";
+                "0" === d && "2" === e && (f = "m/base/file/list?"), f += "pageNo=" + (b ? b : 1), f += "&pageSize=" + (c ? c : 12), d && "all" != d && (f += "&bizType=" + (d ? d : -1)), f += "&fileType=" + (e ? e : -1);
+                var g = new Date;
+                return f += "&time=" + g.getTime(), a({
+                    withCredentials: !0,
+                    method: "GET",
+                    url: PREFIX_URL + f
+                })
+            }, b.cropImage = function(b) {
+                var c = "m/base/file/crop";
+                return a({
+                    withCredentials: !0,
+                    method: "POST",
+                    url: PREFIX_URL + c,
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    },
+                    data: $.param(b)
+                })
+            }, b
+        }]);
+    ng.module("app.directives.responsiveImage", []).directive("responsiveImage", ["$compile", function() {
+        return {
+            restrict: "EA",
+            link: function(a, b) {
+                "0" != a.fileType && $(b).bind("load", function() {
+                    $(this).removeAttr("style");
+                    var a = $(this).parent().width(),
+                        b = $(this).parent().height();
+                    this.width > this.height ? (this.style.width = a + "px", this.style.height = this.height * a / this.width + "px", this.style.top = "50%", this.style.marginTop = "-" + this.height / 2 + "px") : (this.style.height = b + "px", this.style.width = this.width * b / this.height + "px", this.style.left = "50%", this.style.marginLeft = "-" + this.width / 2 + "px")
+                })
+            }
+        }
+    }]);
+    ng.module("app.directives.rightclick", []).directive("rightClick", ["$compile", function(a) {
+        return {
+            restrict: "EA",
+            link: function(b, c) {
+                var d;
+                $(c).on("contextmenu", function(e) {
+                    if (e.preventDefault(), d && d[0] && d.remove(), "0" == b.categoryId) {
+                        d = $('<ul class="right-menu dropdown-menu"></ul>'), d.appendTo($(c)), d.css({
+                            left: e.pageX - $(c).offset().left,
+                            top: e.pageY - $(c).offset().top
+                        }).show();
+                        for (var f in b.myTags) {
+                            var g = '<li class="tag_list" ng-class="{selected: dropTagIndex == ' + f + '}" ng-click="selectTag(' + b.myTags[f].id + "," + f + ')">' + b.myTags[f].name + "</li>",
+                                h = a(g)(b);
+                            d.append(h)
+                        }
+                        var i = a('<li class="tag_list add_cate clearfix" style="border-top:1px solid #ccc;margin-bottom:0px;" ng-click="createCategory()"><em>+</em><span>创建分类</span></li>')(b);
+                        d.append(i);
+                        var j = a('<li class="btn-main" style="width:100%; padding:0px; border: 0;margin:0px;height:25px; line-height:25px;"><a style="height:25px;line-height:25px;text-indent:0;color:#FFF;padding:0px;text-align:center;" ng-click="setCategory(' + b.dropTagIndex + "," + b.img.id + ')">确定</a></li>')(b);
+                        d.append(j), $(j).on("click", function() {
+                            d.hide()
+                        }), $(document).mousemove(function(a) {
+                            (a.pageX < d.offset().left - 20 || a.pageX > d.offset().left + d.width() + 20 || a.pageY < d.offset().top - 20 || a.pageY > d.offset().top + d.height() + 20) && (d.hide(), $(this).unbind("mousemove"))
+                        })
+                    }
+                })
+            }
+        }
+    }]);
+    ng.module("scene.create.console.category", ["services.file"]);
+    ng.module("scene.create.console.category").controller("CategoryConsoleCtrl", ["$scope", "$timeout", "localizedMessages", "fileService", function(a, c, d, e) {
+        a.category = {}, a.confirm = function() {
+            return a.category.name && a.category.name.trim() ? i(a.category.name) > 16 ? void alert("类别字数不能超过16个字符！") : void e.createCategory(b.copy(a.category.name)).then(function(c) {
+                a.category.id = c.data.obj, a.$close(b.copy(a.category))
+            }, function() {
+                alert("创建失败")
+            }) : void alert("类别不能为空！")
+        }, a.cancel = function() {
+            a.$dismiss()
+        }
+    }]);
+    ng.module("scene.create.console.cropImage", ["services.file"]).directive("cropImage", ["sceneService", "fileService", "$compile", function(a, b) {
+        return {
+            restrict: "EAC",
+            scope: {},
+            replace: !0,
+            templateUrl: "scene/console/cropimage.tpl.html",
+            link: function(c, d) {
+                c.PREFIX_FILE_HOST = PREFIX_FILE_HOST;
+                var e, f = a.currentElemDef,
+                    g = a.currentElemDef.properties.src;
+                c.$on("changeElemDef", function(b, d) {
+                    d = a.currentElemDef, g = a.currentElemDef.properties.src, c.preSelectImage(g)
+                }), c.preSelectImage = function(a) {
+                    var b = $("#target");
+                    e ? (b.attr("src", PREFIX_FILE_HOST + a), e.setImage(PREFIX_FILE_HOST + a), e.setSelect([0, 0, 100, 100])) : b.attr("src", PREFIX_FILE_HOST + a).load(function() {
+                        b.Jcrop({
+                            keySupport: !1,
+                            setSelect: [0, 0, 100, 100],
+                            boxHeight: 200,
+                            boxWidth: 300
+                        }, function() {
+                            e = this
+                        }), a && b.Jcrop({
+                            keySupport: !1,
+                            aspectRatio: f.css.width / f.css.height,
+                            setSelect: [-f.properties.imgStyle.marginLeft.split("px")[0], -f.properties.imgStyle.marginTop.split("px")[0], f.css.width, f.css.height]
+                        })
+                    })
+                }, c.preSelectImage(g), c.crop = function() {
+                    var c = a.currentElemDef,
+                        f = e.tellSelect();
+                    f.x = parseInt(f.x, 10), f.y = parseInt(f.y, 10), f.w = parseInt(f.w, 10), f.h = parseInt(f.h, 10), f.x2 = parseInt(f.x2, 10), f.y2 = parseInt(f.y2, 10), f.src = $("#target").attr("src").split(PREFIX_FILE_HOST)[1], b.cropImage(f).then(function(a) {
+                        var b = {
+                            type: "imgSrc",
+                            data: a.data.obj,
+                            width: f.w,
+                            height: f.h
+                        };
+                        c.properties.src = b.data;
+                        var e = b.width / b.height,
+                            g = $("#" + c.id),
+                            h = $("#inside_" + c.id).width(),
+                            i = $("#inside_" + c.id).height(),
+                            j = h / i;
+                        e >= j ? (g.outerHeight(i), g.outerWidth(i * e), g.css("marginLeft", -(g.outerWidth() - h) / 2), g.css("marginTop", 0)) : (g.outerWidth(h), g.outerHeight(h / e), g.css("marginTop", -(g.outerHeight() - i) / 2), g.css("marginLeft", 0)), g.attr("src", PREFIX_FILE_HOST + b.data), c.properties.imgStyle = {}, c.properties.imgStyle.width = g.outerWidth(), c.properties.imgStyle.height = g.outerHeight(), c.properties.imgStyle.marginTop = g.css("marginTop"), c.properties.imgStyle.marginLeft = g.css("marginLeft"), $(d).hide()
+                    }, function() {
+                        c.properties.src || (elements.splice(elements.indexOf(elementsMap[c.id]), 1), delete elementsMap[c.id])
+                    })
+                }, c.cancel = function() {
+                    $(d).hide()
+                }
+            }
+        }
+    }]);
+    ng.module("scene.create.console.bg", ["services.file", "scene.my.upload", "app.directives.responsiveImage", "app.directives.rightclick"]);
+    ng.module("scene.create.console.bg").controller("BgConsoleCtrl", ["$scope", "$timeout", "$rootScope", "$modal", "ModalService", "sceneService", "fileService", "localizedMessages", "obj", function(a, b, c, d, e, f, g, h, i) {
+            a.PREFIX_FILE_HOST = PREFIX_FILE_HOST, a.first = !0, a.categoryList = [], a.imgList = [], a.otherCategory = [], a.categoryId = "1", a.fileType = i.fileType, a.pageSize = h.get("file.bg.pageSize"), a.myTags = [], a.selectedImgs = [], a.selectedImages = [], a.toPage = 1, a.isEditor = c.isEditor;
+            var j = function() {
+                g.listFileCategory(a.fileType).then(function(b) {
+                    a.categoryList = b.data.list, a.changeCategory("0", 1)
+                })
+            };
+            a.totalItems = 0, a.currentPage = 1;
+            var k = function(b, c) {
+                if ("c" == b) {
+                    a.numPages = 2, a.totalItems = 35;
+                    var d = [{
+                        color: "#6366C3"
+                    }, {
+                        color: "#29A1D6"
+                    }, {
+                        color: "#332E42"
+                    }, {
+                        color: "#DBF3FF"
+                    }, {
+                        color: "#434A54"
+                    }, {
+                        color: "#000000"
+                    }, {
+                        color: "#F1F03E"
+                    }, {
+                        color: "#FCF08E"
+                    }, {
+                        color: "#972D53"
+                    }, {
+                        color: "#724192"
+                    }, {
+                        color: "#967BDC"
+                    }, {
+                        color: "#EC87C1"
+                    }, {
+                        color: "#D870AF"
+                    }, {
+                        color: "#F6F7FB"
+                    }, {
+                        color: "#666C78"
+                    }, {
+                        color: "#ABB1BD"
+                    }, {
+                        color: "#CCD0D9"
+                    }, {
+                        color: "#E6E9EE"
+                    }, {
+                        color: "#48CFAE"
+                    }, {
+                        color: "#36BC9B"
+                    }, {
+                        color: "#3BAEDA"
+                    }, {
+                        color: "#50C1E9"
+                    }, {
+                        color: "#AC92ED"
+                    }, {
+                        color: "#4B89DC"
+                    }, {
+                        color: "#4B89DC"
+                    }, {
+                        color: "#5D9CEC"
+                    }, {
+                        color: "#8DC153"
+                    }, {
+                        color: "#ED5564"
+                    }, {
+                        color: "#DB4453"
+                    }, {
+                        color: "#FB6E52"
+                    }, {
+                        color: "#FFCE55"
+                    }, {
+                        color: "#F6BB43"
+                    }, {
+                        color: "#E9573E"
+                    }, {
+                        color: "#9FF592"
+                    }, {
+                        color: "#A0D468"
+                    }];
+                    a.toPage = c, a.imgList = c && 1 != c ? d.slice(18) : d.slice(0, 18), a.currentPage = c
+                } else "all" == b && (b = ""), g.getFileByCategory(c ? c : 1, a.pageSize, b, a.fileType).then(function(b) {
+                    a.imgList = b.data.list, a.totalItems = b.data.map.count, a.currentPage = b.data.map.pageNo, a.allPageCount = b.data.map.count, a.toPage = b.data.map.pageNo, a.numPages = Math.ceil(a.totalItems / a.pageSize)
+                })
+            };
+            a.replaceImage = function() {
+                if (a.selectedImages.length > 1) return alert("只能选择一张图片进行替换！"), !1;
+                if (!a.selectedImages.length) return alert("还没有选择替换图片"), !1;
+                if ("c" != a.categoryId) {
+                    var b = a.selectedImages[0].path,
+                        c = $(".hovercolor").children("img")[0];
+                    a.$close({
+                        type: "imgSrc",
+                        data: b,
+                        width: c.width,
+                        height: c.height
+                    })
+                } else {
+                    var d = a.selectedImages[0].color;
+                    a.$close({
+                        type: "backgroundColor",
+                        color: d
+                    })
+                }
+            }, a.getImagesByPage = function(b, c) {
+                a.currentPage = c, 0 === b ? isNaN(a.tagIndex) || -1 == a.tagIndex ? a.changeCategory(b, c) : a.getImagesByTag(a.myTags[a.tagIndex].id, a.tagIndex, c) : isNaN(a.sysTagIndex) || -1 == a.sysTagIndex ? a.changeCategory(b, c) : a.getImagesBySysTag(a.childCatrgoryList[a.sysTagIndex].id, a.sysTagIndex, c, b)
+            }, a.replaceBgImage = function(b, c) {
+                var d, e = c.target;
+                d = "IMG" == e.nodeName.toUpperCase() ? e : $("img", e)[0], a.$close({
+                    type: "imgSrc",
+                    data: b,
+                    width: d.width,
+                    height: d.height
+                })
+            }, a.replaceBgColor = function(b) {
+                a.$close({
+                    type: "backgroundColor",
+                    color: b
+                })
+            }, a.changeCategory = function(b, c) {
+                return ("c" == b || "all" == b || "0" == b) && (a.allImages.checked = !1, a.sysTagIndex = -1), a.selectedImages = [], 1 > c || c > a.totalItems / a.pageSize + 1 ? void alert("此页超出范围") : (a.imgList = [], b || (b = "0"), a.categoryId = b, void("0" === b ? (a.pageSize = h.get("file.bg.pageSize") - 1, a.getImagesByTag("", a.tagIndex, c), a.tagIndex = -1) : (a.pageSize = h.get("file.bg.pageSize"), k(b, c))))
+            };
+            var l = null;
+            a.createCategory = function() {
+                return a.myTags.length >= 8 ? void alert("最多能创建8个自定义标签！") : void(l = d.open({
+                    windowClass: "console",
+                    templateUrl: "scene/console/category.tpl.html",
+                    controller: "CategoryConsoleCtrl"
+                }).result.then(function(b) {
+                        a.myTags.push(b)
+                    }, function() {}))
+            }, a.getCustomTags = function() {
+                g.getCustomTags().then(function(b) {
+                    a.myTags = b.data.list
+                }, function() {
+                    alert("服务器异常")
+                })
+            }, a.getCustomTags(), a.deleteTag = function(b, c) {
+                g.deleteTag(b).then(function() {
+                    a.myTags.splice(c, 1)
+                }, function() {
+                    alert("服务器异常")
+                })
+            }, a.hover = function(a) {
+                a.showOp = !a.showOp
+            }, a.switchSelect = function(b, c) {
+                if (c.target.id != b.id)
+                    if (b.selected = !b.selected, b.selected) a.selectedImages.push(b);
+                    else
+                        for (var d in a.selectedImages) a.selectedImages[d] == b && a.selectedImages.splice(d, 1)
+            }, a.selectTag = function(b, c) {
+                a.dropTagIndex = c, a.id = a.myTags[c].id
+            }, a.setCategory = function(b, c) {
+                a.dropTagIndex = -1;
+                var d = [];
+                if (!c)
+                    for (var e in a.selectedImages) d.push(a.selectedImages[e].id);
+                var f = c ? c : d.join(",");
+                g.setCategory(a.id, f).then(function() {}, function() {})
+            }, a.hoverTag = function(a) {
+                a.hovered = !a.hovered
+            }, a.prevent = function(b) {
+                b.selected || (b.selected = !0, a.selectedImages.push(b))
+            }, a.prevent = function() {}, a.unsetTag = function() {
+                var b = [];
+                for (var c in a.selectedImages) b.push(a.selectedImages[c].id);
+                g.unsetTag(a.myTags[a.tagIndex].id, b.join(",")).then(function() {
+                    a.getImagesByTag(a.myTags[a.tagIndex].id, a.tagIndex, a.currentPage)
+                }, function() {})
+            }, a.setIndex = function(b) {
+                a.dropTagIndex = -1, a.selectedImages.length || (alert("请您选中图片再进行分类！"), b.stopPropagation())
+            }, a.getChildCategory = function(b) {
+                g.getChildCategory(b).then(function(b) {
+                    a.sysTagIndex = -1, 200 == b.data.code && (a.childCatrgoryList = b.data.list)
+                }, function() {})
+            }, a.goUpload = function() {
+                d.open({
+                    windowClass: "upload-console",
+                    templateUrl: "my/upload.tpl.html",
+                    controller: "UploadCtrl",
+                    resolve: {
+                        category: function() {
+                            return {
+                                categoryId: a.categoryId,
+                                fileType: a.fileType,
+                                coverImage: i.coverImage
+                            }
+                        }
+                    }
+                }).result.then(function() {
+                        a.changeCategory(a.categoryId)
+                    }, function() {})
+            }, a.allImages = {
+                checked: !1
+            }, a.selectAll = function() {
+                for (var b in a.imgList) a.allImages.checked ? (a.imgList[b].selected = !0, a.selectedImages.push(a.imgList[b])) : (a.imgList[b].selected = !1, a.selectedImages = [])
+            }, a.getImagesByTag = function(b, c, d) {
+                return 1 > d || d > a.totalItems / a.pageSize + 1 ? void alert("此页超出范围") : (a.allImages.checked = !1, a.selectedImages = [], a.tagIndex = c, void g.getImagesByTag(b, a.fileType, d, a.pageSize).then(function(b) {
+                    a.imgList = b.data.list, a.totalItems = b.data.map.count, a.currentPage = b.data.map.pageNo, a.allPageCount = b.data.map.count, a.toPage = b.data.map.pageNo, a.numPages = Math.ceil(a.totalItems / a.pageSize)
+                }, function() {
+                    alert("服务器异常")
+                }))
+            }, a.getImagesBySysTag = function(b, c, d, e) {
+                return 1 > d || d > a.totalItems / a.pageSize + 1 ? void alert("此页超出范围") : (a.allImages.checked = !1, a.selectedImages = [], a.sysTagIndex = c, void g.getImagesBySysTag(b, a.fileType, d, a.pageSize, e).then(function(b) {
+                    a.imgList = b.data.list, a.totalItems = b.data.map.count, a.currentPage = b.data.map.pageNo, a.allPageCount = b.data.map.count, a.toPage = b.data.map.pageNo, a.numPages = Math.ceil(a.totalItems / a.pageSize)
+                }, function() {
+                    alert("服务器异常")
+                }))
+            }, a.deleteImage = function(b, c) {
+                var d = [];
+                if (!b && 0 === a.selectedImages.length) return void alert("请您选中图片后再进行删除操作！");
+                c && c.stopPropagation();
+                var f = b ? "确定删除此图片？" : "确定删除所选图片？";
+                if (!b)
+                    for (var h in a.imgList) a.imgList[h].selected && d.push(a.imgList[h].id);
+                var i = b ? b : d.join(",");
+                e.openConfirmDialog({
+                    msg: f
+                }, function() {
+                    g.deleteFile(i).then(function() {
+                        isNaN(a.tagIndex) || -1 == a.tagIndex ? a.changeCategory("0", a.currentPage) : a.getImagesByTag(a.myTags[a.tagIndex].id, a.tagIndex, a.currentPage)
+                    })
+                })
+            }, j()
+        }]);
+    ng.module("scene.create.console.pic_lunbo", ["scene.my.upload"]);
+    ng.module("scene.create.console.pic_lunbo").controller("picsCtrl", ["$scope", "$timeout", "$rootScope", "$modal", "ModalService", "sceneService", "fileService", "obj", function(a, b, d, e, f, g, h, i) {
+            var j = {
+                    lunBo: 1,
+                    jiuGongGe: 2
+                },
+                k = {
+                    autoPlay: i.properties.autoPlay === c ? !0 : i.properties.autoPlay,
+                    interval: i.properties.interval === c ? 3e3 : i.properties.interval,
+                    picStyle: i.properties.picStyle === c ? j.lunBo : i.properties.picStyle,
+                    children: []
+                },
+                l = i.properties.children;
+            if (l && l.length > 0)
+                for (var m in l) k.children.push(l[m]);
+            a.imgList = k.children, a.isAutoPlay = k.autoPlay, a.fileDomain = PREFIX_FILE_HOST, a.autoPlay = function(b) {
+                a.isAutoPlay = k.autoPlay = b
+            }, a.choosePic = function() {
+                return k.children.length >= 6 ? void alert("最多选择6张图片") : void e.open({
+                    windowClass: "console img_console",
+                    templateUrl: "scene/console/bg.tpl.html",
+                    controller: "BgConsoleCtrl",
+                    resolve: {
+                        obj: function() {
+                            return {
+                                fileType: 1,
+                                elemDef: i
+                            }
+                        }
+                    }
+                }).result.then(function(b) {
+                        a.imgList.push({
+                            src: b.data,
+                            desc: "",
+                            height: b.height,
+                            width: b.width
+                        })
+                    }, function() {})
+            }, a.remove = function(b) {
+                a.imgList.splice(b, 1)
+            }, a.ok = function() {
+                return 0 === k.children.length ? void alert("请选择图片") : (i.properties = k, void a.$close(k))
+            }, a.cancel = function() {
+                a.$dismiss()
+            }
+        }]);
+    ng.module("scene.create.console.video", []);
+    ng.module("scene.create.console.video").controller("VideoCtrl", ["$scope", "$timeout", "obj", function(a, b, c) {
+        a.model || (a.model = {}), a.model.src = c.properties.src, a.confirm = function() {
+            return a.model.src ? void a.$close(a.model.src) : void alert("请输入视频地址")
+        }, a.cancel = function() {
+            a.$dismiss()
+        }
+    }]);
+    ng.module("scene.create.console.link", ["services.scene"]);
+    ng.module("scene.create.console.link").controller("LinkConsoleCtrl", ["$scope", "$timeout", "obj", "sceneService", function(a, c, d, e) {
+            a.url = {}, a.url.externalLink = "http://";
+            var f;
+            a.confirm = function() {
+                "external" == a.url.link ? f = a.url.externalLink : "internal" == a.url.link && (f = a.url.internalLink.id), a.$close(f)
+            }, a.cancel = function() {
+                a.$dismiss()
+            }, a.removeLink = function(b) {
+                "external" == b ? a.url.externalLink = "http://" : "internal" == b && (a.url.internalLink = a.pageList[0]), a.url.link = ""
+            }, a.changed = function() {
+                "external" == a.url.link ? a.url.internalLink = a.pageList[0] : a.url.externalLink = "http://"
+            }, a.selectRadio = function(b) {
+                a.url.link || ("external" == b ? a.url.link = "external" : "internal" == b && (a.url.link = "internal"))
+            }, a.getPageNames = function() {
+                var c = d.sceneId;
+                e.getPageNames(c).then(function(c) {
+                    a.pageList = c.data.list, a.pageList.unshift({
+                        id: 0,
+                        name: "无"
+                    }), a.url.internalLink = a.pageList[0], b.forEach(a.pageList, function(b) {
+                        b.name || (b.name = "第" + b.num + "页"), d.properties.url && d.properties.url == b.id && (a.url.link = "internal", a.url.internalLink = b)
+                    }), d.properties.url && isNaN(d.properties.url) && (a.url.link = "external", a.url.externalLink = decodeURIComponent(d.properties.url.split("=")[2]))
+                })
+            }, a.getPageNames()
+        }]);
+    ng.module("scene.create.console.micro", ["app.directives.addelement", "services.scene"]);
+    ng.module("scene.create.console.micro").controller("MicroConsoleCtrl", ["$scope", "$timeout", "localizedMessages", "obj", "sceneService", function(a, c, d, e, f) {
+            a.model || (a.model = {});
+            var g = [];
+            a.isSelected = [], a.backgroundColors = [{
+                backgroundColor: "#D34141"
+            }, {
+                backgroundColor: "#000"
+            }, {
+                backgroundColor: "#23A3D3"
+            }, {
+                backgroundColor: "#79C450"
+            }, {
+                backgroundColor: "#fafafa"
+            }], a.labelNames = [{
+                id: 1,
+                title: "栏目一",
+                color: {
+                    backgroundColor: ""
+                }
+            }, {
+                id: 2,
+                title: "栏目二",
+                color: {
+                    backgroundColor: ""
+                }
+            }, {
+                id: 3,
+                title: "栏目三",
+                color: {
+                    backgroundColor: ""
+                }
+            }, {
+                id: 4,
+                title: "栏目四",
+                color: {
+                    backgroundColor: ""
+                }
+            }], a.model.color = e.properties.labels[0].color.backgroundColor, a.selectColor = function(c) {
+                a.model.color = c.backgroundColor, b.forEach(a.labelNames, function(a) {
+                    a.color.backgroundColor && (a.color.backgroundColor = c.backgroundColor)
+                })
+            }, b.forEach(e.properties.labels, function(c) {
+                b.forEach(a.labelNames, function(a) {
+                    c.id == a.id && (a.title = c.title, a.color.backgroundColor = c.color.backgroundColor, a.link = c.link, a.selected = !0, c.mousedown = !1)
+                })
+            }), a.confirm = function() {
+                g = [];
+                var c = 0,
+                    d = 0;
+                b.forEach(a.labelNames, function(a) {
+                    a.selected && (a.link ? g.push(a) : d++, c++)
+                }), 2 > c ? alert("导航标签不能少于两个！") : d > 0 ? alert("每个导航必须有链接页面！") : a.$close(g)
+            }, a.cancel = function() {
+                a.$dismiss()
+            }, a.switchLabel = function(b, c) {
+                a.label = b, b.selected ? a.labelIndex == c ? (b.color.backgroundColor = "", b.selected = !1, b.mousedown = !1) : (a.labelIndex = c, b.mousedown = !0) : (b.color.backgroundColor = a.model.color, a.labelIndex = c, b.selected = !0, b.mousedown = !0), b.mousedown ? (a.model.title = b.title, a.model.link = b.link ? a.pageList[b.link] : a.pageList[0]) : (a.model.title = "", a.model.link = a.pageList[0])
+            }, a.selectLink = function(b) {
+                a.label.mousedown && (a.label.link = b.num, console.log(a.labelNames))
+            }, a.changeLabelName = function() {
+                a.label.mousedown && (a.label.title = a.model.title)
+            }, a.getPageNames = function() {
+                var c = e.sceneId;
+                f.getPageNames(c).then(function(c) {
+                    a.pageList = c.data.list, a.pageList.unshift({
+                        id: 0,
+                        name: "无"
+                    }), b.forEach(a.pageList, function(a) {
+                        a.name || (a.name = "第" + a.num + "页")
+                    }), a.model.link = a.pageList[0]
+                })
+            }, a.getPageNames()
+        }]);
+
+    ng.module("app.directives.comp.editor", []).directive("mapEditor", function() {
+        return {
+            restrict: "AE",
+            templateUrl: "directives/mapeditor.tpl.html",
+            link: function(a) {
+                var b = new BMap.Map("l-map");
+                b.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
+                var c = {
+                        onSearchComplete: function(a) {
+                            if (d.getStatus() == BMAP_STATUS_SUCCESS) {
+                                for (var b = [], c = 0; c < a.getCurrentNumPois(); c++) b.push(a.getPoi(c).title + ", " + a.getPoi(c).address);
+                                document.getElementById("r-result").innerHTML = b.join("<br/>")
+                            }
+                        }
+                    },
+                    d = new BMap.LocalSearch(b, c);
+                a.searchAddress = function() {
+                    d.search(a.address)
+                }
+            }
+        }
+    });
+    ng.module("scene.create.console.map", ["app.directives.comp.editor"]);
+    ng.module("scene.create.console.map").controller("MapConsoleCtrl", ["$scope", "sceneService", "$timeout", function(a, b, c) {
+            var d = null,
+                e = null;
+            a.address = {
+                address: "",
+                lat: "",
+                lng: ""
+            }, a.search = {
+                address: ""
+            }, a.searchResult = [], c(function() {
+                d = new BMap.Map("l-map"), d.addControl(new BMap.NavigationControl), d.centerAndZoom(new BMap.Point(116.404, 39.915), 12);
+                var b = {
+                    onSearchComplete: function(b) {
+                        e.getStatus() == BMAP_STATUS_SUCCESS && (a.searchResult = b.Fn, a.$apply())
+                    }
+                };
+                e = new BMap.LocalSearch(d, b)
+            }), a.searchAddress = function() {
+                e.search(a.search.address)
+            }, a.setPoint = function(b, c, e) {
+                a.address.address = e, a.address.lat = b, a.address.lng = c, d.clearOverlays();
+                var f = new BMap.Point(c, b),
+                    g = new BMap.Marker(f);
+                d.addOverlay(g);
+                var h = new BMap.Label(e, {
+                    offset: new BMap.Size(20, -10)
+                });
+                g.setLabel(h), d.centerAndZoom(f, 12)
+            }, a.resetAddress = function() {
+                a.$close(a.address)
+            }, a.cancel = function() {
+                a.$dismiss()
+            }
+        }]);
+    ng.module("scene.create.console", [
+        "scene.create.console.setting"
+        ,"scene.create.console.audio"
+        ,"scene.create.console.input"
+        ,"scene.create.console.button"
+        ,"scene.create.console.tel"
+        ,"scene.create.console.pic_lunbo"
+        ,"scene.create.console.video"
+        ,"scene.create.console.link"
+        ,"scene.create.console.micro"
+        ,"scene.create.console.map"
+    ]);
     ng.module("scene.create.console").controller("ConsoleCtrl", ["$scope", function() {}]);
 
     ng.module("app.directives.editor", []).directive("toolbar", ["$compile", function($compile) {
@@ -4121,18 +5383,11 @@
         })
         .directive("pasteElement", ["sceneService", function(sceneService) {
             function generateMenu() {
-                var element = $('<ul id="pasteMenu" class="dropdown-menu" '
-                                +'style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1">'
-                                +'<li class="paste" role="presentation">'
-                                    +'<a role="menuitem" tabindex="-1">' +
-                                        +'<div class="fa fa-paste" style="color: #08a1ef;"></div>&nbsp;&nbsp;粘贴'
-                                    +'</a>'
-                                +'</li>'
-                            +'</ul>')
+                var element = $('<ul id="pasteMenu" class="dropdown-menu" style="min-width: 100px; display: block;" role="menu" aria-labelledby="dropdownMenu1"><li class="paste" role="presentation"><a role="menuitem" tabindex="-1"><div class="fa fa-paste" style="color: #08a1ef;"></div>&nbsp;&nbsp;粘贴</a></li></ul>')
                     .css({position: "absolute","user-select": "none"});
                 element.find(".paste").on("click", function() {
                     sceneService.pasteElement(sceneService.originalElemDef, sceneService.copyElemDef, sceneService.sameCopyCount);
-                    element.hide()
+                    element.hide();
                 });
                 return element;
             }
@@ -4143,7 +5398,7 @@
                     $element.on("contextmenu", function(events) {
                         if (q) {
                             var menu = generateMenu(),element = $("#pasteMenu");
-                            element.length > 0 && element.remove();
+                            if(element.length > 0)element.remove();
                             $("#eq_main").append(menu);
                             menu.css({
                                 left: events.pageX + $("#eq_main").scrollLeft() + 15,
@@ -4160,7 +5415,7 @@
                                 }
                             });
                         }
-                        return !1;
+                        return false;
                     });
                 }
             }
@@ -4175,6 +5430,17 @@
         ,"scene/console/angle-knob.tpl.html"
         ,"scene/console/anim.tpl.html"
         ,"scene/console/setting.tpl.html"
+        ,"scene/console/audio.tpl.html"
+        ,"scene/console/input.tpl.html"
+        ,"scene/console/button.tpl.html"
+        ,"scene/console/tel.tpl.html"
+        ,"scene/console/pic_lunbo.tpl.html"
+        ,"scene/console/video.tpl.html"
+        ,"scene/console/link.tpl.html"
+        ,"scene/console/microweb.tpl.html"
+        ,"scene/console/map.tpl.html"
+        ,"scene/console/category.tpl.html"
+        ,"scene/console/cropimage.tpl.html"
     ]);
     ng.module("dialog/confirm.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("dialog/confirm.tpl.html", '<div class="modal-header">\n    <span class="glyphicon glyphicon-exclamation-sign"></span>\n    <span>提示</span>\n</div>\n<div class="modal-body" ng-if="confirmObj.msg">\n <!-- confirm message -->\n  <div class="confirm-msg">{{confirmObj.msg}}</div>\n</div>\n<div class="modal-footer">\n    <a ng-click="ok();" class="btn-main"\n    style="width: 88px;">\n        {{confirmObj.confirmName || \'是\'}}\n    </a>\n    <a ng-click="cancel();" class="btn-grey0"\n    style="width: 88px;margin-left: 15px;">\n        {{confirmObj.cancelName || \'取消\'}}\n    </a>\n</div>')
@@ -4188,9 +5454,11 @@
     ng.module("scene/console/bg.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/console/bg.tpl.html", '<!-- <div class="bg_console">\n  <div class="img_list">\n        <div class="category_list">\n           <div ng-show="fileType == \'0\'" class="category_item" ng-click="changeCategory(\'c\')" ng-class="{active: \'c\' == categoryId}">\n             <span>纯色背景</span>\n         </div>\n            <ul class="category_list_container">\n              <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value)">\n                   {{category.name}}\n             </li>\n         </ul>\n         <div class="btn-group fl" dropdown ng-show="otherCategory.length > 0">\n              <span class="dropdown-toggle" ng-disabled="disabled">\n               其它 <span class="caret"></span>\n              </span>\n           <ul class="dropdown-menu">\n              <li ng-repeat="category in otherCategory">\n                  <a href ng-click="changeCategory(category.value)">{{category.name}}</a>\n             </li>\n           </ul>\n           </div>\n            <div class="category_item" ng-click="changeCategory(\'0\')" ng-class="{active: \'0\' == categoryId}">\n             <span ng-show="fileType == \'0\'">我的背景</span>\n             <span ng-show="fileType == \'1\'">我的图片</span>\n         </div>\n        </div>\n        <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n           <ul class="img_box">\n              <li ng-show="isEditor || categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                  <span class="glyphicon glyphicon-upload"></span>\n              </li>\n             <li ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" photo-draggable="{{img.path}}" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="replaceBgImage(img.path, $event)">\n                    <span ng-click="deleteImage(img.id, $event)" ng-show="isEditor || categoryId == \'0\'" class="del_icon glyphicon glyphicon-remove-circle"></span>\n                 <img responsive-image ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"></img>\n              </li>\n             <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId"  ng-repeat="img in imgList track by $index" ng-click="replaceBgColor(img.color, $event)">\n               </li>\n         </ul>\n         \n      </div>\n        <div class="pagination_container" ng-show="numPages>1">\n           <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="10" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="changeCategory(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n           <div class="current_page">\n                <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? changeCategory(categoryId, toPage) : null">\n             <a ng-click="changeCategory(categoryId,toPage)" class="go">GO</a>\n             <span>当前: {{currentPage}} / {{numPages}} 页</span>\n         </div>\n        </div>\n        <div ng-show="fileType == \'1\'" class="bottom_area" style="position: relative; min-height: 80px;">\n           <div class="crop_drop" crop-droppable style = "min-height: 80px;">\n                <p ng-hide="cropMode" class="">拖动图片到此区域剪裁</p>\n             <div class="image_crop">\n                  <img id="target"></img>\n               </div>\n            </div>\n            <div class="fr" style="width: 180px;">\n                <p>*单击图片替换</p>\n                <p>*或拖动图片到左侧区域剪裁</p>\n              <a ng-show="cropMode" class="btn-main" style="width: 105px;position: absolute;bottom: 0;" ng-click="crop()">剪裁并替换</a>\n         </div>\n        </div>\n    </div>\n</div> -->\n<div class="bg_console clearfix" style="background-color:#E7E7E7;">\n   <div class="fl" style="width:188px;">\n      <ul class="nav nav-tabs tabs-left" style="padding-top:0px;"><!-- \'tabs-right\' for right tabs -->\n           <li class="active" ng-click="changeCategory(\'0\')">\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = false;" data-toggle="tab">我的背景</a>\n                <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = false;" data-toggle="tab">我的图片</a>\n            </li>\n         <li>\n              <a href="" ng-show="fileType == \'0\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">背景库</a>\n              <a href="" ng-show="fileType == \'1\'" ng-click="systemImages = true; changeCategory(\'all\')" data-toggle="tab">图片库</a>\n          </li>\n       </ul>\n   </div>\n    <div class="fl" style="width:710px;padding:0 10px;background-color:#FFF;">\n        <div class="tab-content" id="bg_contain">\n         <div class="tab-pane active" ng-show="!systemImages">\n             <div class="img_list" style="padding-bottom: 0px;">\n                   <div class="category_list clearfix">\n                      <ul class="category_list_container clearfix" style="width:610px;float:left;">\n                         <li ng-class="{active: tagIndex == -1}" class="category_item" ng-click="changeCategory(\'0\');">\n                              全部\n                            </li>\n                         <li ng-class="{active: tagIndex == $index}" class="category_item" ng-repeat="myTag in myTags" ng-mouseenter="hoverTag(myTag)" ng-mouseleave="hoverTag(myTag)" ng-click="getImagesByTag(myTag.id, $index)">\n                                {{myTag.name}}<span ng-if="myTag.hovered" ng-click="deleteTag(myTag.id, $index, $event)">x</span>\n                         </li>                       \n                      </ul>\n                     <div class="category_item active" ng-click="createCategory();" style="float:right;">\n                          创建分类\n                      </div>                      \n                  </div>\n                    <div class="edit">\n                        <input type="checkbox" ng-model="allImages.checked" ng-change="selectAll()"/>&nbsp;&nbsp;<span ng-click="deleteImage()"><a href="">删除</a></span>\n                      <div class="btn-group">\n                           <div class="dropdown-toggle"  data-toggle="dropdown" ng-click="setIndex($event);">分类到</div>\n                           <div class="dropdown-menu" role="menu">\n                               <ul forbidden-close>\n                                  <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;" ng-click="setCategory(dropTagIndex)"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                        <div ng-if="tagIndex > -1" style="display: inline-block; margin-left: 20px;"><a href="" ng-click="unsetTag()">取消分类</a></div>\n                  </div>\n                </div>\n            </div>\n            <div class="tab-pane" ng-class="{active: systemImages}" ng-show="systemImages">\n               <div class="img_list">\n                    <div class="category_list">             \n                      <ul class="category_list_container clearfix">\n                         <li class="category_item"  ng-click="changeCategory(\'all\')" ng-class="{active: \'all\' == categoryId}">\n                         最新\n                            </li>\n                         <li ng-class="{active: category.value == categoryId}" class="category_item" ng-repeat="category in categoryList" ng-click="changeCategory(category.value); getChildCategory(category.value);sysTagIndex = -1;">\n                               {{category.name}}\n                         </li>\n                         <li ng-show="fileType == \'0\'" class="category_item"  ng-click="changeCategory(\'c\');numPages=2;" ng-class="{active: \'c\' == categoryId}">\n                         纯色背景\n                          </li>\n                     </ul>   \n                  </div>\n                    <div class="cat_two_list clearfix" ng-if="\'c\' != categoryId && \'all\' != categoryId">\n                      <ul>\n                          <li ng-class="{active: sysTagIndex == $index}" ng-repeat = "childCatrgory in childCatrgoryList" ng-click="getImagesBySysTag(childCatrgory.id, $index, 1, categoryId)" style="cursor:pointer;">\n                                {{childCatrgory.name}}\n                            </li>\n                     </ul>\n                 </div>\n                </div>\n            </div>\n        </div>\n        <div class="img_list" style="padding-top:0px;">\n           <div class="img_list_container" ng-class="{photo_list: fileType == \'1\', bg_list: fileType == \'0\'}">\n               <ul class="img_box clearfix">\n                 <li ng-show="categoryId == \'0\'" class="upload" title="上传图片" ng-click="goUpload(img.path)">\n                      <span class=""><img ng-src="{{CLIENT_CDN}}assets/images/bg_15.jpg" alt="" /></span>\n                   </li>\n                 <li class="imageList" ng-show="fileType == \'0\' && \'c\' != categoryId" ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                       <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}" />\n                       <div class="edit_content" ng-if="(img.showOp || img.selected) && categoryId == \'0\'">\n                            <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                          <div ng-if="categoryId == \'0\'" class="set btn-group" class="dropdown-toggle"  data-toggle="dropdown" ng-click="prevent(img, $event)">\n                               <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>  \n                          <div class="dropdown-menu set_category" id="{{img.id}}" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory();" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                               </ul>\n                             <div class="fl btn-main" style="width:100%;"><a href="" style="color:#FFF;" ng-click="setCategory(dropTagIndex, img.id)">确定</a></div>\n                         </div>\n                                \n                      </div>\n                    </li>\n                 <li class="imageList" ng-show="fileType == \'1\'"  ng-repeat="img in imgList track by $index" ng-click="switchSelect(img, $event)" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected}" right-click>\n                     <img ng-src="{{PREFIX_FILE_HOST + img.tmbPath}}"/>\n                        <div class="edit_content" ng-show="(img.showOp || img.selected) && categoryId == \'0\'">\n                          <div class="select" ng-if="!img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/nocheck.jpg"/></div>\n                            <div class="select" ng-if="img.selected && categoryId == \'0\'"><img ng-src="{{CLIENT_CDN}}assets/images/checked.png"/></div>\n                         <div class="del" ng-click="deleteImage(img.id, $event)" ng-click="deleteImg()"><img ng-src="{{CLIENT_CDN}}assets/images/bg_07.png" /></div>\n                           <div class="set btn-group" ng-if="categoryId == \'0\'" class="dropdown-toggle" ng-click="prevent(img, $event)" data-toggle="dropdown">\n                                <img id="{{img.id}}" ng-src="{{CLIENT_CDN}}assets/images/bg_19.png" />\n                            </div>\n                            <div class="dropdown-menu set_category" role="menu">\n                              <ul forbidden-close id="cat_tab">\n                                 <li ng-class="{selecttag: dropTagIndex == $index}" ng-repeat="myTag in myTags" ng-click="selectTag(myTag, $index)"><span>{{myTag.name}}</span></li>\n                                   <li ng-click="createCategory()" class="add_cate clearfix"><em>+</em><span>添加分类</span></li>\n                                </ul>\n                             <div class="fl btn-main" ng-click="setCategory(dropTagIndex, img.id)" style="width:100%;"><a href="" style="color:#FFF;">确定</a></div>\n                         </div>\n                        </div>\n                    </li>\n                 <li class="photo_item" style="background-color: {{img.color}}" ng-show="fileType == \'0\' && \'c\' == categoryId" ng-mouseenter="hover(img)" ng-mouseleave="hover(img)" ng-class="{hovercolor: img.showOp || img.selected, mr0: $index%9 == 8}" ng-click="switchSelect(img, $event)"  ng-repeat="img in imgList track by $index">\n                 </li>\n             </ul>\n         </div>\n            <div class="fanye_foot clearfix" style="margin-top: 20px;">\n               <div class="fr btn-main" ng-click="replaceImage();"><a href="" style="color:#FFF;">确定</a></div>\n               <div class="pagination_container fl">\n                 <pagination style="float: left" class="pagination-sm" previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" max-size="5" items-per-page="pageSize" total-items="totalItems" ng-model="currentPage" ng-change="getImagesByPage(categoryId, currentPage)" boundary-links="true" rotate="true" num-pages="numPages"></pagination>\n                   <div class="current_page">\n                        <input type="text" ng-model="toPage" ng-keyup="$event.keyCode == 13 ? getImagesByPage(categoryId, toPage) : null">\n                        <a ng-click="getImagesByPage(categoryId,toPage)" class="go">GO</a>\n                        <span>当前: {{currentPage}} / {{numPages}} 页</span>\n                 </div>\n                </div>\n            </div>\n        </div>\n    </div>\n</div>')
     }]);
+
     ng.module("scene/console/fake.tpl.html", []).run(["$templateCache", function($templateCache) {
         a.put("scene/console/fake.tpl.html", '<div class="modal-footer">\n  <div class="alert alert-info" role="alert">此功能为高级账号功能，点击按钮免费申请成为高级账号！</div>\n    <a class="btn-main login" target="_blank" style="width: 188px;" ng-href="http://eqxiu.hjtmt.com/forum.php?mod=viewthread&tid=77">免费成为高级账号</a>\n</div>\n<div class="anim_area" style="padding: 0 20px 20px;">\n <img title="点击上方按钮成为高级账号" ng-show="type==\'style\'" src="{{CLIENT_CDN}}assets/images/create/fakestyle.png"/>\n  <img title="点击上方按钮成为高级账号" ng-show="type==\'anim\'" src="{{CLIENT_CDN}}assets/images/create/fakeanim.png"/>\n</div>')
     }]);
+
     ng.module("scene/console/style.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/console/style.tpl.html", '<div ng-if="activeTab == \'style\'" ng-controller="StyleConsoleCtrl">\n   <div class="yangshi">\n     <section>\n         <div class="style_list" ng-init="showBasic=true" ng-click="showBasic = !showBasic; showBorder = false; showShadow = false;">\n              <b class="caret" ng-show="showBasic"></b><b class="caret off" ng-show="!showBasic"></b>基础样式\n           </div>\n            <div ng-show="showBasic"  class="style_con_hei">\n              <div class="style_list_angel clearfix">\n                   <div class="">背景颜色</div>\n                  <div class="color_select clearfix" style="margin-top:10px;">\n                      <input class=" flo_right" style="font-size:12px;width:135px;" style-input elem-id="{{elemDef.id}}" ng-model="model.backgroundColor" css-item="backgroundColor" type="text" />\n                     <a class="input_kuang flo_lef" ng-style="{backgroundColor: model.backgroundColor}" ng-model="model.backgroundColor" colorpicker="rgba" ></a>\n                  </div>\n                </div>\n                <div class="style_list_angel clearfix" ng-show="elemDef.type == \'2\' ||elemDef.type == \'8\' || (\'\'+elemDef.type).charAt(0) == \'6\'">\n                 <div class="">文字颜色</div>\n                  <div class="color_select clearfix" style="margin-top:10px;">\n                      <input class=" flo_right" style="font-size:12px;width:135px;" style-input elem-id="{{elemDef.id}}" ng-model="model.color" css-item="color" type="text" />\n                     <a class="input_kuang flo_lef" ng-style="{backgroundColor: model.color}" ng-model="model.color" colorpicker="rgba" ></a>\n\n                    </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div>透明度</div>\n                    <div class="touming clearfix">\n                        <p class="num"><input type="number" min="0" max="100" limit-input style="width:56px;height:24px;border-radius:0px;" style-input elem-id="{{elemDef.id}}" css-item="opacity" ng-model="model.opacity"/>%</p>\n                       <div style="width: 100px;" ui-slider min="0" max="100" ng-model="model.opacity"></div>\n                    </div>\n                </div>                  \n              <div class="style_list_angel clearfix" ng-show="elemDef.type == \'8\' || (\'\'+elemDef.type).charAt(0) == \'6\' || elemDef.type == \'2\' || (\'\'+elemDef.type).charAt(0) == \'5\'">\n                  <div>\n                     边距\n                        <div class="touming clearfix">\n                            <p class="num"><input min="0" max="20" limit-input class="input_kuang short" type="number" style-input css-item="padding" ng-model="model.paddingTop"/>px</p>               \n                          <div style="width: 100px;" ui-slider min="0" max="20" ng-model="model.paddingTop"></div>\n                      </div>\n                    </div>\n                </div>\n                <div class="style_list_angel clearfix" ng-show="elemDef.type == \'8\' || (\'\'+elemDef.type).charAt(0) == \'6\' || elemDef.type == \'2\' || (\'\'+elemDef.type).charAt(0) == \'5\'">\n                  <div>\n                     行高\n                        <div class="touming clearfix">\n                            <p class="num"><input min="0" max="3" limit-input step="0.1" class="input_kuang short" type="number" style-input css-item="lineHeight" ng-model="model.lineHeight"/>倍</p>           \n                          <div style="width: 100px;" use-decimals step="0.1" ui-slider min="0" max="3" ng-model="model.lineHeight"></div>\n                       </div>\n                    </div>\n                </div>                              \n          </div>\n        </section>\n        <section>\n         <div class="style_list" ng-click="showBorder = !showBorder; showBasic=false;showShadow=false;">\n               <b class="caret" ng-show="showBorder"></b><b class="caret off" ng-show="!showBorder"></b>边框样式\n         </div>\n            <div ng-show="showBorder" class="style_con_hei">\n              <div class="style_list_angel clearfix">\n                   边框尺寸\n                  <div class="touming clearfix">\n                        <p class="num"><input class="input_kuang short" limit-input type="number" min="0" max="20" style-input css-item="borderWidth" ng-model="model.borderWidth"/>px</p>              \n                      <div style="width: 100px;" ui-slider min="0" max="20" ng-model="model.borderWidth"></div>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div>边框弧度</div>\n                   <!-- <div class="touming clearfix">\n                       <p class="num"><input type="number" min="0" max="100" limit-input style="width:56px;height:24px;border-radius:2px;" style-input css-item="borderRadius" ng-model="model.borderRadiusPerc" />%</p>       \n                      <div class="num" style="width:100px;" ui-slider min="0" max="100" ng-model="model.borderRadiusPerc"></div>\n                    </div> -->\n                    <div class="touming clearfix">\n                        <p class="num"><input class="input_kuang short" type="number" min="0" max="{{maxRadius}}" limit-input style-input css-item="borderRadius" ng-model="model.borderRadius" />px</p>        \n                      <div class="num" style="width:100px;" ui-slider min="0" max="{{maxRadius}}" ng-model="model.borderRadius"></div>\n                  </div>\n                </div>  \n              <div class="style_list_angel clearfix">\n                   <div class="flo_lef">边框样式</div>\n                   <div class="flo_right">\n                       <select style="border:1px solid #ccc" style-input css-item="borderStyle" ng-model="model.borderStyle">\n                            <option value="solid">直线</option>\n                         <option value="dashed">破折线</option>\n                           <option value="dotted">点状线</option>\n                           <option value="double">双划线</option>\n                           <option value="groove">3D凹槽</option>\n                          <option value="ridge">3D垄状</option>\n                           <option value="inset">3D内嵌</option>\n                           <option value="outset">3D外嵌</option>\n                      </select>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div class="">边框颜色</div>\n                  <div class="clearfix" style="margin-top:10px;">\n                       <input class="flo_right" style="font-size:12px;width:135px;" style-input ng-model="model.borderColor" css-item="borderColor" type="text" />\n                       <a class="input_kuang flo_lef" ng-style="{backgroundColor: model.borderColor}" ng-model="model.borderColor" colorpicker="rgba"></a>\n                   </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div>\n                     旋转\n                        <div class="touming clearfix">\n                            <p class="num"><input min="0" max="360" limit-input style-input css-item="transform" class="input_kuang short" type="number"  ng-model="model.transform"/>度</p>         \n                          <div style="width: 100px;" ui-slider min="0" max="360" ng-model="model.transform"></div>\n                      </div>\n                    </div>\n                </div>              \n          </div>\n        </section>\n        <section>\n         <div class="style_list" ng-click="showShadow = !showShadow; showBasic=false;showBorder=false;">\n               <b class="caret" ng-show="showShadow"></b><b class="caret off" ng-show="!showShadow"></b>阴影样式\n         </div>\n            <div ng-show="showShadow" class="style_con_hei">\n              <div class="style_list_angel clearfix">\n                   大小\n                    <div class="touming clearfix">\n                        <div style="width: 100px;" ui-slider min="0" max="20" ng-model="tmpModel.boxShadowSize"></div>\n                        <p class="num"><input limit-input class="input_kuang short" min="0" max="20" type="number" style-input css-item="boxShadow" ng-model="tmpModel.boxShadowSize"/>px</p>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   模糊\n                    <div class="touming clearfix">\n                        <div style="width: 100px;" ui-slider min="0" max="20" ng-model="tmpModel.boxShadowBlur"></div>\n                        <p class="num"><input limit-input class="input_kuang short" min="0" max="20" type="number" style-input css-item="boxShadow" ng-model="tmpModel.boxShadowBlur"/>px</p>\n                 </div>\n                </div>\n                <div class="style_list_angel clearfix">\n                   <div class="">颜色</div>\n                    <div class="clearfix" style="margin-top:10px;">\n                       <input class=" flo_right" style="font-size:12px;width:135px;" style-input  ng-model="tmpModel.boxShadowColor" css-item="boxShadow" type="text" />                       \n                      <a class="input_kuang flo_lef" ng-style="{backgroundColor: tmpModel.boxShadowColor}" ng-model="tmpModel.boxShadowColor" colorpicker="rgba" colorpicker-fixed-position="true"></a>\n\n                   </div>\n                </div>  \n              <div class="style_list_angel clearfix">\n                   方向\n                    <div class="clearfix" style="margin-top:15px;">\n                       <div class="fr">\n                          <p class="num" style="margin-top:18px;"><input style="width:58px;margin-right:5px;" min="0" max="359" limit-input class="input_kuang" type="number" style-input css-item="boxShadow" ng-model="tmpModel.boxShadowDirection"/>度</p></div>                    \n                      <angle-knob class="flo_lef" style="display: block;position: relative;height: 60px;margin-left:60px;"></angle-knob>\n                    </div>\n                </div>\n            </div>\n        </section>\n        <div class="modal-footer">\n            <a class="btn-main login" style="width: 120px;" ng-click="clear()">清除全部样式</a>\n     </div>\n    </div>\n</div>\n')
     }]);
@@ -4202,6 +5470,40 @@
     }]);
     ng.module("scene/console/setting.tpl.html", []).run(["$templateCache", function($templateCache) {
         $templateCache.put("scene/console/setting.tpl.html", '<div panel-draggable id="comp_setting">\n  <div class="cancel"><a href="" title="关闭" ng-click="cancel()">x</a></div>\n <div class="style_head clearfix">\n     <ul class="clearfix">\n         <li><a ng-click="activeTab = \'style\'" ng-class="{hover:activeTab == \'style\'}">样式</a></li>\n         <li><a ng-click="activeTab = \'anim\'" ng-class="{hover:activeTab == \'anim\'}">动画</a></li>\n       </ul>\n </div>\n    <div class="style_content">\n       <div ng-include="\'scene/console/anim.tpl.html\'"></div>\n      <div ng-include="\'scene/console/style.tpl.html\'"></div>\n     \n  </div>      \n  \n</div>')
+    }]);
+
+    ng.module("scene/console/audio.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/audio.tpl.html", '<div class="input_console">\n   <div class="modify_area">\n     <form class="form-horizontal" role="form">\n            <div class="category_list" style="padding-left:198px;">\n               <ul class="category_list_container clearfix">\n                 <li ng-class="{active: category.value == model.bgAudio.type}" class="category_item" ng-repeat="category in categoryList" ng-click="model.bgAudio.type = category.value">\n                      {{category.name}}\n                 </li>\n             </ul>\n         </div>\n            <div ng-if="model.bgAudio.type == \'1\'" class="audio_area clearfix">\n             <span class="control-label" style="padding-top:12px;padding-right:5px;">链接地址</span>\n               <input class="" type="text" ng-model="model.type1" placeholder="请输入mp3文件链接" style="width:280px;height:35px;line-height:35px;border:1px solid #E7E7E7;border-radius:0px;padding-left:5px;font-size:12px;" />\n           </div>\n            <div ng-if="model.bgAudio.type == \'2\'" class="audio_area clearfix" style="height:auto;">\n                <select class="float-lf selectcartoon" ng-change="selectAudio(2)" ng-model="model.selectedMyAudio" ng-options="myAudio.name for myAudio in myAudios" id="nb_musicurl" style="padding-left:5px;width:280px;">\n                  <option value="">选择我的音乐</option>\n              </select>\n             <span class="btn-main" ng-click="goUpload()">上传音乐</span>\n              <!-- <span ng-show="model.type2">\n                 <a class="glyphicon glyphicon-play" ng-click="playAudio(1);" title="试听">\n                      <audio id="audition1" ng-src="{{model.type2}}"></audio>\n                   </a>\n                  <a class="glyphicon glyphicon-pause" ng-click="pauseAudio(1);" title="暂停">\n                    </a>  \n                </span> -->\n               <div ng-if = "model.type2" style = "margin-top:10px;">\n                    <audio ng-src="{{model.type2}}" controls="controls">\n                  </audio>                                \n              </div>\n                <!-- <span class="btn-main" ng-click="goUpload()">上传音乐</span> -->\n         </div>\n            <div ng-if="model.bgAudio.type == \'3\'" class="audio_area clearfix">\n             <select class="float-lf selectcartoon" ng-change="selectAudio(3)" ng-model="model.selectedAudio" ng-options="reservedAudio.name for reservedAudio in reservedAudios" id="nb_musicurl" style="padding-left:5px;width:280px;height:35px;line-height:35px;border:1px solid #E7E7E7;">\n                    <option value="">选择音乐库文件</option>\n             </select>\n             <!-- <span ng-show="model.type3">\n                 <a class="glyphicon glyphicon-play" ng-click="playAudio(2);" title="试听">\n                      <audio id="audition2" ng-src="{{model.type3}}"></audio>\n                   </a>\n                  <a class="glyphicon glyphicon-pause" ng-click="pauseAudio(2);" title="暂停">\n                    </a>\n              </span>   -->   \n              <div ng-if = "model.type3" style = "margin-top:10px;">\n                    <audio  ng-src="{{model.type3}}" controls="controls">\n                 </audio>                                \n              </div>\n            </div>\n        </form>\n   </div>\n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="confirm()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>')
+    }]);
+    ng.module("scene/console/input.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/input.tpl.html", '<div class="input_console">\n   <div class="modify_area">\n     <span class="label">输入框名称：</span>\n     <input type="text" maxlength="15" ng-model="model.title" ng-keyup="$event.keyCode == 13 ? confirm() : null"/>\n     <input type="checkbox" id="checkbox_required" ng-model="model.required" ng-true-value="required" style="margin-top:0;margin-left:5px;" />\n     <label for="checkbox_required" style="font-weight: lighter; margin:0;font-size:12px;">必填</label>\n  \n      <div class="customized_container">\n            <input type="radio" id="input_name" ng-model="model.type" ng-change="model.title=\'姓名\'" value="501" /><label for="input_name" style="font-weight: lighter; margin: 0;">姓名</label>\n            <input type="radio" id="input_phone" ng-model="model.type" ng-change="model.title=\'手机\'" value="502" /><label for="input_phone" style="font-weight: lighter; margin: 0;" />手机</label>\n            <input type="radio" id="input_email" ng-model="model.type" ng-change="model.title=\'邮箱\'" value="503" /><label for="input_email" style="font-weight: lighter; margin: 0;">邮箱</label>\n          <input type="radio" id="input_text" ng-model="model.type" ng-change="model.title=\'文本\'" value="5" /><label for="input_text" style="font-weight: lighter; margin: 0;">文本</label>\n      </div>\n    </div>\n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="confirm()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>')
+    }]);
+    ng.module("scene/console/button.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/button.tpl.html", '<div class="button_console">\n    <div class="modify_area">\n     <span class="label">按钮名称：</span>\n      <input type="text" maxlength="15" ng-model="model.title" ng-keyup="$event.keyCode == 13 ? confirm() : null"/>\n </div>\n    \n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="confirm()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>')
+    }]);
+    ng.module("scene/console/tel.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/tel.tpl.html", '<div class="button_console">\n    <div class="modify_area  tel_title">\n      <span ng-repeat = "button in buttons track by $index" ng-class = "{spanborder: $index == btnIndex}">\n          <!-- <a ng-class = "{btn1: $index==0, btn2: $index == 1, btn3: $index ==2, btn4: $index ==3}" ng-click = "chooseTelButton(button, $index, $event)" selected><span class = "glyphicon glyphicon-earphone"></span>{{button.text}}</a> -->\n           <a ng-style = "button.btnStyle" ng-click = "chooseTelButton(button, $index, $event)" selected>{{button.text}}</a>\n     </span>\n   </div>\n    <div class = "divider" style = "margin-top: 10px; height: 1px; background: #ccc;"></div>\n  <div class="modify_area">\n     <span class="label" style="font-weight:lighter;">按钮名称：&nbsp;</span>\n       <input type="text" ng-model="model.title" ng-keyup="$event.keyCode == 13 ? confirm() : null"/>\n    </div>\n\n  <div class="modify_area">\n     <span class="label" style="font-weight:lighter;">手机/电话：</span>\n        <input class = "tel-button" type="text" placeholder = "010-88888888" ng-model="model.number" ng-keyup="$event.keyCode == 13 ? confirm() : null" ng-focus = "removePlaceHolder($event)" ng-blur = "addPlaceHolder()"/>\n </div>\n    \n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="confirm()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>')
+    }]);
+    ng.module("scene/console/pic_lunbo.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/pic_lunbo.tpl.html", '<div class="pic_lunbo_console input_console">\n    <div class="modify_area">\n        <div class="row">\n            <div class="col-sm-7">\n                <div class="row" style="margin:0px -15px 10px -15px;">\n                    <div class="col-sm-5" style="line-height: 35px; vertical-align: middle; text-align: center;">图集样式</div>\n                    <div class="col-sm-7">\n                        <select class="" style="font-size:12px;padding-left:3px;width:150px;">\n                            <option value="1">图片轮播</option>\n                        </select>\n                    </div>\n                </div>\n                <div class="row" style="margin:10px -15px;">\n                    <div class="col-sm-5" style="line-height: 35px; vertical-align: middle; text-align: center;">自动播放</div>\n                    <div class="col-sm-7" style="font-size: 30px; color: #9ad64b;text-align:left;">\n                        <span class="fa fa-toggle-on" style="cursor: pointer;" ng-show="isAutoPlay" ng-click="autoPlay(false)"></span>\n                        <span class="fa fa-toggle-off" style="cursor: pointer;" ng-hide="isAutoPlay" ng-click="autoPlay(true)"></span>\n                    </div>\n                </div>\n                <div class="row" style="margin: 10px -15px;">\n                    <div class="col-sm-5" style="text-align: center;">\n                        <a style="border-radius:3px;width:88px;" class="btn-main btn-success" ng-click="choosePic()">选择图片</a>\n                    </div>\n                    <div class="col-sm-7" style="font-size:12px; line-height: 35px;text-align:left;">\n                        <div>最多可选择6张图片</div>\n                    </div>\n                </div>\n            </div>\n            <div class="col-sm-5">\n                <div class="well" style="margin-bottom: 0;">\n                    <img class="scratch" style="height: 100px; width: 100%;" ng-src="{{CLIENT_CDN}}assets/images/u2462.png">\n                </div>\n            </div>\n        </div>\n        <div class="row" style="margin-top: 20px;" ng-hide="imgList.length">\n            <div class="col-sm-12">\n                <div class="divider" style="height: 1px; background: #ddd;"></div>\n            </div>\n        </div>\n        <div class="panel panel-default lunbo_upload" style="margin:20px 15px 0 15px;" ng-show="imgList.length">\n            <div class="panel-body">\n                <div style="margin: 10px 0; height: 66px;" ng-repeat="img in imgList track by $index">\n                    <div style="border-radius: 5px; overflow: hidden; width: 66px; height: 66px; float: left;">\n                        <img style="width: 100%; height: 100%;" ng-src="{{fileDomain + img.src}}">\n                    </div>\n                    <textarea placeholder="添加描述功能暂不开放" rows="4" disabled style="width: 75%; float: left; margin: 0 10px;" maxlength="150" ng-model="img.desc">{{img.desc}}</textarea>\n                    <div style="line-height: 66px; text-align: center; float: right;">\n                        <span class="glyphicon glyphicon-remove-circle" style="font-size: 30px; vertical-align: middle; cursor: pointer; color: orange;" ng-click="remove($index)"></span>\n                    </div>\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="ok()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>')
+    }]);
+    ng.module("scene/console/video.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/video.tpl.html", '<div class="video_console">\n    <div class="modify_area" style="height:auto">\n     <div>\n         <span class="label">视频通用代码：</span>\n            <span class="video_code"><a href="http://eqxiu.hjtmt.com/forum.php?mod=viewthread&tid=678&page=1&extra=#pid2706" target="_blank"><ins>什么是视频通用代码？</ins></a></span>\n     </div>\n        <div class="video_tip">\n           <textarea style="border-radius:0px;" class = "video_src" ng-model="model.src" ng-keyup="$event.keyCode == 13 ? confirm() : null"/>\n        </div>\n        <div class="video_tip">将视频的通用代码粘贴到文本框里即可。<a href="http://eqxiu.hjtmt.com/forum.php?mod=viewthread&tid=678&page=1&extra=#pid2706" target="_blank"><ins>查看帮助</ins></a></div>\n        <div class="video_tip">建议使用视频：<a href="http://www.youku.com/" target="_blank"><ins>优酷</ins></a>、<a href="http://www.tudou.com/" target="_blank"><ins>土豆</ins></a>、<a href="http://v.qq.com/" target="_blank"><ins>腾讯视频</ins></a></div>\n    </div>  \n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="confirm()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>')
+    }]);
+    ng.module("scene/console/link.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/link.tpl.html", '<div class = "link-modal">   \n  <div class = "row" style = "font-size: 14px; text-align:center;">\n     <div class="input_console">\n           <div class = "modify_area" style="text-align:left;padding-left:110px;">\n               <div style="margin-bottom:20px;">\n                 <input type="radio" name="externalRadio" id="externalRadio" ng-model = "url.link" value="external" ng-change = "changed()" style="margin:0px;">\n                       网站地址：\n                 <input class = "" style="height:35px;width:280px;" type="text" ng-model = "url.externalLink" name="externalLink" id="externalLink" placeholder = "网站地址" ng-disabled = "url.link == \'internal\'" ng-change = "selectRadio(\'external\')"/>\n                    <a style = "font-size: 16px;display: inline-block; margin-top: 5px;background-image: url(\'assets/images/create/delete.png\'); width: 14px; height: 14px;" ng-show = "url.link == \'external\'" class = "delete-link" ng-click = "removeLink(\'external\')"></a>\n              </div>\n                <div class = "" >\n                 <input type="radio" name="internalRadio" id="internalRadio" value="internal" ng-model = "url.link" ng-change = "changed()" style="margin:0px;">\n                       场景页面：\n                 <select style = "border:1px solid #E7E7E7; height: 35px;width:280px;" ng-model = "url.internalLink" ng-options = "page.name for page in pageList" ng-disabled = "url.link == \'external\'" ng-change = "selectRadio(\'internal\')"></select>\n                  <a style = "display: inline-block;font-size: 16px; background-image: url(\'assets/images/create/delete.png\'); width: 14px; height: 14px;" ng-show = "url.link == \'internal\'" ng-click = "removeLink(\'internal\')"></a>\n                </div>\n            </div>\n        </div>\n        <div class = "modal-footer">\n          <a type = "button" style="width:88px" class = "btn  btn-main" ng-click = "confirm()">确定</a>\n           <a type = "button" style="width:88px" class = "btn  btn-grey0" ng-click = "cancel()">取消</a>\n       </div>\n    </div>\n</div>')
+    }]);
+    ng.module("scene/console/microweb.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/microweb.tpl.html", '<div class="button_console">\n    <div class="modify_area">\n     <div>导航样式:\n            <ul>\n              <li ng-click = "selectColor(color)" ng-class = "{colorborder: model.color == color.backgroundColor}" style = "display: inline-block; margin: 10px;" ng-repeat = "color in backgroundColors"><div style = "width: 50px; height: 30px; margin: 10px; cursor:pointer;" ng-style = "color"></div></li>\n            </ul>\n     </div>\n    </div>\n    <div class = "divider" style = "margin-top: 10px; height: 1px; background: #ccc;"></div>\n  <div class="modify_area">\n     <div>\n         <ul class="clearfix" style="left:50%;margin-left:-160px;position:relative;height:65px;">\n              <li class = "title_color" ng-class = "{colorborder:labelIndex == $index && labelName.mousedown,selectedcolor: labelName.selected,whitecolor: labelName.color.backgroundColor == \'#fafafa\'}" ng-click = "switchLabel(labelName, $index)" style = "display: inline-block;float:left;" ng-repeat = "labelName in labelNames"><div style = "margin: 10px; width:50px; height: 30px;line-height:30px; border: 1px solid #ccc; cursor: pointer;" ng-style = "labelName.color">{{labelName.title}}</div></li>\n          </ul>\n     </div>\n        <span class="label">导航名称：</span>\n      <input type="text" ng-model="model.title" ng-change = "changeLabelName()" ng-keyup="$event.keyCode == 13 ? confirm() : null" placeholder = "导航名称" maxlength = "4"/>\n   </div>\n\n  <div class="modify_area">\n     <span class="label">链接页面：</span>\n      <select style = "width: 181px; height: 30px; display: inline-block;" ng-model = "model.link" ng-options = "page.name for page in pageList" ng-change = "selectLink(model.link)"></select>\n </div>\n\n  <div class="modify_area" style = "color: #ff0000">\n        至少选择两个标签，并分别添加链接\n  </div>\n    \n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="confirm()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>')
+    }]);
+    ng.module("scene/console/map.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/map.tpl.html", '<div class="map_console">\n <div id="l-map"></div>\n    <div class="search_area">\n     <div class="input-group">\n       <input type="text" class="form-control" ng-model="search.address" ng-keyup="$event.keyCode == 13 ? searchAddress() : null" placeholder="请输入地名">\n       <span class="input-group-btn">\n          <button ng-click="searchAddress()" class="btn btn-default" type="button">搜索</button>\n        </span>\n     </div><!-- /input-group -->\n       <div id="r-result">\n           <ul class="list-group">\n               <li class="list-group-item" ng-repeat="address in searchResult" ng-click="setPoint(address.point.lat, address.point.lng, address.address)">\n                   {{address.address}} \n              </li>\n         </ul>\n     </div>\n    </div>\n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="resetAddress()">确定</a>\n    <a class="btn-grey0 cancel" style="width: 88px;" ng-click="cancel()">取消</a>\n</div>');
+    }]);
+    ng.module("scene/console/category.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/category.tpl.html", '<div class="category_input">\n <input type="text" ng-model="category.name" placeholder="分类名称" />\n</div>\n<div class="modal-footer">\n    <a class="btn-main login" style="width: 88px;" ng-click="confirm()">确定</a>\n</div>')
+    }]);
+    ng.module("scene/console/cropimage.tpl.html", []).run(["$templateCache", function($templateCache) {
+        $templateCache.put("scene/console/cropimage.tpl.html", '\n\n<div class="cropimage" style="">\n   <!-- <img ng-src="{{PREFIX_FILE_HOST + imgUrl}}"/> -->\n    <div class="image_crop">\n      <img id="target"></img>\n   </div>\n    <div class="crop_close">\n      <a class=" btn-main" href="" ng-click="crop()">确定</a>\n     <a class=" btn-main" href="" ng-click="cancel()">取消</a>\n   </div>\n</div>')
     }]);
 
     ng.module("templates-common", [

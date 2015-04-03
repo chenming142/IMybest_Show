@@ -2280,7 +2280,22 @@
                 }, function() {})
             }
         }]),
-    b.module("scene.create.console", ["scene.create.console.bg", "scene.create.console.map", "scene.create.console.input", "scene.create.console.button", "scene.create.console.setting", "scene.create.console.audio", "scene.create.console.tel", "scene.create.console.fake", "scene.create.console.pic_lunbo", "scene.create.console.micro", "scene.create.console.link", "scene.create.console.video", "scene.create.console.category", "scene.create.console.cropImage"]),
+    b.module("scene.create.console", [
+        "scene.create.console.bg",
+        "scene.create.console.map",
+        "scene.create.console.input",
+        "scene.create.console.button",
+        "scene.create.console.setting",
+        "scene.create.console.audio",
+        "scene.create.console.tel",
+        "scene.create.console.fake",
+        "scene.create.console.pic_lunbo",
+        "scene.create.console.micro",
+        "scene.create.console.link",
+        "scene.create.console.video",
+        "scene.create.console.category",
+        "scene.create.console.cropImage"
+    ]),
     b.module("scene.create.console").controller("ConsoleCtrl", ["$scope", function() {}]),
     b.module("scene.create.console.setting.anim", ["app.directives.uislider", "app.directives.limitInput"]),
     b.module("scene.create.console.setting.anim").controller("AnimConsoleCtrl", ["$scope", "sceneService", function(a, b) {
@@ -2331,7 +2346,8 @@
                 }, {
                     id: 11,
                     name: "翻转消失"
-                }], a.animDirectionEnum = [{
+                }],
+                a.animDirectionEnum = [{
                     id: 0,
                     name: "从左向右"
                 }, {
@@ -2343,7 +2359,9 @@
                 }, {
                     id: 3,
                     name: "从下到上"
-                }], c.properties || (c.properties = {}), c.properties.anim && null != c.properties.anim.type) {
+                }],
+                c.properties || (c.properties = {}),
+                c.properties.anim && null != c.properties.anim.type) {
                 var e;
                 for (e = 0; e < a.animTypeEnum.length; e++) a.animTypeEnum[e].id == c.properties.anim.type && (a.activeAnim = a.animTypeEnum[e]);
                 a.model = {
@@ -2950,9 +2968,12 @@
                 var d = "style";
                 a.$on("showStylePanel", function(b, c) {
                     d = a.activeTab, a.activeTab = "", a.$apply(), a.activeTab = c && c.activeTab ? c.activeTab : d, a.$apply()
-                }), a.activeTab = c.activeTab, a.cancel = function() {
+                }),
+                a.activeTab = c.activeTab,
+                a.cancel = function() {
                     $(b).hide()
-                }, a.$on("$locationChangeStart", function() {
+                },
+                a.$on("$locationChangeStart", function() {
                     a.cancel()
                 })
             },
@@ -3009,14 +3030,26 @@
                 boxShadowSize: 0,
                 boxShadowColor: "rgba(0,0,0,0.5)"
             }
-        }, a.$watch("tmpModel", function() {
+        },
+        a.$watch("tmpModel", function() {
             var b = {};
             $.extend(!0, b, a.model), b.borderRadius += "px", b.borderTopLeftRadius = b.borderTopRightRadius = b.borderBottomLeftRadius = b.borderBottomRightRadius = b.borderRadius, b.opacity = (100 - a.model.opacity) / 100, b.boxShadow = Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor, b.boxShadowDirection = a.tmpModel.boxShadowDirection, b.boxShadowSize = a.tmpModel.boxShadowSize, b.transform = "rotateZ(" + a.model.transform + "deg)", $.extend(!0, c.css, b)
-        }, !0), a.$watch("model", function() {
+        }, !0),
+        a.$watch("model", function() {
             var b = {};
-            $.extend(!0, b, a.model), b.borderRadius += "px", b.borderTopLeftRadius = b.borderTopRightRadius = b.borderBottomLeftRadius = b.borderBottomRightRadius = b.borderRadius, b.opacity = (100 - a.model.opacity) / 100, b.boxShadow = Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor, b.boxShadowDirection = a.tmpModel.boxShadowDirection, b.boxShadowSize = a.tmpModel.boxShadowSize, b.transform = "rotateZ(" + a.model.transform + "deg)", $.extend(!0, c.css, b)
+            $.extend(!0, b, a.model),
+            b.borderRadius += "px",
+            b.borderTopLeftRadius = b.borderTopRightRadius = b.borderBottomLeftRadius = b.borderBottomRightRadius = b.borderRadius,
+            b.opacity = (100 - a.model.opacity) / 100,
+            b.boxShadow = Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor,
+            b.boxShadowDirection = a.tmpModel.boxShadowDirection,
+            b.boxShadowSize = a.tmpModel.boxShadowSize,
+            b.transform = "rotateZ(" + a.model.transform + "deg)",
+
+            $.extend(!0, c.css, b)
         }, !0)
-    }]).directive("styleInput", function() {
+    }])
+        .directive("styleInput", function() {
         return {
             restrict: "AE",
             link: function(a, b, c) {
@@ -3042,79 +3075,94 @@
                     }
                     "borderRadius" == c.cssItem && d.css({
                         borderRadius: a.model.borderRadius
-                    }), "opacity" == c.cssItem && d.css({
+                    }),
+                    "opacity" == c.cssItem && d.css({
                         opacity: (100 - $(b).val()) / 100
-                    }), "backgroundColor" == c.cssItem && d.css({
+                    }),
+                    "backgroundColor" == c.cssItem && d.css({
                         backgroundColor: $(b).val()
-                    }), "color" == c.cssItem && d.css({
+                    }),
+                    "color" == c.cssItem && d.css({
                         color: $(b).val()
-                    }), "borderStyle" == c.cssItem && d.css({
+                    }),
+                    "borderStyle" == c.cssItem && d.css({
                         borderStyle: a.model.borderStyle
-                    }), "borderColor" == c.cssItem && d.css({
+                    }),
+                    "borderColor" == c.cssItem && d.css({
                         borderColor: a.model.borderColor
-                    }), "padding" == c.cssItem && d.css({
+                    }),
+                    "padding" == c.cssItem && d.css({
                         paddingTop: a.model.paddingTop,
                         marginTop: -a.model.paddingBottom
-                    }), "lineHeight" == c.cssItem && d.css({
+                    }),
+                    "lineHeight" == c.cssItem && d.css({
                         lineHeight: a.model.lineHeight
-                    }), "transform" == c.cssItem && d.parents("li").css({
+                    }),
+                    "transform" == c.cssItem && d.parents("li").css({
                         transform: "rotateZ(" + a.model.transform + "deg)"
-                    }), "boxShadow" == c.cssItem && (a.tmpModel.boxShadowX = -Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, a.tmpModel.boxShadowY = Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, d.css({
+                    }),
+                    "boxShadow" == c.cssItem && (a.tmpModel.boxShadowX = -Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, a.tmpModel.boxShadowY = Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180) * a.tmpModel.boxShadowSize, d.css({
                         boxShadow: Math.round(a.tmpModel.boxShadowX) + "px " + Math.round(a.tmpModel.boxShadowY) + "px " + a.tmpModel.boxShadowBlur + "px " + a.tmpModel.boxShadowColor
                     }))
                 })
             }
         }
-    }).directive("angleKnob", function() {
-        return {
-            restrict: "AE",
-            templateUrl: "scene/console/angle-knob.tpl.html",
-            link: function(a, b) {
-                function c(a, b) {
-                    var c = Math.sqrt((a - 28) * (a - 28) + (b - 28) * (b - 28)) / 28,
-                        d = 28 + (a - 28) / c,
-                        e = 28 + (b - 28) / c;
-                    f.css({
-                        top: Math.round(e),
-                        left: Math.round(d)
-                    })
-                }
+    })
+        .directive("angleKnob", function() {
+            return {
+                restrict: "AE",
+                templateUrl: "scene/console/angle-knob.tpl.html",
+                link: function(a, b) {
+                    function c(a, b) {
+                        var c = Math.sqrt((a - 28) * (a - 28) + (b - 28) * (b - 28)) / 28,
+                            d = 28 + (a - 28) / c,
+                            e = 28 + (b - 28) / c;
+                        f.css({
+                            top: Math.round(e),
+                            left: Math.round(d)
+                        })
+                    }
 
-                function d(a, b) {
-                    var c = a - 28,
-                        d = 28 - b,
-                        e = 180 * Math.atan(c / d) / Math.PI;
-                    return b > 28 && (e += 180), 28 >= b && 28 > a && (e += 360), Math.round(e)
+                    function d(a, b) {
+                        var c = a - 28,
+                            d = 28 - b,
+                            e = 180 * Math.atan(c / d) / Math.PI;
+                        return b > 28 && (e += 180), 28 >= b && 28 > a && (e += 360), Math.round(e)
+                    }
+                    var e = $(b).find(".sliderContainer"),
+                        f = $(b).find(".sliderKnob");
+                    a.$watch(function() {
+                        return a.tmpModel.boxShadowDirection
+                    }, function(a) {
+                        f.css({
+                            top: 28 - 28 * Math.cos(a * Math.PI / 180),
+                            left: 28 + 28 * Math.sin(a * Math.PI / 180)
+                        })
+                    }),
+                    0 !== a.tmpModel.boxShadowDirection && f.css({
+                        top: 28 - 28 * Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180),
+                        left: 28 + 28 * Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180)
+                    }),
+                    e.bind("mousedown", function(b) {
+                        b.stopPropagation();
+                        var f = e.offset().left,
+                            g = e.offset().top;
+                        c(b.pageX - f, b.pageY - g);
+                        var h = d(b.pageX - f, b.pageY - g);
+                        a.tmpModel.boxShadowDirection = h, a.$apply(),
+                        $(this).bind("mousemove", function(b) {
+                            b.stopPropagation(),
+                            c(b.pageX - f, b.pageY - g);
+                            var e = d(b.pageX - f, b.pageY - g);
+                            a.tmpModel.boxShadowDirection = e, a.$apply()
+                        }),
+                        $(this).bind("mouseup", function() {
+                            $(this).unbind("mousemove"), $(this).unbind("mouseup")
+                        })
+                    })
                 }
-                var e = $(b).find(".sliderContainer"),
-                    f = $(b).find(".sliderKnob");
-                a.$watch(function() {
-                    return a.tmpModel.boxShadowDirection
-                }, function(a) {
-                    f.css({
-                        top: 28 - 28 * Math.cos(a * Math.PI / 180),
-                        left: 28 + 28 * Math.sin(a * Math.PI / 180)
-                    })
-                }), 0 !== a.tmpModel.boxShadowDirection && f.css({
-                    top: 28 - 28 * Math.cos(a.tmpModel.boxShadowDirection * Math.PI / 180),
-                    left: 28 + 28 * Math.sin(a.tmpModel.boxShadowDirection * Math.PI / 180)
-                }), e.bind("mousedown", function(b) {
-                    b.stopPropagation();
-                    var f = e.offset().left,
-                        g = e.offset().top;
-                    c(b.pageX - f, b.pageY - g);
-                    var h = d(b.pageX - f, b.pageY - g);
-                    a.tmpModel.boxShadowDirection = h, a.$apply(), $(this).bind("mousemove", function(b) {
-                        b.stopPropagation(), c(b.pageX - f, b.pageY - g);
-                        var e = d(b.pageX - f, b.pageY - g);
-                        a.tmpModel.boxShadowDirection = e, a.$apply()
-                    }), $(this).bind("mouseup", function() {
-                        $(this).unbind("mousemove"), $(this).unbind("mouseup")
-                    })
-                })
             }
-        }
-    }),
+        }),
     b.module("scene.create.console.tel", ["app.directives.addelement"]),
     b.module("scene.create.console.tel").controller("TelConsoleCtrl", ["$scope", "$timeout", "localizedMessages", "obj", function(a, c, d, e) {
         a.model = {
@@ -4642,7 +4690,7 @@
                     },
                     H = function() {
                         J()
-                    };git 
+                    };
                 n === !1 ? h.on("click", function() {
                     F(), u.addClass("colorpicker-visible").css(G()), a.on("mousedown", H)
                 }) : (F(), u.addClass("colorpicker-visible").css(G())), u.on("mousedown", function(a) {
@@ -6318,7 +6366,8 @@
                 return b(a)
             }])
         }]),
-    b.module("services.file", []), b.module("services.file").factory("fileService", ["$http", function(a) {
+    b.module("services.file", []),
+    b.module("services.file").factory("fileService", ["$http", function(a) {
             var b = {};
             return b.listFileCategory = function(b) {
                 var c = "base/class/" + ("1" == b ? "tpType" : "bgType"),
@@ -6808,7 +6857,8 @@
                 type: 1,
                 pageId: G.obj.id,
                 sceneId: G.obj.sceneId
-            }), 8 == ("" + a).charAt(0) && (d = j(a, b), $.extend(!0, d, {
+            }),
+                8 == ("" + a).charAt(0) && (d = j(a, b), $.extend(!0, d, {
                 color: "#676767",
                 borderWidth: "1",
                 borderStyle: "solid",
@@ -6828,7 +6878,8 @@
                 sceneId: G.obj.sceneId,
                 title: null,
                 type: 8
-            }), 2 == ("" + a).charAt(0) && (d = j(a, b), g = {
+            }),
+                2 == ("" + a).charAt(0) && (d = j(a, b), g = {
                 content: "点击此处进行编辑",
                 css: d,
                 id: f,
@@ -6838,7 +6889,8 @@
                 sceneId: G.obj.sceneId,
                 title: null,
                 type: 2
-            }), 4 == ("" + a).charAt(0) && (d = j(a, b), d.width = "100px", d.height = "100px", g = {
+            }),
+                4 == ("" + a).charAt(0) && (d = j(a, b), d.width = "100px", d.height = "100px", g = {
                 content: "",
                 css: d,
                 id: f,
@@ -6852,7 +6904,8 @@
                 sceneId: G.obj.sceneId,
                 title: null,
                 type: 4
-            }), 5 == ("" + a).charAt(0) && (d = j(a, b), $.extend(!0, d, {
+            }),
+                5 == ("" + a).charAt(0) && (d = j(a, b), $.extend(!0, d, {
                 color: "#676767",
                 borderWidth: "1",
                 borderStyle: "solid",
@@ -6872,7 +6925,8 @@
                 sceneId: G.obj.sceneId,
                 title: "请命名",
                 type: 5
-            }), 6 == ("" + a).charAt(0) && (d = j(a, b), $.extend(!0, d, {
+            }),
+                6 == ("" + a).charAt(0) && (d = j(a, b), $.extend(!0, d, {
                 color: "#676767",
                 borderWidth: "1",
                 borderStyle: "solid",
@@ -6891,7 +6945,8 @@
                 sceneId: G.obj.sceneId,
                 title: null,
                 type: 6
-            }), "p" == a && (d = j(a, b), g = {
+            }),
+                "p" == a && (d = j(a, b), g = {
                 content: "",
                 css: d,
                 id: f,
@@ -6903,7 +6958,8 @@
                 sceneId: G.obj.sceneId,
                 title: null,
                 type: "p"
-            }), "v" == a && (d = j(a, b), d.width = "48px", d.height = "48px", g = {
+            }),
+                "v" == a && (d = j(a, b), d.width = "48px", d.height = "48px", g = {
                 content: "",
                 css: d,
                 id: f,
@@ -6915,7 +6971,12 @@
                 sceneId: G.obj.sceneId,
                 title: null,
                 type: "v"
-            }), c && $.extend(!0, g, c), H.push(g), I[g.id] = g, g
+            }),
+
+                c && $.extend(!0, g, c),
+                H.push(g),
+                I[g.id] = g,
+                g
         }
         function n(a) {
             var b = [];
@@ -6932,7 +6993,12 @@
                     }
                 }
             }).result.then(function(a) {
-                    L = null, "bgAudio" == a.compType && (G.obj.scene.image || (G.obj.scene.image = {}), G.obj.scene.image.bgAudio = a.bgAudio)
+                    L = null,
+                    "bgAudio" == a.compType
+                        && (
+                            G.obj.scene.image || (G.obj.scene.image = {}),
+                            G.obj.scene.image.bgAudio = a.bgAudio
+                        )
                 }, function() {
                     L = null
                 }))
@@ -7425,11 +7491,11 @@
                     }
                 }),
                     b.find(".copy").click(function(a) {
-                    a.stopPropagation(), E.sameCopyCount = 0, E.pageId = G.obj.id, $(".modal-dialog")[0] || E.copyElement(e), b.hide()
-                }),
+                        a.stopPropagation(), E.sameCopyCount = 0, E.pageId = G.obj.id, $(".modal-dialog")[0] || E.copyElement(e), b.hide()
+                    }),
                     b.find(".paste").click(function(a) {
-                    a.stopPropagation(), $(".modal-dialog")[0] || E.pasteElement(E.originalElemDef, E.copyElemDef), b.hide()
-                }),
+                        a.stopPropagation(), $(".modal-dialog")[0] || E.pasteElement(E.originalElemDef, E.copyElemDef), b.hide()
+                    }),
                     b.find(".cut").click(function(a) {
                     a.stopPropagation(), C(e), b.hide()
                 }),
@@ -8013,7 +8079,20 @@
                 })
             }, b
         }]),
-    b.module("templates-app", ["about.tpl.html", "data/associateData.tpl.html", "data/editData.tpl.html", "dialog/confirm.tpl.html", "dialog/message.tpl.html", "error.tpl.html", "error/error.tpl.html", "footer.tpl.html", "header.tpl.html", "help.tpl.html", "home/home.tpl.html", "main/customer.tpl.html", "main/main.tpl.html", "main/spread.tpl.html", "main/spreadDetail.tpl.html", "main/userGuide.tpl.html", "my/myscene.tpl.html", "my/sceneSetting.tpl.html", "my/upload.tpl.html", "notifications.tpl.html", "reg/agreement.tpl.html", "reg/reg.tpl.html", "sample/sample.tpl.html", "scene/console.tpl.html", "scene/console/angle-knob.tpl.html", "scene/console/anim.tpl.html", "scene/console/audio.tpl.html", "scene/console/bg.tpl.html", "scene/console/button.tpl.html", "scene/console/category.tpl.html", "scene/console/cropimage.tpl.html", "scene/console/fake.tpl.html", "scene/console/input.tpl.html", "scene/console/link.tpl.html", "scene/console/map.tpl.html", "scene/console/microweb.tpl.html", "scene/console/pic_lunbo.tpl.html", "scene/console/setting.tpl.html", "scene/console/style.tpl.html", "scene/console/tel.tpl.html", "scene/console/video.tpl.html", "scene/create.tpl.html", "scene/createNew.tpl.html", "scene/effect/falling.tpl.html", "scene/scene.tpl.html", "usercenter/console/branch.tpl.html", "usercenter/console/relAccount.tpl.html", "usercenter/request_reg.tpl.html", "usercenter/tab/account.tpl.html", "usercenter/tab/message.tpl.html", "usercenter/tab/reset.tpl.html", "usercenter/tab/userinfo.tpl.html", "usercenter/tab/xd.tpl.html", "usercenter/transfer.tpl.html", "usercenter/usercenter.tpl.html"]),
+    b.module("templates-app", [
+        "about.tpl.html",
+        "data/associateData.tpl.html",
+        "data/editData.tpl.html",
+        "dialog/confirm.tpl.html",
+        "dialog/message.tpl.html",
+        "error.tpl.html",
+        "error/error.tpl.html",
+        "footer.tpl.html",
+        "header.tpl.html",
+        "help.tpl.html",
+        "home/home.tpl.html",
+        "main/customer.tpl.html",
+        "main/main.tpl.html", "main/spread.tpl.html", "main/spreadDetail.tpl.html", "main/userGuide.tpl.html", "my/myscene.tpl.html", "my/sceneSetting.tpl.html", "my/upload.tpl.html", "notifications.tpl.html", "reg/agreement.tpl.html", "reg/reg.tpl.html", "sample/sample.tpl.html", "scene/console.tpl.html", "scene/console/angle-knob.tpl.html", "scene/console/anim.tpl.html", "scene/console/audio.tpl.html", "scene/console/bg.tpl.html", "scene/console/button.tpl.html", "scene/console/category.tpl.html", "scene/console/cropimage.tpl.html", "scene/console/fake.tpl.html", "scene/console/input.tpl.html", "scene/console/link.tpl.html", "scene/console/map.tpl.html", "scene/console/microweb.tpl.html", "scene/console/pic_lunbo.tpl.html", "scene/console/setting.tpl.html", "scene/console/style.tpl.html", "scene/console/tel.tpl.html", "scene/console/video.tpl.html", "scene/create.tpl.html", "scene/createNew.tpl.html", "scene/effect/falling.tpl.html", "scene/scene.tpl.html", "usercenter/console/branch.tpl.html", "usercenter/console/relAccount.tpl.html", "usercenter/request_reg.tpl.html", "usercenter/tab/account.tpl.html", "usercenter/tab/message.tpl.html", "usercenter/tab/reset.tpl.html", "usercenter/tab/userinfo.tpl.html", "usercenter/tab/xd.tpl.html", "usercenter/transfer.tpl.html", "usercenter/usercenter.tpl.html"]),
     b.module("about.tpl.html", []).run(["$templateCache", function(a) {
             a.put("about.tpl.html", '<div class="about">\n    <div class="header">\n        <div class="content">\n            <div class="logo"><img ng-src="{{CLIENT_CDN}}assets/images/logo.png" alt=""></div>\n        </div>\n    </div>\n    <div class="banner">\n      <img ng-src="{{CLIENT_CDN}}assets/images/contact1.jpg"/>\n    </div>\n    <div class="main clearfix">\n     <h1>关于我们</h1>\n        <p>易企秀是专门为中小微企业营销人员精心打造的移动场景营销管家，旨在帮助中小微企业的营销人员通过移动互联网，轻松构建业务场景，轻量化展示产品和服务，多渠道推广，吸引沉淀客户，再营销，从而持续积累客户，提升营销效果，创造更高更好的市场业绩。</p>\n        <p>如果您需要借助移动互联网做新产品发布、客户培训会、用户沟通沙龙、移动环境中的产品演示、线上调研沟通、服务预约报名等业务活动时，就来易企秀吧，我们相信易企秀一定能帮到您。</p>\n\n        <img ng-src="{{CLIENT_CDN}}assets/images/contact2.jpg"/>\n\n        <p>联系我们：</p>\n        <p>郭鑫 18611538643 </p>\n        <p>邮件：vip@eqxiu.com</p>\n        <p>QQ：2972881348</p>\n        <p>微信公众号： \n            <img style="display: block;" src="{{CLIENT_CDN}}assets/images/code_about.jpg"/>\n        </p>\n    </div>\n</div>\n<div ng-include="\'footer.tpl.html\'"></div>');
 
