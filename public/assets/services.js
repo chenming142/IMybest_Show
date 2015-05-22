@@ -1419,24 +1419,20 @@
         return SceneService;
     }]);
 
-    ng.module("confirm-dialog", []).controller("ConfirmDialogCtrl", ["$scope", "confirmObj", function (a, b) {
-        a.confirmObj = b, a.ok = function () {
-            a.$close()
-        }, a.cancel = function () {
-            a.$dismiss()
-        }
+    ng.module("confirm-dialog", []).controller("ConfirmDialogCtrl", ["$scope", "confirmObj", function ($scope, confirmObj) {
+        $scope.confirmObj = confirmObj;
+        $scope.ok = function () {$scope.$close();};
+        $scope.cancel = function () {$scope.$dismiss();}
     }]);
-    ng.module("message-dialog", []).controller("MessageDialogCtrl", ["$scope", "msgObj", function (a, b) {
-        a.msgObj = b, a.close = function () {
-            a.$close()
-        }, a.cancel = function () {
-            a.$dismiss()
-        }
+    ng.module("message-dialog", []).controller("MessageDialogCtrl", ["$scope", "msgObj", function ($scope, msgObj) {
+        $scope.msgObj = msgObj;
+        $scope.close = function () {$scope.$close();};
+        $scope.cancel = function () {$scope.$dismiss();}
     }]);
-    ng.module("services.modal", ["confirm-dialog", "message-dialog"]).factory("ModalService", ["$modal", function (a) {
-        var b = {};
-        return b.openConfirmDialog = function (b, c, d) {
-            a.open({
+    ng.module("services.modal", ["confirm-dialog", "message-dialog"]).factory("ModalService", ["$modal", function ($modal) {
+        var modal = {};
+        modal.openConfirmDialog = function (data, successFn, failFn) {
+            $modal.open({
                 backdrop: "static",
                 keyboard: !1,
                 backdropClick: !1,
@@ -1445,27 +1441,29 @@
                 controller: "ConfirmDialogCtrl",
                 resolve: {
                     confirmObj: function () {
-                        return b
+                        return data;
                     }
                 }
-            }).result.then(c, d)
-        },
-            b.openMsgDialog = function (b, c, d) {
-                a.open({
-                    backdrop: "static",
-                    keyboard: !1,
-                    backdropClick: !1,
-                    windowClass: "message-dialog",
-                    templateUrl: "dialog/message.tpl.html",
-                    controller: "MessageDialogCtrl",
-                    resolve: {
-                        msgObj: function () {
-                            return b
-                        }
+            }).result.then(successFn, failFn);
+        };
+        modal.openMsgDialog = function (data, successFn, failFn) {
+            $modal.open({
+                backdrop: "static",
+                keyboard: !1,
+                backdropClick: !1,
+                windowClass: "message-dialog",
+                templateUrl: "dialog/message.tpl.html",
+                controller: "MessageDialogCtrl",
+                resolve: {
+                    msgObj: function () {
+                        return data;
                     }
-                }).result.then(c, d)
-            }, b
+                }
+            }).result.then(successFn, failFn);
+        };
+        return modal;
     }]);
+
     ng.module("services.pagetpl", []);
     ng.module("services.pagetpl").factory("pageTplService", ["$http", "$rootScope", "$modal", "$q", function (a) {
         var PageTplService = {};
