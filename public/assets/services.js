@@ -1346,7 +1346,7 @@
                 for (var j = 0; j < CurPageElementInfo.length; j++) I[CurPageElementInfo[j].id] = CurPageElementInfo[j];
                 defer.resolve(pageTplInfo);
             } else {
-                var url = "m/scene/pageTpl/" + b, tt = new Date;
+                var url = "m/scene/pageTpl/" + pageTplId, tt = new Date;
                 url += (/\?/.test(url) ? "&" : "?") + "time=" + tt.getTime();
                 $http({
                     withCredentials: !0,
