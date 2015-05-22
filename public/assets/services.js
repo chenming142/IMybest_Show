@@ -1,4 +1,22 @@
 !function(win, ng, undefined) {
+    ng.module("services.mine", []);
+    ng.module("services.mine").factory("MineService", ["$http", function($http) {
+        var mineFactory = {};
+        mineFactory.getMyScenes = function(b, pageNo, pageSize) {
+            var url = "m/scene/my";
+            b && (url += "/" + b);
+            url += "?pageNo=" + (pageNo ? pageNo : 1);
+            url += "&pageSize=" + (pageSize ? pageSize : 12);
+            url += (/\?/.test(url) ? "&" : "?") + "time=" + new Date().getTime();
+            $http({
+                withCredentials: !0,
+                method: "GET",
+                url: PREFIX_URL + url
+            });
+        };
+        return mineFactory;
+    }]);
+
     ng.module("I18N.MESSAGES", []).constant("I18N.MESSAGES", {
         "notify.success": "success",
         "notify.info": "info",

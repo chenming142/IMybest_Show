@@ -2251,6 +2251,7 @@
             };
             i(), a.removeQueue = function() {}
         }]),
+
     b.module("reg", []), b.module("reg").controller("TestLoginCtrl", ["$rootScope", "$scope", function(a, b) {
             b.weiChatUrl = "https://open.weixin.qq.com/connect/qrconnect?appid=wxc5f1bbae4bb93ced&redirect_uri=http://www.hjtmt.com/testlogin.html&response_type=code&scope=snsapi_login&state=STATE#wechat_redirect"
         }]),

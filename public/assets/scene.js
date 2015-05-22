@@ -1,4 +1,6 @@
 !function(win, ng, undefined) {
+    ng.module("my.scenesetting", ["services.scene", "services.mine", "services.data", "scene.create.console", "app.directives.addelement", "services.usercenter", "services.i18nNotifications"]),
+
     ng.module("scene.create", [
         "app.directives.editor",
         "services.scene",
