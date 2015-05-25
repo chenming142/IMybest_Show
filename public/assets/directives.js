@@ -522,28 +522,46 @@
             delete curElementDef.css.border;
 
             var d = curElementDef.css, $target = $("#inside_" + $scope.elemDef.id + " > .element-box");
-            if (a.model = {
-                    backgroundColor: d.backgroundColor || "",
-                    opacity: 100 - 100 * d.opacity || 0,
-                    color: d.color || "#676767",
-                    borderWidth: parseInt(d.borderWidth, 10) || 0,
-                    borderStyle: d.borderStyle || "solid",
-                    borderColor: d.borderColor || "rgba(0,0,0,1)",
-                    paddingBottom: parseInt(d.paddingBottom, 10) || 0,
-                    paddingTop: parseInt(d.paddingTop, 10) || 0,
-                    lineHeight: +d.lineHeight || 1,
-                    borderRadius: parseInt(d.borderRadius, 10) || 0,
-                    transform: d.transform && parseInt(d.transform.replace("rotateZ(", "").replace("deg)", ""), 10) || 0
-                }, a.maxRadius = Math.min(e.outerWidth(), e.outerHeight()) / 2 + 10, d.borderRadiusPerc ? a.model.borderRadiusPerc = parseInt(d.borderRadiusPerc, 10) : d.borderRadius ? "999px" == d.borderRadius ? a.model.borderRadiusPerc = 100 : (a.model.borderRadiusPerc = parseInt(100 * parseInt(d.borderRadius, 10) * 2 / Math.min(e.outerWidth(), e.outerHeight()), 10), a.model.borderRadiusPerc > 100 && (a.model.borderRadiusPerc = 100)) : a.model.borderRadiusPerc = 0, a.tmpModel = {
-                    boxShadowDirection: 0,
-                    boxShadowX: 0,
-                    boxShadowY: 0,
-                    boxShadowBlur: 0,
-                    boxShadowSize: 0,
-                    boxShadowColor: "rgba(0,0,0,0.5)"
-                }, d.boxShadow) {
+            $scope.model = {
+                backgroundColor: d.backgroundColor || "",
+                opacity: 100 - 100 * d.opacity || 0,
+                color: d.color || "#676767",
+                borderWidth: parseInt(d.borderWidth, 10) || 0,
+                borderStyle: d.borderStyle || "solid",
+                borderColor: d.borderColor || "rgba(0,0,0,1)",
+                paddingBottom: parseInt(d.paddingBottom, 10) || 0,
+                paddingTop: parseInt(d.paddingTop, 10) || 0,
+                lineHeight: +d.lineHeight || 1,
+                borderRadius: parseInt(d.borderRadius, 10) || 0,
+                transform: d.transform && parseInt(d.transform.replace("rotateZ(", "").replace("deg)", ""), 10) || 0
+            }
+            $scope.maxRadius = Math.min($target.outerWidth(), $target.outerHeight()) / 2 + 10;
+            d.borderRadiusPerc
+                ? $scope.model.borderRadiusPerc = parseInt(d.borderRadiusPerc, 10)
+                : d.borderRadius
+                    ? "999px" == d.borderRadius
+                        ? $scope.model.borderRadiusPerc = 100
+                        : (
+                            $scope.model.borderRadiusPerc = parseInt(100 * parseInt(d.borderRadius, 10) * 2 / Math.min($target.outerWidth(), $target.outerHeight()), 10),
+                            $scope.model.borderRadiusPerc > 100 && ($scope.model.borderRadiusPerc = 100)
+                        )
+                    : $scope.model.borderRadiusPerc = 0;
+            $scope.tmpModel = {
+                boxShadowDirection: 0,
+                boxShadowX: 0,
+                boxShadowY: 0,
+                boxShadowBlur: 0,
+                boxShadowSize: 0,
+                boxShadowColor: "rgba(0,0,0,0.5)"
+            };
+            if (d.boxShadow) {
                 var f = d.boxShadow.split(" ");
-                a.tmpModel.boxShadowX = parseInt(f[0], 10), a.tmpModel.boxShadowY = parseInt(f[1], 10), a.tmpModel.boxShadowDirection = parseInt(d.boxShadowDirection, 10) || 0, a.tmpModel.boxShadowBlur = parseInt(f[2], 10), a.tmpModel.boxShadowColor = f[3], a.tmpModel.boxShadowSize = parseInt(d.boxShadowSize, 10) || 0
+                $scope.tmpModel.boxShadowX = parseInt(f[0], 10);
+                $scope.tmpModel.boxShadowY = parseInt(f[1], 10);
+                $scope.tmpModel.boxShadowDirection = parseInt(d.boxShadowDirection, 10) || 0;
+                $scope.tmpModel.boxShadowBlur = parseInt(f[2], 10);
+                $scope.tmpModel.boxShadowColor = f[3];
+                $scope.tmpModel.boxShadowSize = parseInt(d.boxShadowSize, 10) || 0;
             }
             $scope.clear = function () {
                 $scope.model = {

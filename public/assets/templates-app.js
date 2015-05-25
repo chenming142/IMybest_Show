@@ -7,9 +7,7 @@
         , "scene/console/angle-knob.tpl.html"
         , "scene/console/anim.tpl.html"
         , "scene/console/setting.tpl.html"
-
         , "scene/console/fake.tpl.html"
-
         , "scene/console/bg.tpl.html"
         , "scene/console/audio.tpl.html"
         , "scene/console/input.tpl.html"
@@ -28,9 +26,248 @@
     ng.module("dialog/confirm.tpl.html", []).run(["$templateCache", function ($templateCache) {
         $templateCache.put("dialog/confirm.tpl.html", '<div class="modal-header">\n    <span class="glyphicon glyphicon-exclamation-sign"></span>\n    <span>提示</span>\n</div>\n<div class="modal-body" ng-if="confirmObj.msg">\n <!-- confirm message -->\n  <div class="confirm-msg">{{confirmObj.msg}}</div>\n</div>\n<div class="modal-footer">\n    <a ng-click="ok();" class="btn-main"\n    style="width: 88px;">\n        {{confirmObj.confirmName || \'是\'}}\n    </a>\n    <a ng-click="cancel();" class="btn-grey0"\n    style="width: 88px;margin-left: 15px;">\n        {{confirmObj.cancelName || \'取消\'}}\n    </a>\n</div>')
     }]);
+    
     ng.module("scene/create.tpl.html", []).run(["$templateCache", function ($templateCache) {
-        $templateCache.put("scene/create.tpl.html", '<div class="creat_head">\n  <div class="creat_head_con clearfix">\n    <div class="creat_logo"><a href="#/main" ng-click="stopCopy()"><img ng-src="{{CLIENT_CDN}}assets/images/logo.png" /></a></div>\n    <div class="creat_con clearfix">\n        <ul class="comp_panel clearfix">\n          <li comp-draggable="panel" ctype="2" class="comp-draggable text" title="请拖动到编辑区域" ng-click="createComp(\'2\');">\n            <span>文本</span>\n          </li>\n          <li comp-draggable="panel" ctype="3" class="comp-draggable bg" title="请拖动到编辑区域" ng-click="createComp(\'3\');">\n            <span>背景</span>\n          </li>\n          <li comp-draggable="panel" ctype="9" class="comp-draggable music" title="请拖动到编辑区域" ng-click="createComp(\'9\');">\n            <span>音乐</span>\n          </li>  \n          <li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="v" class="comp-draggable vedio" title="请拖动到编辑区域" ng-click="createComp(\'v\');">\n            <span>视频</span>\n          </li>        \n          <li comp-draggable="panel" ctype="4" class="comp-draggable image" title="请拖动到编辑区域" ng-click="createComp(\'4\');">\n            <span>图片</span>\n          </li>\n          <li comp-draggable="panel" ctype="5" class="comp-draggable textarea" title="请拖动到编辑区域" ng-click="createComp(\'5\');">\n            <span>输入框</span>\n          </li>\n          <li comp-draggable="panel" ctype="6" class="comp-draggable button" title="请拖动到编辑区域" ng-click="createComp(\'6\');">\n            <span>按钮</span>\n          </li>\n          <li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="p" class="comp-draggable images" title="请拖动到编辑区域" ng-click="createComp(\'p\');">\n            <span>图集</span>\n          </li>\n          <li comp-draggable="panel" ctype="8" class="comp-draggable phone" title="请拖动到编辑区域" ng-click="createComp(\'8\');">\n            <span>电话</span>\n          </li>          \n          <li comp-draggable="panel" ctype="g101" class="comp-draggable contact" title="请拖动到编辑区域" ng-click="createCompGroup(\'g101\');">\n            <span>联系人</span>\n          </li>          \n          <li ng-click="openPageSetPanel()" class="texiao">\n            <span><a id = "toggle_button" class="page_effect" >特效</a></span></li>\n        </ul>\n  </div>\n    <div class="create-action">\n        <ul>\n            <li class="act-border save"><span class="create-save" ng-click="saveScene(true)">保存</span></li>\n            <li class="publish"><span class="create-publish" ng-click="publishScene()">发布</span></li>\n            <li class="act-border quit"><span class="create-quit" ng-click="exitScene()">退出</span></li> \n        </ul>\n    </div>\n    <div ng-hide="showToolBar();">\n        <div ng-show="isEditor" style="position: absolute;right: -200px;top: 20px;">\n            <select ng-model="tpl.obj.scene.isTpl">\n                <option value="0">非模板</option>\n                <option value="1">保存为pc模板</option>\n                <option value="2">保存为移动端模板</option>\n            </select>\n        </div>\n    </div>\n</div>\n</div>\n<div class="create_scene">\n  <div class="main clearfix">\n      <div class="content">\n          <div class="create_left">\n            <tabset justified="true">\n              <tab heading="页面模版" class="hint--bottom hint--rounded" style = "width: 290px;">\n                  <tabset justified="true" class="tpl_tab">\n                    <tab ng-repeat="pageTplType in pageTplTypes" heading="{{pageTplType.name}}" ng-click="getPageTplsByType(pageTplType.value)">\n                      <div class="nav2 clearfix" dropdown >\n                        <div class="others dropdown-toggle" ng-show="otherCategory.length > 0"><span></span></div>\n                        <ul class="clearfix nav2_list">\n                          <li ng-class="{active:childCat.id == categoryId}" ng-click="getPageTplTypestemp(childCat.id ,bizType)" ng-repeat="childCat in childCatrgoryList">{{childCat.name}}</li>\n                        </ul>\n                        <ul class="clearfix nav2_other dropdown-menu">\n                          <li ng-class="{active:othercat.id == categoryId}" ng-click="getPageTplTypestemp(othercat.id ,bizType)" ng-repeat="othercat in otherCategory">{{othercat.name}}</li>\n                        </ul>                        \n                      </div>\n                      <ul id="tpl_panel" class="page_tpl_container clearfix">\n                        <li class="page_tpl_item" ng-repeat="pageTpl in pageTpls" class="comp-draggable" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);">\n                          <img ng-src="{{PREFIX_FILE_HOST + pageTpl.properties.thumbSrc}}" />\n                        </li>\n                      </ul>\n                    </tab>\n                    <tab ng-repeat="myname in myName" heading="{{myName[0].name}}" active="myname.active" ng-if = "pageTplTypes" ng-click = "getPageTplsByMyType()">\n                      <div style="padding:10px;" ng-hide="myPageTpls">在页面管理中选中页面，点击生成模板，即可生成我的页面模板！</div>\n                      <ul id="tpl_panel" class="page_tpl_container clearfix">\n                        <li thumb-tpl my-attr="pageTpl" style="position: relative;" id="my-tpl" class="nr page_tpl_item comp-draggable" ng-repeat="pageTpl in myPageTpls" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);">\n                        </li>\n                      </ul>\n                    </tab>\n                  </tabset>\n              </tab>\n            </tabset>\n          </div> \n          <div class="phoneBox">\n            <div >\n                <div class="top"></div>\n                <div class = "phone_menubar"></div>\n                <div class="scene_title_baner">\n                  <div ng-bind="tpl.obj.scene.name" class="scene_title"></div>\n                </div>\n                <div class="nr sortable" id="nr"></div>\n                <div class="bottom"></div>\n                <div class = "tips">为了获得更好的使用，建议使用谷歌浏览器（chrome）、360浏览器、IE11浏览器。</div>\n            </div>\n            <div class="phone_texiao">\n                <div id="editBG" style="display: none;"><span class="hint--right hint--rounded" data-hint="选择新背景">背景</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的背景"><span ng-click="removeBG($event)" class="glyphicon glyphicon-remove"></span></a></div>\n                <div id="editBGAudio" ng-click="openAudioModal()" ng-show="tpl.obj.scene.image.bgAudio"><span class="hint--right hint--rounded" data-hint="选择新音乐">音乐</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的音乐"><span ng-click="removeBGAudio($event)" class="glyphicon glyphicon-remove"></span></a></div>\n                <div id="editScratch" ng-click="openOneEffectPanel(tpl.obj.properties)" ng-show="tpl.obj.properties"><span class="hint--right hint--rounded" data-hint="选择新特效">{{effectName}}</span><div style="margin:10px 0;border-bottom: 2px solid #666;"></div><a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面特效"><span ng-click="removeScratch($event)" class="glyphicon glyphicon-remove"></span></a></div>\n            </div>\n              <div class="history">\n                  <a title="撤销(ctrl+z)" ng-click="back()"><i class="fa fa-reply" ng-class="{active: canBack}"></i></a>\n                  <a title="恢复(ctrl+y)" ng-click="forward()"><i class="fa fa-share" ng-class="{active: canForward}"></i></a>\n              </div>\n          </div>\n\n          <div id = "containment" class="create_right"> \n            <div class="guanli">页面管理</div>\n            <div class = "nav_top">\n              <div class="nav_top_list">\n                <a ng-click="duplicatePage()" class="">复制</a>\n                <a class="" ng-click = "deletePage($event)" ng-show = "pages.length != 1">删除</a>\n                <a ng-click = "creatMyTemplate()">生成模版</a>\n              </div>\n             \n              <div class = "btn-group">\n                <div class="dropdown">\n                  <div id = "page_panel" ng-show="showPageEffect" class="dropdown-menu1 panel panel-default">\n                    <ul class = "effect_list">\n                      <li class = "effect" ng-repeat = "effect in effectList" ng-click = "openOneEffectPanel(effect)">\n                        <div class = "effect_img"><img ng-src="{{effect.src}}"></div>\n                        <div class = "effect_info">{{effect.name}}</div>\n                      </li>\n                    </ul>\n                  </div>\n\n                  <div id = "page_panel" ng-if="effectType == \'scratch\'" class="dropdown-menu1 panel panel-default">\n\n                    <div class="panel-heading">涂抹设置</div>\n                    <div class="panel-body">\n                      <form class="form-horizontal" role="form">\n                        <div class="form-group form-group-sm clearfix" style="margin-bottom:0;">\n                          <label class="col-sm-5 control-label">覆盖特效</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "scratch.image" ng-options = "scracthImage.name for scracthImage in scratches"  style="width:115px;">\n                            </select>\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;margin-top:5px;">\n                          <label class="col-sm-5 control-label" style="padding-top:6px;">覆盖图片</label>\n                          <div class="col-sm-7">\n                            <a ng-click = "openUploadModal()" class = "auto_img btn-main btn-success ">自定义图片</a>\n                          </div>\n                        </div>\n                        <div class = "divider" style="margin-top:6px;"></div>\n                        <div class = "well" style="margin-bottom:0px;">\n                          <img class = "scratch" ng-src="{{scratch.image.path}}"/>\n                        </div>\n                        <div class = "divider"></div>\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label for="inputEmail3" class="col-sm-5 control-label">涂抹比例</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "scratch.percentage" ng-options = "percentage.name for percentage in percentages">\n                            </select>\n                          </div>\n                        </div>\n                         <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label for="inputEmail3" class="col-sm-5 control-label">提示文字</label>\n                          <div class="col-sm-7">\n                            <input type="text" ng-model = "scratch.tip" id="inputEmail3" placeholder="提示文字" maxlength = "15">\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                            <a dropdown-toggle type="button" ng-click = "saveEffect(scratch)" class="btn-main" style="width:88px;border:none;">保存</a>\n                            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                          </div>\n                        </div>\n                      </form>\n                    </div>\n                  </div>\n\n                  <div id = "page_panel" ng-if="effectType==\'finger\'" class="dropdown-menu1 panel panel-default">\n\n                    <div class="panel-heading">指纹设置</div>\n                    <div class="panel-body">\n                      <form class="form-horizontal" role="form">\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label class="col-sm-5 control-label">背景图片</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "finger.bgImage" ng-options = "bgImage.name for bgImage in fingerBackgrounds">\n                            </select>\n                          </div>\n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n                          <label class="col-sm-5 control-label">指纹图片</label>\n                          <div class="col-sm-7">\n                            <select ng-model = "finger.zwImage" ng-options = "zwImage.name for zwImage in fingerZws">\n                            </select>\n                          </div>\n                        </div>\n                        <div class = "divider"></div>\n                        <div class = "well" style="margin-bottom:15px;">\n                          <img class = "finger_bg" ng-src="{{finger.bgImage.path}}"/>\n                        \n                            <img class = "finger_zw" ng-src="{{finger.zwImage.path}}"/>\n                          \n                        </div>\n                        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                            <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(finger)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n                            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                          </div>\n                        </div>\n                      </form>\n                    </div>\n                  </div>\n                  <div id = "page_panel" ng-show="effectType == \'money\'" class="dropdown-menu1 panel panel-default">\n                    <div class="panel-heading">数钱设置</div>\n                    <div class="panel-body">\n                      <div class = "well" style="margin-bottom:15px;">\n                          <img ng-src="{{CLIENT_CDN + \'assets/images/create/money_thumb2.jpg\'}}"/>      \n                      </div>\n                      <div>\n                        <span>文字提示：</span>\n                        <span class="fr" style="width: 140px;"><input type="text" ng-model="money.tip" placeholder="让你数到手抽筋"></span>\n                      </div>\n                      <div class="form-group form-group-sm" style="margin-bottom:0px;">\n                        <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n                          <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(money)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n                          <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n                        </div>\n                      </div>\n                    </div>\n                  </div>\n                  <div ng-include="\'scene/effect/falling.tpl.html\'"></div>\n                </div>\n              </div>\n            </div>\n\n            <div class="nav_content">\n              <ul id = "pageList" ui-sortable = "sortableOptions" ng-model="pages">\n                <li class = "blurClass" ng-repeat="page in pages track by $index" ng-click="navTo(page, $index, $event)" ng-init = "editableStatus[$index] = false" ng-class="{current: pageNum-1 == $index}" blur-children>\n                    <span style = "float: left; margin-top: 17px; background: #fff; color: #666; font-weight: 200;border-radius:9px;width:18px;height:18px;padding:0px;text-align:center;line-height:18px;" class = "badge">{{$index+1}}</span>\n                    <span style = "margin-left: 17px;font-size:14px;" ng-click = "editableStatus[$index] = true" ng-show = "!editableStatus[$index]">{{page.name}}</span>\n                    <input style = "width: 80px; height: 25px; margin-top: 8px; margin-left: 10px; color: #999;" type = "text" ng-model = "page.name" ng-show = "editableStatus[$index]" ng-blur = "editableStatus[$index] = false;savePageNames(page, $index)" ng-focus = "getOriginPageName(page)" maxlength = "7" custom-focus/>                   \n                </li>\n              </ul>\n              <div class = "page-list-label" ng-show="isEditor && pageList == true">  \n                  <label ng-repeat = "allchild in pageLabelAll">\n                      <input type="checkbox" name="" value="" ng-model = "allchild.ischecked">{{allchild.name}}\n                  </label>                                                 \n                  <div class="select-labels">\n                      <a ng-click="pageChildLabel()">确定</a>\n                  </div>\n              </div>               \n            </div>\n            <div class="nav_bottom">\n              <a ng-click="insertPage()" class="" title="增加一页">+</a>\n             <!--  <a ng-click="duplicatePage()" class="duplicate_page">复制一页</a> -->\n            </div>\n\n            <div ng-show="isEditor">\n              <div class="btn-main" ng-click="chooseThumb()">选择本页缩略图</div>\n              <img width="100" ng-src="{{PREFIX_FILE_HOST + tpl.obj.properties.thumbSrc}}"></img>\n            </div>\n          </div>\n      </div>\n  </div>\n</div>\n</div>\n');
+        $templateCache.put("scene/create.tpl.html",
+            '<div class="creat_head">' +
+                '<div class="creat_head_con clearfix">' +
+                    '<div class="creat_logo">' +
+                        '<a href="#/main" ng-click="stopCopy()"><img ng-src="{{CLIENT_CDN}}assets/images/logo.png" /></a>' +
+                    '</div>' +
+                    '<div class="creat_con clearfix">' +
+                        '<ul class="comp_panel clearfix">' +
+                            '<li comp-draggable="panel" ctype="2" class="comp-draggable text" title="请拖动到编辑区域" ng-click="createComp(\'2\');"><span>文本</span></li>' +
+                            '<li comp-draggable="panel" ctype="3" class="comp-draggable bg" title="请拖动到编辑区域" ng-click="createComp(\'3\');"><span>背景</span></li>' +
+                            '<li comp-draggable="panel" ctype="9" class="comp-draggable music" title="请拖动到编辑区域" ng-click="createComp(\'9\');"><span>音乐</span></li>' +
+                            '<li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="v" class="comp-draggable vedio" title="请拖动到编辑区域" ng-click="createComp(\'v\');"><span>视频</span></li>' +
+                            '<li comp-draggable="panel" ctype="4" class="comp-draggable image" title="请拖动到编辑区域" ng-click="createComp(\'4\');"><span>图片</span></li>' +
+                            '<li comp-draggable="panel" ctype="5" class="comp-draggable textarea" title="请拖动到编辑区域" ng-click="createComp(\'5\');"><span>输入框</span></li>' +
+                            '<li comp-draggable="panel" ctype="6" class="comp-draggable button" title="请拖动到编辑区域" ng-click="createComp(\'6\');"><span>按钮</span></li>' +
+                            '<li ng-if="isAllowToAccessScrollImage" comp-draggable="panel" ctype="p" class="comp-draggable images" title="请拖动到编辑区域" ng-click="createComp(\'p\');"><span>图集</span></li>' +
+                            '<li comp-draggable="panel" ctype="8" class="comp-draggable phone" title="请拖动到编辑区域" ng-click="createComp(\'8\');"><span>电话</span></li>' +
+                            '<li comp-draggable="panel" ctype="g101" class="comp-draggable contact" title="请拖动到编辑区域" ng-click="createCompGroup(\'g101\');"><span>联系人</span></li>' +
+                            '<li ng-click="openPageSetPanel()" class="texiao"><span><a id = "toggle_button" class="page_effect" >特效</a></span></li>' +
+                        '</ul>' +
+                    '</div>' +
+                    '<div class="create-action">' +
+                        '<ul>' +
+                            '<li class="act-border save"><span class="create-save" ng-click="saveScene(true)">保存</span></li>' +
+                            '<li class="publish"><span class="create-publish" ng-click="publishScene()">发布</span></li>' +
+                            '<li class="act-border quit"><span class="create-quit" ng-click="exitScene()">退出</span></li>' +
+                        '</ul>' +
+                    '</div>' +
+                    '<div ng-hide="showToolBar();">' +
+                        '<div ng-show="isEditor" style="position: absolute;right: -200px;top: 20px;">' +
+                            '<select ng-model="tpl.obj.scene.isTpl">' +
+                                '<option value="0">非模板</option>' +
+                                '<option value="1">保存为pc模板</option>' +
+                                '<option value="2">保存为移动端模板</option>' +
+                            '</select>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>'+
+
+            '<div class="create_scene">' +
+                '<div class="main clearfix">' +
+                    '<div class="content">' +
+                        '<div class="create_left">' +
+                            '<tabset justified="true">' +
+                                '<tab heading="页面模版" class="hint--bottom hint--rounded" style = "width: 290px;">' +
+                                    '<tabset justified="true" class="tpl_tab">' +
+                                        '<tab ng-repeat="pageTplType in pageTplTypes" heading="{{pageTplType.name}}" ng-click="getPageTplsByType(pageTplType.value)">' +
+                                            '<div class="nav2 clearfix" dropdown >' +
+                                                '<div class="others dropdown-toggle" ng-show="otherCategory.length > 0"><span></span></div>' +
+                                                '<ul class="clearfix nav2_list">' +
+                                                    '<li ng-class="{active:childCat.id == categoryId}" ng-click="getPageTplTypestemp(childCat.id ,bizType)" ng-repeat="childCat in childCatrgoryList">{{childCat.name}}</li>' +
+                                                '</ul>' +
+                                                '<ul class="clearfix nav2_other dropdown-menu">' +
+                                                    '<li ng-class="{active:othercat.id == categoryId}" ng-click="getPageTplTypestemp(othercat.id ,bizType)" ng-repeat="othercat in otherCategory">{{othercat.name}}</li>' +
+                                                '</ul>' +
+                                            '</div>' +
+                                            '<ul id="tpl_panel" class="page_tpl_container clearfix">' +
+                                                '<li class="page_tpl_item" ng-repeat="pageTpl in pageTpls" class="comp-draggable" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);">' +
+                                                    '<img ng-src="{{PREFIX_FILE_HOST + pageTpl.properties.thumbSrc}}" />' +
+                                                '</li>' +
+                                            '</ul>' +
+                                        '</tab>' +
+                                        '<tab ng-repeat="myname in myName" heading="{{myName[0].name}}" active="myname.active" ng-if = "pageTplTypes" ng-click = "getPageTplsByMyType()">' +
+                                            '<div style="padding:10px;" ng-hide="myPageTpls">在页面管理中选中页面，点击生成模板，即可生成我的页面模板！</div>' +
+                                            '<ul id="tpl_panel" class="page_tpl_container clearfix">' +
+                                                '<li thumb-tpl my-attr="pageTpl" style="position: relative;" id="my-tpl" class="nr page_tpl_item comp-draggable" ng-repeat="pageTpl in myPageTpls" title="点击插入编辑区域" ng-click="insertPageTpl(pageTpl.id);"></li>' +
+                                            '</ul>' +
+                                        '</tab>' +
+                                    '</tabset>' +
+                                '</tab>' +
+                            '</tabset>' +
+                        '</div>' +
+                        '<div class="phoneBox">' +
+                            '<div >' +
+                                '<div class="top"></div>' +
+                                '<div class = "phone_menubar"></div>' +
+                                '<div class="scene_title_baner">' +
+                                    '<div ng-bind="tpl.obj.scene.name" class="scene_title"></div>' +
+                                '</div>' +
+                                '<div class="nr sortable" id="nr"></div>' +
+                                '<div class="bottom"></div>' +
+                                '<div class = "tips">为了获得更好的使用，建议使用谷歌浏览器（chrome）、360浏览器、IE11浏览器。</div>' +
+                            '</div>' +
+                            '<div class="phone_texiao">' +
+                                '<div id="editBG" style="display: none;">' +
+                                    '<span class="hint--right hint--rounded" data-hint="选择新背景">背景</span>' +
+                                    '<div style="margin:10px 0;border-bottom: 2px solid #666;"></div>' +
+                                    '<a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的背景"><span ng-click="removeBG($event)" class="glyphicon glyphicon-remove"></span></a>' +
+                                '</div>' +
+                                '<div id="editBGAudio" ng-click="openAudioModal()" ng-show="tpl.obj.scene.image.bgAudio">' +
+                                    '<span class="hint--right hint--rounded" data-hint="选择新音乐">音乐</span>' +
+                                    '<div style="margin:10px 0;border-bottom: 2px solid #666;"></div>' +
+                                    '<a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面的音乐"><span ng-click="removeBGAudio($event)" class="glyphicon glyphicon-remove"></span></a>' +
+                                '</div>' +
+                                '<div id="editScratch" ng-click="openOneEffectPanel(tpl.obj.properties)" ng-show="tpl.obj.properties">' +
+                                    '<span class="hint--right hint--rounded" data-hint="选择新特效">{{effectName}}</span>' +
+                                    '<div style="margin:10px 0;border-bottom: 2px solid #666;"></div>' +
+                                    '<a style = "color: #666;" class="hint--bottom hint--rounded" data-hint="删除当前页面特效"><span ng-click="removeScratch($event)" class="glyphicon glyphicon-remove"></span></a>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="history">' +
+                                '<a title="撤销(ctrl+z)" ng-click="back()"><i class="fa fa-reply" ng-class="{active: canBack}"></i></a>' +
+                                '<a title="恢复(ctrl+y)" ng-click="forward()"><i class="fa fa-share" ng-class="{active: canForward}"></i></a>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div id = "containment" class="create_right">' +
+                            '<div class="guanli">页面管理</div>' +
+                            '<div class = "nav_top">' +
+                                '<div class="nav_top_list">' +
+                                    '<a ng-click="duplicatePage()" class="">复制</a>' +
+                                    '<a class="" ng-click = "deletePage($event)" ng-show = "pages.length != 1">删除</a>' +
+                                    '<a ng-click = "creatMyTemplate()">生成模版</a>' +
+                                '</div>' +
+                                '<div class = "btn-group">' +
+                                    '<div class="dropdown">' +
+                                        '<div id = "page_panel" ng-show="showPageEffect" class="dropdown-menu1 panel panel-default">' +
+                                            '<ul class = "effect_list">' +
+                                                '<li class = "effect" ng-repeat = "effect in effectList" ng-click = "openOneEffectPanel(effect)">' +
+                                                    '<div class = "effect_img"><img ng-src="{{effect.src}}"></div>' +
+                                                    '<div class = "effect_info">{{effect.name}}</div>' +
+                                                '</li>' +
+                                            '</ul>' +
+                                        '</div>' +
+                                        '<div id = "page_panel" ng-if="effectType == \'scratch\'" class="dropdown-menu1 panel panel-default">' +
+                                            '<div class="panel-heading">涂抹设置</div>' +
+                                            '<div class="panel-body">' +
+                                                '<form class="form-horizontal" role="form">' +
+                                                    '<div class="form-group form-group-sm clearfix" style="margin-bottom:0;">' +
+                                                        '<label class="col-sm-5 control-label">覆盖特效</label>' +
+                                                        '<div class="col-sm-7">' +
+                                                            '<select ng-model = "scratch.image" ng-options = "scracthImage.name for scracthImage in scratches"  style="width:115px;"></select>' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                    '<div class="form-group form-group-sm" style="margin-bottom:0px;margin-top:5px;">' +
+                                                        '<label class="col-sm-5 control-label" style="padding-top:6px;">覆盖图片</label>' +
+                                                        '<div class="col-sm-7"><a ng-click = "openUploadModal()" class = "auto_img btn-main btn-success ">自定义图片</a></div>' +
+                                                    '</div>' +
+                                                    '<div class = "divider" style="margin-top:6px;"></div>' +
+                                                    '<div class = "well" style="margin-bottom:0px;"><img class = "scratch" ng-src="{{scratch.image.path}}"/></div>' +
+                                                    '<div class = "divider"></div>' +
+                                                    '<div class="form-group form-group-sm" style="margin-bottom:10px;">' +
+                                                        '<label for="inputEmail3" class="col-sm-5 control-label">涂抹比例</label>' +
+                                                        '<div class="col-sm-7">' +
+                                                            '<select ng-model = "scratch.percentage" ng-options = "percentage.name for percentage in percentages"></select>' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                    '<div class="form-group form-group-sm" style="margin-bottom:10px;">' +
+                                                        '<label for="inputEmail3" class="col-sm-5 control-label">提示文字</label>' +
+                                                        '<div class="col-sm-7">' +
+                                                            '<input type="text" ng-model = "scratch.tip" id="inputEmail3" placeholder="提示文字" maxlength = "15">' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                    '<div class="form-group form-group-sm" style="margin-bottom:0px;">' +
+                                                        '<div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">' +
+                                                            '<a dropdown-toggle type="button" ng-click = "saveEffect(scratch)" class="btn-main" style="width:88px;border:none;">保存</a>' +
+                                                            '<a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                '</form>' +
+                                            '</div>' +
+                                        '</div>' +
+                                        '<div id = "page_panel" ng-if="effectType==\'finger\'" class="dropdown-menu1 panel panel-default">' +
+                                            '<div class="panel-heading">指纹设置</div>' +
+                                            '<div class="panel-body">' +
+                                                '<form class="form-horizontal" role="form">' +
+                                                    '<div class="form-group form-group-sm" style="margin-bottom:10px;">' +
+                                                        '<label class="col-sm-5 control-label">背景图片</label>' +
+                                                        '<div class="col-sm-7">' +
+                                                            '<select ng-model = "finger.bgImage" ng-options = "bgImage.name for bgImage in fingerBackgrounds"></select>' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                    '<div class="form-group form-group-sm" style="margin-bottom:10px;">' +
+                                                        '<label class="col-sm-5 control-label">指纹图片</label>' +
+                                                        '<div class="col-sm-7">' +
+                                                            '<select ng-model = "finger.zwImage" ng-options = "zwImage.name for zwImage in fingerZws"></select>' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                    '<div class = "divider"></div>' +
+                                                    '<div class = "well" style="margin-bottom:15px;">' +
+                                                        '<img class = "finger_bg" ng-src="{{finger.bgImage.path}}"/>' +
+                                                        '<img class = "finger_zw" ng-src="{{finger.zwImage.path}}"/>' +
+                                                    '</div>' +
+                                                    '<div class="form-group form-group-sm" style="margin-bottom:0px;">' +
+                                                        '<div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">' +
+                                                            '<a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(finger)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>' +
+                                                            '<a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>' +
+                                                        '</div>' +
+                                                    '</div>' +
+                                                '</form>' +
+                                            '</div>' +
+                                        '</div>' +
+                                        '<div id = "page_panel" ng-show="effectType == \'money\'" class="dropdown-menu1 panel panel-default">' +
+                                            '<div class="panel-heading">数钱设置</div>' +
+                                            '<div class="panel-body">' +
+                                                '<div class = "well" style="margin-bottom:15px;">' +
+                                                    '<img ng-src="{{CLIENT_CDN + \'assets/images/create/money_thumb2.jpg\'}}"/>' +
+                                                '</div>' +
+                                            '<div>' +
+                                            '<span>文字提示：</span>' +
+                                            '<span class="fr" style="width: 140px;"><input type="text" ng-model="money.tip" placeholder="让你数到手抽筋"></span>' +
+                                        '</div>' +
+                                        '<div class="form-group form-group-sm" style="margin-bottom:0px;">' +
+                                            '<div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">' +
+                                                '<a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(money)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>' +
+                                                '<a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div ng-include="\'scene/effect/falling.tpl.html\'"></div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="nav_content">' +
+                        '<ul id = "pageList" ui-sortable = "sortableOptions" ng-model="pages">' +
+                            '<li class = "blurClass" ng-repeat="page in pages track by $index" ng-click="navTo(page, $index, $event)" ng-init = "editableStatus[$index] = false" ng-class="{current: pageNum-1 == $index}" blur-children>' +
+                                '<span style = "float: left; margin-top: 17px; background: #fff; color: #666; font-weight: 200;border-radius:9px;width:18px;height:18px;padding:0px;text-align:center;line-height:18px;" class = "badge">{{$index+1}}</span>' +
+                                '<span style = "margin-left: 17px;font-size:14px;" ng-click = "editableStatus[$index] = true" ng-show = "!editableStatus[$index]">{{page.name}}</span>' +
+                                '<input style = "width: 80px; height: 25px; margin-top: 8px; margin-left: 10px; color: #999;" type = "text" ng-model = "page.name" ng-show = "editableStatus[$index]" ng-blur = "editableStatus[$index] = false;savePageNames(page, $index)" ng-focus = "getOriginPageName(page)" maxlength = "7" custom-focus/>' +
+                            '</li>' +
+                        '</ul>' +
+                        '<div class = "page-list-label" ng-show="isEditor && pageList == true">' +
+                            '<label ng-repeat = "allchild in pageLabelAll"><input type="checkbox" name="" value="" ng-model = "allchild.ischecked">{{allchild.name}}</label>' +
+                            '<div class="select-labels">' +
+                                '<a ng-click="pageChildLabel()">确定</a>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="nav_bottom"><a ng-click="insertPage()" class="" title="增加一页">+</a><!--  <a ng-click="duplicatePage()" class="duplicate_page">复制一页</a> --></div>' +
+                    '<div ng-show="isEditor">' +
+                        '<div class="btn-main" ng-click="chooseThumb()">选择本页缩略图</div>' +
+                        '<img width="100" ng-src="{{PREFIX_FILE_HOST + tpl.obj.properties.thumbSrc}}"/>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>');
     }]);
+    
     ng.module("scene/effect/falling.tpl.html", []).run(["$templateCache", function ($templateCache) {
         $templateCache.put("scene/effect/falling.tpl.html", '<div id = "page_panel" ng-if="effectType == \'fallingObject\'" class="dropdown-menu1 panel panel-default">\n    <div class="panel-heading">落物设置</div>\n    <div class="panel-body">\n      <form class="form-horizontal" role="form">\n        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n          <label class="col-sm-5 control-label">环境图片</label>\n          <div class="col-sm-7">\n            <select ng-model = "falling.src" ng-options = "fallingObj.name for fallingObj in fallings">\n            </select>\n          </div>\n        </div>\n        <div class = "divider"></div>\n        <div class = "well" style="margin-bottom:15px;text-align: center;background-color: #ddd">\n          <img ng-src="{{falling.src.path}}"/>\n        </div>\n        <div class = "divider"></div>\n        <div class="form-group form-group-sm" style="margin-bottom:10px;">\n          <label class="col-sm-5 control-label">环境氛围</label>\n          <div class="col-sm-7">\n           <div style="line-height: 24px;font-size: 12px;"><span style="margin-right:39px;">弱</span><span style="margin-right:37px;">中</span><span>强</span></div>\n            <div style="width: 100px;" ui-slider min="1" max="3" ng-model="falling.density"></div>\n\n          </div>\n        </div>\n        \n        <div class="form-group form-group-sm" style="margin-bottom:0px;">\n          <div class="modal-footer" style="padding-bottom:0px;padding-top:0px;">\n            <a class="btn-main" dropdown-toggle type="button" ng-click = "saveEffect(falling)" class="btn btn-success btn-sm btn-main login" style="width:88px;">保存</a>\n            <a dropdown-toggle type="button" ng-click = "cancelEffect()" class="btn-grey0" style="width:88px;">取消</a>\n          </div>\n        </div>\n      </form>\n    </div>\n  </div>')
     }]);
