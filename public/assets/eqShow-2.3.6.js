@@ -1372,7 +1372,7 @@
             },
             c.weiChatCode = e.absUrl().split("&")[0].split("=")[1],
             c.$on("$locationChangeStart", function() {
-                if ("/home/login" != e.path()
+                if ("/home/login" != e.path()dddd
                     || g.currentUser
                         ? "/home/register" != e.path()
                             || g.currentUser
