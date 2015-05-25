@@ -1,5 +1,15 @@
 var p = 0, q = !1;
-
+function calCharLength(str){
+    for(var b = 0, c = 0; c < str.length; c++ ){
+        var d = str.charCodeAt(c);
+        if( d >= 1 && 126 >= d || d >= 65376 && 65439 >= d){
+            b++;
+        }else{
+            b += 2;
+        }
+    }
+    return b;
+}
 !function(win, ng, undefined) {
     ng.module("app", ['ngRoute', 'scene', 'ui.bootstrap', "templates-app", "templates-common", "I18N.MESSAGES", "services.i18nNotifications"]);
     ng.module("app").config(["$routeProvider", function ($routeProvider) {

@@ -1,5 +1,196 @@
 !function(win, ng, undefined) {
     ng.module("my.scenesetting", ["services.scene", "services.mine", "services.data", "scene.create.console", "app.directives.addelement", "services.usercenter", "services.i18nNotifications"]),
+    ng.module("my.scenesetting").controller("SceneSettingCtrl", [
+        "$route",
+        "$location",
+        "$rootScope",
+        "$window",
+        "$scope",
+        "$routeParams",
+        "sceneService",
+        "MineService",
+        "dataService",
+        "$sce",
+        "$modal",
+        "usercenterService",
+        "security",
+        "pageTplService",
+        "i18nNotifications",
+        function($route, $location, $rootScope, $window, $scope, $routeParams, sceneService, MineService, dataService, $sce, $modal, usercenterService, security, pageTplService, i18nNotifications) {
+            $scope.loading = false;
+            $scope.url = "";
+            $scope.sceneId = $routeParams.sceneId;
+            $scope.isVendorUser = $rootScope.isVendorUser;
+            $scope.isAllowToAccessLastPageSetting = security.isAllowToAccess(2);
+
+            var r = 0;
+            $scope.PREFIX_FILE_HOST = PREFIX_FILE_HOST;
+            $scope.alwaysOpen = true;
+            var s;
+            $scope.scene || ($scope.scene = {});
+            $scope.switchOpen = function() {
+                $scope.alwaysOpen && ($scope.startDate = null, $scope.endDate = null);
+            };
+            $scope.openImageModal = function() {
+                $modal.open({
+                    windowClass: "img_console console",
+                    templateUrl: "scene/console/bg.tpl.html",
+                    controller: "BgConsoleCtrl",
+                    resolve: {
+                        obj: function() {
+                            return {
+                                fileType: 1,
+                                elemDef: null,
+                                coverImage: "coverImage"
+                            }
+                        }
+                    }
+                }).result.then(function(a) {
+                        $scope.newCoverImage = a;
+                        $scope.newCoverImage.tmbPath = a.data;
+                        $scope.newCoverImage.path = a.data;
+                        $scope.coverImages.unshift($scope.newCoverImage);
+                        $scope.scene.image.imgSrc = $scope.newCoverImage.path;
+                }, function() {});
+            };
+            $scope.chooseCover = function(a) {
+                $scope.scene.image.imgSrc = a.path
+            };
+            $scope.openmin = function(a) {
+                a.preventDefault();
+                a.stopPropagation();
+                $scope.openedmax = !1;
+                $scope.openedmin = !0;
+                $scope.minDateStart = new Date;
+                $scope.maxDateStart = $scope.endDate ? new Date(new Date($scope.endDate).getTime() - 864e5) : null
+            };
+            $scope.openmax = function(a) {
+                a.preventDefault();
+                a.stopPropagation();
+                $scope.openedmin = !1;
+                $scope.openedmax = !0;
+                $scope.minDateEnd = $scope.startDate ? new Date(new Date($scope.startDate).getTime() + 864e5) : new Date
+            };
+            $scope.dateOptions = {
+                formatYear: "yy",
+                startingDay: 1
+            };
+            $scope.formats = ["dd-MMMM-yyyy", "yyyy/MM/dd", "dd.MM.yyyy", "shortDate"];
+            $scope.format = $scope.formats[1];
+            $scope.saveSceneSettings = function() {
+                if ($scope.startDate && !$scope.endDate) return void($scope.invalidText = "请选择结束时间");
+                if ($scope.endDate && !$scope.startDate) return void($scope.invalidText = "请选择开始时间");
+                if ($scope.scene.description && $scope.scene.description.trim().length > 30) return void($scope.invalidText = "场景描述不能超过30个字");
+                if (!$scope.scene.name || !$scope.scene.name.trim()) return void($scope.invalidText = "请填写场景名称");
+                var len = calCharLength(f.scene.name.trim());
+                return len > 48
+                        ? void alert("场景名称不能超过48个字符或24个汉字")
+                        : $scope.scene.property && $scope.scene.property.bottomLabel && $scope.scene.property.bottomLabel.name && calCharLength($scope.scene.property.bottomLabel.name) > 16
+                            ? void alert("自定义名称不能超过16个字符")
+                            : $scope.scene.property && $scope.scene.property.bottomLabel && !$scope.scene.property.bottomLabel.name && $scope.scene.property.bottomLabel.url && "http://" != $scope.scene.property.bottomLabel.url
+                                ? void alert("请输入自定义底标名称")
+                                : (
+                                        $scope.startDate
+                                        && $scope.endDate
+                                        && (
+                                            $scope.scene.startDate = $scope.startDate.getTime(), $scope.scene.endDate = $scope.endDate.getTime()
+                                        ),
+                                        $scope.startDate && $scope.endDate || ($scope.scene.startDate = null, $scope.scene.endDate = null),
+                                            $scope.scene.type = $scope.scene.type.value,
+                                            $scope.scene.pageMode = $scope.scene.pageMode.id,
+                                            $scope.scene.property = ng.toJson($scope.scene.property),
+                                            void sceneService.saveSceneSettings($scope.scene).then(function() {
+                                                i18nNotifications.pushForNextRoute("scene.setting.success", "notify.success");
+                                                $location.path("my/scene/" + $scope.sceneId).search({});
+                                                $rootScope.showSetScenePanel = false;
+                                            }, function() {}));
+            };
+            $scope.getSceneDetail = function() {
+                sceneService.getSceneDetail($scope.sceneId).then(function(a) {
+                    $scope.scene = a.data.obj;
+                    $scope.scene.applyPromotion = "" + $scope.scene.applyPromotion;
+                    $scope.scene.applyTemplate = "" + $scope.scene.applyTemplate;
+                    2 == a.data.obj.pageMode && (a.data.obj.pageMode = 0);
+                    $scope.scene.property = $scope.scene.property ? JSON.parse($scope.scene.property) : {};
+                    ng.forEach($scope.pagemodes, function(b) {
+                        a.data.obj.pageMode == b.id && ($scope.scene.pageMode = b);
+                    });
+                    $scope.code = PREFIX_URL + "eqs/qrcode/" + f.scene.code + ".png";
+                    $scope.url = PREFIX_HOST + "/s/" + $scope.scene.code;
+                    $scope.customUrl = $sce.trustAsResourceUrl(PREFIX_HOST + "/view.html?sceneId=" + $scope.scene.id + "&preview=preview");
+                    $scope.scene.image.isAdvancedUser = $rootScope.isAdvancedUser || $rootScope.isVendorUser ? !0 : !1;
+                    $scope.hideAd = $scope.scene.image.hideEqAd ? !0 : !1;
+                    r = $scope.scene.pageCount;
+                    $scope.scene.startDate && $scope.scene.endDate && (
+                        $scope.startDate = new Date($scope.scene.startDate),
+                            $scope.endDate = new Date($scope.scene.endDate),
+                            $scope.alwaysOpen = !1);
+                    sceneService.getSceneType().then(function(a) {
+                        $scope.types = a.data.list;
+                        ng.forEach($scope.types, function(a) {
+                            a.value == $scope.scene.type && ($scope.scene.type = a)
+                        });
+                    });
+                    sceneService.getCoverImages().then(function(a) {
+                        $scope.coverImages = a.data.list;
+                        for (var b, c = 0; c < $scope.coverImages.length; c++) {
+                            if ($scope.scene.image.imgSrc == $scope.coverImages[c].path) {
+                                s = $scope.coverImages[c];
+                                $scope.coverImages.splice(c, 1);
+                                b = 0;
+                                break;
+                            }
+                            s = {
+                                tmbPath: $scope.scene.image.imgSrc,
+                                path: $scope.scene.image.imgSrc
+                            };
+                            b = 1;
+                        }
+                        $scope.coverImages.unshift(s);
+                    });
+                });
+            };
+            $scope.getSceneDetail();
+            $scope.pagemodes = [{
+                id: 0,
+                name: "上下翻页"
+            }, {
+                id: 1,
+                name: "上下惯性翻页"
+            }, {
+                id: 4,
+                name: "左右翻页"
+            }, {
+                id: 3,
+                name: "左右惯性翻页"
+            }, {
+                id: 5,
+                name: "左右连续翻页"
+            }];
+            $scope.scene.pageMode = $scope.pagemodes[0];
+            $scope.getUserXd = function() {
+                usercenterService.getUserXd().then(function(a) {
+                    $scope.userXd = a.data.obj;
+                });
+            };
+            $scope.getUserXd();
+            $scope.hideAdd = function(a) {
+                return $scope.scene.image.hideEqAd && $scope.userXd < 100 ? (alert("秀点不足！"), void($scope.scene.image.hideEqAd = !1)) : void(a && ($scope.scene.property.bottomLabel = {}, $scope.scene.image.hideEqAd = !0));
+            };
+            pageTplService.getPageTpls(1301).then(function(a) {
+                $scope.pageTpls = a.data.list && a.data.list.length > 0 ? a.data.list : [];
+            });
+            pageTplService.getPageTpls(1311).then(function(a) {
+                $scope.bottomPageTpls = a.data.list && a.data.list.length > 0 ? a.data.list : [];
+            });
+            $scope.chooseLastPage = function(a) {$scope.scene.image.lastPageId = a;};
+            $scope.chooseBottomLabel = function(a) {
+                $scope.scene.image.hideEqAd = false;
+                $scope.scene.property.bottomLabel || ($scope.scene.property.bottomLabel = {});
+                $scope.scene.property.bottomLabel.id = a;
+                a || ($scope.scene.property.bottomLabel = {});
+            }
+    }]);
 
     ng.module("scene.create", [
         "app.directives.editor",
@@ -836,118 +1027,150 @@
             }])
         .directive("changeColor", function () {
             return {
-                link: function (a, b) {
-                    b.bind("click", function () {
-                        $(b).addClass("current")
-                    })
+                link: function (scope, elemnt) {
+                    elemnt.bind("click", function () {
+                        $(elemnt).addClass("current");
+                    });
                 }
             }
         })
-        .directive("thumbTpl", ["sceneService", function (a) {
+        .directive("thumbTpl", ["sceneService", function (sceneService) {
             return {
                 scope: {
                     localModel: "=myAttr"
                 },
-                link: function (b, c) {
-                    $(c).empty(), a.templateEditor.parse({
-                        def: b.localModel,
-                        appendTo: c,
+                link: function (scope, element) {
+                    $(element).empty();
+                    sceneService.templateEditor.parse({
+                        def: scope.localModel,
+                        appendTo: element,
                         mode: "view"
-                    }), $(".edit_area", c).css("transform", "scale(0.25) translateX(-480px) translateY(-729px)")
+                    });
+                    $(".edit_area", element).css("transform", "scale(0.25) translateX(-480px) translateY(-729px)");
                 }
             }
         }]);
 
     ng.module("scene.create.new", ["services.scene"]);
-    ng.module("scene.create.new").controller("SceneNewCtrl", ["$scope", "$location", "sceneService", "items", function(a, c, d, e) {
-        a.scene = {
-            name: ""
-        }, e && (a.scene.name = e.name), d.getSceneType().then(function(c) {
-            if (a.scene.types = c.data.list, e) {
-                var d = !0;
-                b.forEach(a.scene.types, function(b) {
-                    if (d) {
-                        var f = "" + e.type;
-                        b.value === f ? (a.scene.type = b, d = !1) : a.scene.type = c.data.list[0]
+    ng.module("scene.create.new").controller("SceneNewCtrl", ["$scope", "$location", "sceneService", "items", function($scope, $location, sceneService, items) {
+        $scope.scene = {name: ""};
+        if(items){
+            $scope.scene.name = items.name;
+        }
+        sceneService.getSceneType().then(function(c) {
+            $scope.scene.types = c.data.list;
+            if (items) {
+                var flag = true;
+                ng.forEach($scope.scene.types, function(b) {
+                    if (flag) {
+                        var f = "" + items.type;
+                        if(b.value === f){
+                            $scope.scene.type = b;
+                            flag = false;
+                        }else{
+                            $scope.scene.type = c.data.list[0];
+                        }
                     }
-                })
-            } else a.scene.type = c.data.list[0]
-        }), a.create = function() {
-            if ("" === a.scene.name.trim()) return void alert("请输入场景名称");
-            var b = i(a.scene.name.trim());
-            if (b > 48) return void alert("场景名称不能超过48个字符或24个汉字");
-            if (e) {
-                var f = {
-                    id: e.id,
-                    name: a.scene.name,
-                    type: a.scene.type.value,
-                    pageMode: a.scene.pageMode.id
+                });
+            }else{
+                $scope.scene.type = c.data.list[0];
+            }
+        });
+        $scope.create = function() {
+            if ("" === $scope.scene.name.trim()) return void alert("请输入场景名称");
+            var len = calCharLength($scope.scene.name.trim());
+            if (len > 48) return void alert("场景名称不能超过48个字符或24个汉字");
+            if (items) {
+                var params = {
+                    id: items.id,
+                    name: $scope.scene.name,
+                    type: $scope.scene.type.value,
+                    pageMode: $scope.scene.pageMode.id
                 };
-                d.createByTpl(f).then(function(a) {
-                    c.path("scene/create/" + a.data.obj), c.search("pageId", 1)
-                }, function() {})
-            } else d.createBlankScene(a.scene.name, a.scene.type.value, a.scene.pageMode.id).then(function(a) {
-                c.path("scene/create/" + a.data.obj), c.search("pageId", 1)
-            });
-            a.$close()
-        }, a.cancel = function() {
-            a.$dismiss()
-        }, a.pagemodes = [{
+                sceneService.createByTpl(params).then(function(a) {
+                    $location.path("scene/create/" + a.data.obj);
+                    $location.search("pageId", 1);
+                }, function() {});
+            } else {
+                sceneService.createBlankScene($scope.scene.name, $scope.scene.type.value, $scope.scene.pageMode.id).then(function(a) {
+                    $location.path("scene/create/" + a.data.obj);
+                    $location.search("pageId", 1);
+                });
+            }
+            $scope.$close();
+        };
+        $scope.cancel = function() {$scope.$dismiss();};
+        $scope.pagemodes = [{
             id: 2,
             name: "上下翻页"
         }, {
             id: 1,
             name: "左右翻页"
-        }], a.scene.pageMode = a.pagemodes[0]
+        }];
+        $scope.scene.pageMode = $scope.pagemodes[0];
     }]);
 
     ng.module("scene", ["scene.create", "services.scene", "scene.create.new", "app.directives.addelement"]);
-    ng.module("scene").controller("SceneCtrl", ["$window", "$scope", "$location", "sceneService", "$modal", function(b, c, d, e, f) {
-        c.PREFIX_FILE_HOST = PREFIX_FILE_HOST,
-            c.PREFIX_CLIENT_HOST = PREFIX_HOST,
-            c.isActive = "scene",
-            c.scene = {type: null},
-            c.totalItems = 0,
-            c.currentPage = 1,
-            c.toPage = "",
-            c.tabindex = 0,
-            c.childcat = 0,
-            c.order = "new";
-        var g = 12,
-            h = 0;
-        c.pageChanged = function(a) {
-            return i.targetPage = a, 1 > a || a > c.totalItems / 11 + 1 ? void alert("此页超出范围") : void c.getPageTpls(1, i.sceneType, i.tagId, a, g, c.order)
-        },
-            c.preview = function(b) {
-                var c = PREFIX_HOST + "/view.html?sceneId=" + b;
-                a.open(c, "_blank")
-            },
-            c.createScene = function(a) {
-                f.open({
-                    windowClass: "login-container",
-                    templateUrl: "scene/createNew.tpl.html",
-                    controller: "SceneNewCtrl",
-                    resolve: {
-                        items: function() {
-                            return a
-                        }
+    ng.module("scene").controller("SceneCtrl", ["$window", "$scope", "$location", "sceneService", "$modal", function($window, $scope, $location, sceneService, $modal) {
+        $scope.PREFIX_FILE_HOST = PREFIX_FILE_HOST;
+        $scope.PREFIX_CLIENT_HOST = PREFIX_HOST;
+
+        $scope.isActive = "scene";
+        $scope.scene = {type: null};
+        $scope.totalItems = 0;
+        $scope.currentPage = 1;
+        $scope.toPage = "";
+        $scope.tabindex = 0;
+        $scope.childcat = 0;
+        $scope.order = "new";
+
+        var g = 12, h = 0;
+        $scope.pageChanged = function(a) {
+            i.targetPage = a;
+            if (1 > a || a > c.totalItems / 11 + 1) {
+                return void alert("此页超出范围");
+            } else {
+                return void $scope.getPageTpls(1, i.sceneType, i.tagId, a, g, $scope.order);
+            }
+        }
+        $scope.preview = function(b) {
+            var url = PREFIX_HOST + "/view.html?sceneId=" + b;
+            window.open(url, "_blank");
+        };
+        $scope.createScene = function(a) {
+            $modal.open({
+                windowClass: "login-container",
+                templateUrl: "scene/createNew.tpl.html",
+                controller: "SceneNewCtrl",
+                resolve: {
+                    items: function() {
+                        return a;
                     }
-                })
-            },
-            c.getStyle = function(a) {
-                return {
-                    "background-image": "url(" + PREFIX_FILE_HOST + a + ")"
                 }
-            },
-            c.show = function(a) {
-                console.log(a.target), $(a.target).children(".cc").css("display", "block")
-            },
-            e.getSceneType().then(function(a) {
-                c.pageTplTypes = a.data.list && a.data.list.length > 0 ? a.data.list : []
-            }).then(function() {}),
-            c.tplnew = function(a) {
-                c.order = a, i.orderby = a, i.tagId ? c.getPageTpls(null, i.sceneType, i.tagId, h, g, a) : c.getPageTpls(1)
-            };
+            });
+        };
+        $scope.getStyle = function(a) {
+            return {
+                "background-image": "url(" + PREFIX_FILE_HOST + a + ")"
+            }
+        };
+        $scope.show = function(a) {
+            console.log(a.target);
+            $(a.target).children(".cc").css("display", "block");
+        };
+        sceneService.getSceneType().then(function(a) {
+            $scope.pageTplTypes = a.data.list && a.data.list.length > 0 ? a.data.list : [];
+        }).then(function() {});
+        $scope.tplnew = function(a) {
+            $scope.order = a;
+            i.orderby = a;
+            if(i.tagId){
+                $scope.getPageTpls(null, i.sceneType, i.tagId, h, g, a);
+            }else{
+                $scope.getPageTpls(1);
+            }
+        };
+
         var i = {
                 sceneType: null,
                 tagId: "",
@@ -956,20 +1179,42 @@
                 targetPage: ""
             },
             j = {};
-        c.getPageTplsByType = function(a) {
-            i.sceneType = a, c.childcat = a, c.categoryId = 0, j[a] ? (c.childCatrgoryList = j[a], c.getPageTpls(1, i.sceneType, c.childCatrgoryList[0].id, h, g, c.order)) : e.getPageTplTypesTwo(a, a).then(function(b) {
-                c.childCatrgoryList = j[a] = b.data.list, c.getPageTpls(1, i.sceneType, c.childCatrgoryList[0].id, h, g, c.order)
-            })
-        },
-            c.allpage = function(a) {
-                i.sceneType = a, c.childcat = 0, c.getPageTpls(1), c.childCatrgoryList = []
-            },
-            c.getPageTpls = function(a, b, d, f) {
-                var g = 11;
-                c.categoryId = d, i.tagId = d, e.getPageTpls(a, b, d, f, g, i.orderby).then(function(a) {
-                    a.data.list && a.data.list.length > 0 ? (c.tpls = a.data.list, c.totalItems = a.data.map.count, c.currentPage = a.data.map.pageNo, c.allPageCount = a.data.map.count, c.toPage = "") : c.tpls = []
-                })
-            },
-            c.getPageTpls(1)
+        $scope.getPageTplsByType = function(a) {
+            i.sceneType = a;
+            $scope.childcat = a;
+            $scope.categoryId = 0;
+            if(j[a]){
+                $scope.childCatrgoryList = j[a];
+                $scope.getPageTpls(1, i.sceneType, $scope.childCatrgoryList[0].id, h, g, $scope.order);
+            }else{
+                sceneService.getPageTplTypesTwo(a, a).then(function(b) {
+                    $scope.childCatrgoryList = j[a] = b.data.list;
+                    $scope.getPageTpls(1, i.sceneType, $scope.childCatrgoryList[0].id, h, g, $scope.order);
+                });
+            }
+        };
+        $scope.allpage = function(a) {
+            i.sceneType = a;
+            $scope.childcat = 0;
+            $scope.getPageTpls(1);
+            $scope.childCatrgoryList = [];
+        };
+        $scope.getPageTpls = function(a, b, d, f) {
+            var g = 11;
+            $scope.categoryId = d;
+            i.tagId = d;
+            sceneService.getPageTpls(a, b, d, f, g, i.orderby).then(function(a) {
+                if(a.data.list && a.data.list.length > 0){
+                    $scope.tpls = a.data.list;
+                    $scope.totalItems = a.data.map.count;
+                    $scope.currentPage = a.data.map.pageNo;
+                    $scope.allPageCount = a.data.map.count;
+                    $scope.toPage = ""
+                }else{
+                    $scope.tpls = [];
+                }
+            });
+        };
+        $scope.getPageTpls(1);
     }]);
 }(window, window.angular);

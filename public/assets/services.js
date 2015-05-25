@@ -17,6 +17,159 @@
         return mineFactory;
     }]);
 
+    ng.module("services.usercenter", []).factory("usercenterService", ["$http", function(a) {
+        var b = {};
+        return b.getUserInfo = function() {
+            var b = PREFIX_URL + "m/u/info";
+            return b += "?time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: b
+            })
+        }, b.getCompanyInfo = function() {
+            var b = PREFIX_URL + "m/u/company/info";
+            return b += "?time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: b
+            })
+        }, b.saveCompanyInfo = function(b) {
+            var c = PREFIX_URL + "m/u/company/save";
+            return a({
+                withCredentials: !0,
+                method: "POST",
+                url: c,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                data: $.param(b)
+            })
+        }, b.saveUserInfo = function(b) {
+            var c = PREFIX_URL + "m/u/save";
+            return a({
+                withCredentials: !0,
+                method: "POST",
+                url: c,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                data: $.param(b)
+            })
+        }, b.getUserXd = function() {
+            var b = PREFIX_URL + "m/u/xd";
+            return b += "?time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: b
+            })
+        }, b.getgiveXd = function(b) {
+            var c = PREFIX_URL + "m/u/giveXd";
+            return c += "?toUser=" + b.toUser, c += "&xdCount=" + b.xdCount, c += "&time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "POST",
+                url: c
+            })
+        }, b.getXdlog = function(b, c) {
+            var d = PREFIX_URL + "m/u/xdlog?pageNo=" + b + "&pageSize=" + c;
+            return d += "?time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "POST",
+                url: d
+            })
+        }, b.getXdStat = function() {
+            var b = PREFIX_URL + "m/u/xdStat";
+            return b += "?time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: b
+            })
+        }, b.relAccount = function(b, c, d) {
+            var e = PREFIX_URL + "eqs/bindAccount?relUser=" + b + "&loginName=" + c + "&loginPassword=" + d;
+            return e += "&time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "POST",
+                url: e,
+                headers: {
+                    "Content-Type": "text/plain; charset=UTF-8"
+                }
+            })
+        }, b.setRead = function(b) {
+            var c = PREFIX_URL + "m/u/markRead?ids=" + b;
+            return c += "&time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "POST",
+                url: c,
+                headers: {
+                    "Content-Type": "text/plain; charset=UTF-8"
+                }
+            })
+        }, b.getNewMessage = function(b, c, d) {
+            var e = PREFIX_URL + "m/u/msgList?pageNo=" + b + "&pageSize=" + c;
+            return d && (e += "&unread=" + d), e += "&time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: e
+            })
+        }, b.getBranches = function(b, c) {
+            var d = PREFIX_URL + "m/u/sub/list?pageNo=" + c + "&pageSize=" + b;
+            return d += "&time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: d
+            })
+        }, b.getDepts = function() {
+            var b = PREFIX_URL + "m/u/tag/list";
+            return b += "?time=" + (new Date).getTime(), a({
+                withCredentials: !0,
+                method: "GET",
+                url: b
+            })
+        }, b.addDept = function(b) {
+            var c = PREFIX_URL + "m/u/tag/create";
+            return a({
+                withCredentials: !0,
+                method: "POST",
+                url: c,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                data: $.param(b)
+            })
+        }, b.updateBranch = function(b) {
+            var c = PREFIX_URL + "m/u/sub/save";
+            return a({
+                withCredentials: !0,
+                method: "POST",
+                url: c,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                data: $.param(b)
+            })
+        }, b.createBranch = function(b) {
+            var c = PREFIX_URL + "m/u/sub/create";
+            return a({
+                withCredentials: !0,
+                method: "POST",
+                url: c,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                data: $.param(b)
+            })
+        }, b.openBranch = function(b, c) {
+            var d = PREFIX_URL;
+            return d += c ? "m/u/sub/turnOn?id=" + b : "m/u/sub/turnOff?id=" + b, a({
+                withCredentials: !0,
+                method: "POST",
+                url: d,
+                headers: {
+                    "Content-Type": "text/plain; charset=UTF-8"
+                }
+            })
+        }, b
+    }]);
+
     ng.module("I18N.MESSAGES", []).constant("I18N.MESSAGES", {
         "notify.success": "success",
         "notify.info": "info",
